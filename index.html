@@ -1,0 +1,2478 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fluency Sprint</title>
+  <style>
+    :root {
+      --ink: #172033;
+      --muted: #64748b;
+      --line: #d7deea;
+      --paper: #fffdf7;
+      --panel: #ffffff;
+      --teal: #0f9f8f;
+      --teal-dark: #087b70;
+      --coral: #f05d4f;
+      --coral-dark: #c43f34;
+      --gold: #f4b63d;
+      --green: #46a758;
+      --blue: #3c75d8;
+      --shadow: 0 18px 42px rgba(23, 32, 51, 0.12);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top left, rgba(244, 182, 61, 0.22), transparent 32rem),
+        linear-gradient(135deg, #fffaf0 0%, #f7fbff 52%, #fff7f5 100%);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    .page {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1rem clamp(1rem, 3vw, 2rem);
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.65rem;
+      font-weight: 900;
+      font-size: 1.1rem;
+    }
+
+    .brand-mark {
+      width: 2.2rem;
+      height: 2.2rem;
+      border-radius: 8px;
+      background: var(--teal);
+      color: white;
+      display: grid;
+      place-items: center;
+      box-shadow: 0 8px 18px rgba(15, 159, 143, 0.25);
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .shell {
+      width: min(1180px, calc(100% - 2rem));
+      margin: 0 auto;
+      padding: 1rem 0 3rem;
+    }
+
+    .hero {
+      text-align: center;
+      padding: clamp(1.5rem, 5vw, 4rem) 0 2rem;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      border: 2px solid var(--line);
+      border-radius: 999px;
+      padding: 0.35rem 0.65rem;
+      background: rgba(255, 255, 255, 0.78);
+      color: var(--muted);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin-top: 0;
+    }
+
+    h1 {
+      margin-bottom: 0.75rem;
+      font-size: clamp(3rem, 8vw, 6.8rem);
+      line-height: 0.94;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      font-size: clamp(1.8rem, 4vw, 3rem);
+      line-height: 1.05;
+      margin-bottom: 0.6rem;
+    }
+
+    h3 {
+      margin-bottom: 0.4rem;
+      font-size: 1.1rem;
+    }
+
+    .lead {
+      color: var(--muted);
+      font-size: 1.05rem;
+      max-width: 42rem;
+      margin: 0 auto;
+    }
+
+    .grid {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .grid.two {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .grid.three {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .grid.four {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .panel {
+      background: rgba(255, 255, 255, 0.92);
+      border: 2px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .tile {
+      width: 100%;
+      min-height: 11rem;
+      padding: 1.25rem;
+      border: 2px solid var(--line);
+      border-radius: var(--radius);
+      background: white;
+      color: var(--ink);
+      text-align: left;
+      transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+    }
+
+    .tile:hover,
+    .tile:focus-visible {
+      transform: translateY(-2px);
+      border-color: var(--teal);
+      box-shadow: 0 14px 28px rgba(23, 32, 51, 0.12);
+      outline: none;
+    }
+
+    .iconbox {
+      width: 3.25rem;
+      height: 3.25rem;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      margin-bottom: 0.9rem;
+      background: #e8fbf8;
+      color: var(--teal-dark);
+      font-size: 1.35rem;
+      font-weight: 900;
+    }
+
+    .tile:nth-child(2) .iconbox {
+      background: #fff0ec;
+      color: var(--coral-dark);
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .small {
+      font-size: 0.86rem;
+    }
+
+    .tiny {
+      font-size: 0.76rem;
+    }
+
+    .stack {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      flex-wrap: wrap;
+    }
+
+    .between {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .section {
+      padding: 1.1rem;
+    }
+
+    .btn {
+      min-height: 2.6rem;
+      border: 2px solid transparent;
+      border-radius: 8px;
+      padding: 0.65rem 0.95rem;
+      background: var(--ink);
+      color: white;
+      font-weight: 900;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      text-decoration: none;
+    }
+
+    .btn.primary {
+      background: var(--teal);
+      color: white;
+    }
+
+    .btn.warn {
+      background: var(--coral);
+      color: white;
+    }
+
+    .btn.gold {
+      background: var(--gold);
+      color: #3b2d04;
+    }
+
+    .btn.ghost {
+      background: white;
+      color: var(--ink);
+      border-color: var(--line);
+    }
+
+    .btn.icon {
+      width: 2.65rem;
+      padding: 0;
+      flex: 0 0 auto;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      min-height: 2rem;
+      padding: 0.35rem 0.65rem;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: white;
+      color: var(--muted);
+      font-weight: 800;
+      font-size: 0.82rem;
+    }
+
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+    }
+
+    .tab {
+      border: 2px solid var(--line);
+      border-radius: 999px;
+      background: white;
+      color: var(--ink);
+      padding: 0.55rem 0.85rem;
+      font-weight: 900;
+    }
+
+    .tab.active {
+      border-color: var(--teal);
+      background: #e8fbf8;
+      color: var(--teal-dark);
+    }
+
+    label {
+      display: grid;
+      gap: 0.35rem;
+      color: var(--ink);
+      font-weight: 850;
+    }
+
+    input,
+    select {
+      width: 100%;
+      min-height: 2.75rem;
+      border: 2px solid var(--line);
+      border-radius: 8px;
+      background: white;
+      color: var(--ink);
+      padding: 0.65rem 0.75rem;
+      outline: none;
+    }
+
+    input:focus,
+    select:focus {
+      border-color: var(--teal);
+      box-shadow: 0 0 0 4px rgba(15, 159, 143, 0.12);
+    }
+
+    .notice {
+      border: 2px solid #f3d28b;
+      background: #fff8df;
+      color: #5f4608;
+      border-radius: var(--radius);
+      padding: 0.8rem;
+    }
+
+    .success {
+      border-color: #b6e4bd;
+      background: #ecfff0;
+      color: #215b2b;
+    }
+
+    .danger {
+      border-color: #ffc7bd;
+      background: #fff1ef;
+      color: #84251d;
+    }
+
+    .level-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.7rem;
+    }
+
+    .level {
+      min-height: 5.6rem;
+      border: 2px solid var(--line);
+      background: white;
+      border-radius: var(--radius);
+      padding: 0.85rem;
+      text-align: left;
+    }
+
+    .level.active {
+      border-color: var(--coral);
+      box-shadow: 0 0 0 4px rgba(240, 93, 79, 0.12);
+    }
+
+    .level-code {
+      font-size: 0.78rem;
+      color: var(--muted);
+      font-weight: 900;
+    }
+
+    .practice-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(18rem, 24rem);
+      gap: 1rem;
+      align-items: start;
+    }
+
+    .question {
+      text-align: center;
+      padding: clamp(1.2rem, 4vw, 2.5rem);
+    }
+
+    .question-text {
+      font-size: clamp(3.2rem, 11vw, 7.4rem);
+      font-weight: 950;
+      line-height: 1;
+      margin: 1rem 0;
+      letter-spacing: 0;
+    }
+
+    .answer-input {
+      font-size: clamp(2rem, 8vw, 4rem);
+      text-align: center;
+      font-weight: 950;
+      min-height: 5rem;
+      max-width: 18rem;
+      margin: 0 auto;
+    }
+
+    .keypad {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.5rem;
+    }
+
+    .key {
+      min-height: 4rem;
+      border: 2px solid var(--line);
+      border-radius: 8px;
+      background: white;
+      font-size: 1.35rem;
+      font-weight: 950;
+    }
+
+    .key.enter {
+      grid-column: span 2;
+      background: var(--teal);
+      color: white;
+      border-color: var(--teal);
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.7rem;
+    }
+
+    .stat {
+      padding: 0.8rem;
+      border: 2px solid var(--line);
+      background: white;
+      border-radius: var(--radius);
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 1.45rem;
+      line-height: 1;
+      margin-bottom: 0.25rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      padding: 0.7rem;
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      background: #f7fafc;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: minmax(15rem, 22rem) minmax(0, 1fr);
+      gap: 1rem;
+      align-items: start;
+    }
+
+    .class-list {
+      display: grid;
+      gap: 0.55rem;
+    }
+
+    .class-button {
+      border: 2px solid var(--line);
+      border-radius: var(--radius);
+      background: white;
+      text-align: left;
+      padding: 0.75rem;
+    }
+
+    .class-button.active {
+      border-color: var(--teal);
+      background: #e8fbf8;
+    }
+
+    .chart {
+      width: 100%;
+      min-height: 14rem;
+      border: 2px solid var(--line);
+      border-radius: var(--radius);
+      background: #fbfdff;
+      overflow: hidden;
+    }
+
+    .empty {
+      min-height: 10rem;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      color: var(--muted);
+      padding: 1rem;
+      border: 2px dashed var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.65);
+    }
+
+    .footer-note {
+      text-align: center;
+      color: var(--muted);
+      padding: 1rem;
+    }
+
+    .preview-strip {
+      margin: 0 clamp(1rem, 3vw, 2rem) 1rem;
+      padding: 0.7rem;
+      border: 2px solid #c6d7ff;
+      border-radius: var(--radius);
+      background: #eef4ff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.7rem;
+      flex-wrap: wrap;
+    }
+
+    .preview-strip strong {
+      color: #244a93;
+    }
+
+    .preview-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .preview-nav button {
+      min-height: 2rem;
+      border: 1px solid #adc2f4;
+      border-radius: 999px;
+      background: white;
+      color: #244a93;
+      padding: 0.35rem 0.6rem;
+      font-weight: 850;
+      font-size: 0.78rem;
+    }
+
+    @media (max-width: 860px) {
+      .grid.two,
+      .grid.three,
+      .grid.four,
+      .level-list,
+      .practice-layout,
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .topbar {
+        align-items: flex-start;
+      }
+
+      .toolbar {
+        justify-content: flex-start;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .shell {
+        width: min(100% - 1rem, 1180px);
+      }
+
+      .section {
+        padding: 0.85rem;
+      }
+
+      .stats {
+        grid-template-columns: 1fr;
+      }
+
+      th,
+      td {
+        padding: 0.55rem;
+      }
+
+      .question-text {
+        font-size: 3.3rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      var STORE_KEY = "fluencySprintLocalV1";
+      var app = document.getElementById("app");
+      var timerId = null;
+
+      var OPERATIONS = [
+        { id: "addition", label: "Addition", symbol: "+" },
+        { id: "subtraction", label: "Subtraction", symbol: "-" },
+        { id: "multiplication", label: "Multiplication", symbol: "x" },
+        { id: "division", label: "Division", symbol: "/" },
+        { id: "mixed", label: "Mixed Operations", symbol: "+-x/" }
+      ];
+
+      var LEVELS = [
+        { id: "A1", operation: "addition", name: "Add within 10", tags: ["addition"] },
+        { id: "A2", operation: "addition", name: "Friends of 10", tags: ["friends10"] },
+        { id: "A3", operation: "addition", name: "Missing friends of 10", tags: ["friends10", "missing"] },
+        { id: "A4", operation: "addition", name: "Add within 20", tags: ["addition"] },
+        { id: "A5", operation: "addition", name: "Answers ending in 5", tags: ["ending5"] },
+        { id: "A6", operation: "addition", name: "Bridge to 10", tags: ["friends10", "bridge"] },
+        { id: "A7", operation: "addition", name: "Mixed addition fluency", tags: ["addition"] },
+        { id: "S1", operation: "subtraction", name: "Subtract within 10", tags: ["subtraction"] },
+        { id: "S2", operation: "subtraction", name: "Subtract from 10", tags: ["friends10"] },
+        { id: "S3", operation: "subtraction", name: "Missing subtraction facts for 10", tags: ["friends10", "missing"] },
+        { id: "S4", operation: "subtraction", name: "Subtract within 20", tags: ["subtraction"] },
+        { id: "S5", operation: "subtraction", name: "Answers ending in 5", tags: ["ending5"] },
+        { id: "S6", operation: "subtraction", name: "Bridge through 10", tags: ["friends10", "bridge"] },
+        { id: "S7", operation: "subtraction", name: "Mixed subtraction fluency", tags: ["subtraction"] },
+        { id: "M1", operation: "multiplication", name: "2s, 5s, and 10s", tags: ["times2", "times5", "times10"] },
+        { id: "M2", operation: "multiplication", name: "5-times-table facts", tags: ["times5", "ending5"] },
+        { id: "M3", operation: "multiplication", name: "Products ending in 5 or 0", tags: ["ending5", "times5"] },
+        { id: "M4", operation: "multiplication", name: "3s and 4s", tags: ["times3", "times4"] },
+        { id: "M5", operation: "multiplication", name: "6s, 7s, 8s, and 9s", tags: ["times6", "times7", "times8", "times9"] },
+        { id: "M6", operation: "multiplication", name: "Mixed multiplication fluency", tags: ["multiplication"] },
+        { id: "D1", operation: "division", name: "Divide by 2, 5, and 10", tags: ["divide2", "divide5", "divide10"] },
+        { id: "D2", operation: "division", name: "Division facts connected to the 5-times-table", tags: ["divide5", "times5"] },
+        { id: "D3", operation: "division", name: "Division with 5s and 10s", tags: ["divide5", "divide10"] },
+        { id: "D4", operation: "division", name: "Divide within known times tables", tags: ["division"] },
+        { id: "D5", operation: "division", name: "Mixed division fluency", tags: ["division"] },
+        { id: "X1", operation: "mixed", name: "Addition and subtraction within 10", tags: ["addition", "subtraction"] },
+        { id: "X2", operation: "mixed", name: "Friends of 10 mixed", tags: ["friends10"] },
+        { id: "X3", operation: "mixed", name: "Facts ending in 5 mixed", tags: ["ending5"] },
+        { id: "X4", operation: "mixed", name: "Multiplication and division by 2, 5, and 10", tags: ["times2", "times5", "times10"] },
+        { id: "X5", operation: "mixed", name: "All four operations, beginner", tags: ["mixed"] },
+        { id: "X6", operation: "mixed", name: "All four operations, standard", tags: ["mixed"] }
+      ];
+
+      var liveStore = loadStore();
+      var previewStore = null;
+      var store = liveStore;
+      var state = {
+        view: "home",
+        selectedOperation: "addition",
+        selectedLevelId: "A1",
+        dashboardClassId: store.lastClassId || null,
+        dashboardOperation: "all",
+        dashboardTag: "all",
+        authMode: "login",
+        student: null,
+        active: null,
+        results: null,
+        reviewIndex: 0,
+        message: "",
+        previewMode: false
+      };
+
+      function defaultStore() {
+        return {
+          teachers: [],
+          classes: [],
+          students: [],
+          sessions: [],
+          currentTeacherId: null,
+          lastClassId: null
+        };
+      }
+
+      function loadStore() {
+        try {
+          var raw = localStorage.getItem(STORE_KEY);
+          if (!raw) return defaultStore();
+          var parsed = JSON.parse(raw);
+          return Object.assign(defaultStore(), parsed);
+        } catch (error) {
+          return defaultStore();
+        }
+      }
+
+      function saveStore() {
+        if (state.previewMode) return;
+        store.lastClassId = state.dashboardClassId;
+        localStorage.setItem(STORE_KEY, JSON.stringify(store));
+      }
+
+      function buildPreviewStore() {
+        var previewTeacher = {
+          id: "preview-teacher",
+          email: "teacher@example.school",
+          displayName: "Ms Preview",
+          passwordHash: "preview-only",
+          createdAt: previewDate(45)
+        };
+        var previewClass = {
+          id: "preview-class",
+          teacherId: previewTeacher.id,
+          name: "Year 4 Fluency Group",
+          code: "MTH-204-FS",
+          createdAt: previewDate(42)
+        };
+        var students = [
+          previewStudentRecord("preview-student-ava", "Ava", previewClass, 38),
+          previewStudentRecord("preview-student-noah", "Noah", previewClass, 36),
+          previewStudentRecord("preview-student-mia", "Mia", previewClass, 32),
+          previewStudentRecord("preview-student-eli", "Eli", previewClass, 30)
+        ];
+        var sessions = [
+          previewSession(students[0], 18, "sprint", "A2", 22, 15, 5, "6 + ? = 10", "5", 4),
+          previewSession(students[0], 12, "sprint", "A2", 24, 18, 7, "3 + 7", "9", 10),
+          previewSession(students[0], 7, "practice", "A5", 18, 15, 6, "8 + 7", "14", 15),
+          previewSession(students[0], 1, "sprint", "X3", 28, 23, 9, "45 / 5", "8", 9),
+          previewSession(students[1], 16, "practice", "S2", 16, 10, 4, "10 - 6", "5", 4),
+          previewSession(students[1], 9, "sprint", "S5", 20, 15, 5, "20 - 5", "10", 15),
+          previewSession(students[1], 2, "sprint", "M2", 26, 21, 8, "5 x 7", "30", 35),
+          previewSession(students[2], 20, "sprint", "M1", 18, 12, 4, "2 x 8", "14", 16),
+          previewSession(students[2], 13, "practice", "M2", 18, 14, 5, "5 x 9", "40", 45),
+          previewSession(students[2], 3, "sprint", "D2", 24, 19, 7, "35 / 5", "6", 7),
+          previewSession(students[3], 28, "practice", "A1", 12, 9, 3, "4 + 5", "8", 9),
+          previewSession(students[3], 15, "sprint", "X2", 18, 13, 4, "10 - ? = 4", "5", 6)
+        ];
+        return {
+          teachers: [previewTeacher],
+          classes: [previewClass],
+          students: students,
+          sessions: sessions,
+          currentTeacherId: previewTeacher.id,
+          lastClassId: previewClass.id
+        };
+      }
+
+      function previewStudentRecord(id, alias, klass, daysBack) {
+        return {
+          id: id,
+          classId: klass.id,
+          teacherId: klass.teacherId,
+          alias: alias,
+          pinHash: "preview-only",
+          createdAt: previewDate(daysBack)
+        };
+      }
+
+      function previewSession(student, daysBack, mode, levelId, attempted, correct, bestStreak, missedQuestion, studentAnswer, correctAnswer) {
+        var level = levelById(levelId);
+        var accuracy = attempted ? Math.round((correct / attempted) * 100) : 0;
+        return {
+          id: uid("preview_session"),
+          studentId: student.id,
+          studentAlias: student.alias,
+          classId: student.classId,
+          teacherId: student.teacherId,
+          createdAt: previewDate(daysBack),
+          mode: mode,
+          operation: level.operation,
+          levelId: level.id,
+          levelName: level.name,
+          tags: level.tags,
+          attempted: attempted,
+          correct: correct,
+          accuracy: accuracy,
+          bestStreak: bestStreak,
+          timeSpent: mode === "sprint" ? 100 : rand(180, 420),
+          score: correct,
+          mistakes: [{
+            question: missedQuestion,
+            studentAnswer: String(studentAnswer),
+            correctAnswer: correctAnswer,
+            operation: level.operation,
+            levelId: level.id,
+            recovered: false,
+            tags: level.tags
+          }]
+        };
+      }
+
+      function previewDate(daysBack) {
+        var date = new Date();
+        date.setDate(date.getDate() - daysBack);
+        date.setHours(9 + (daysBack % 7), 10 + (daysBack % 5) * 8, 0, 0);
+        return date.toISOString();
+      }
+
+      function preparePreview() {
+        if (state.previewMode && previewStore) return;
+        stopTimer();
+        previewStore = buildPreviewStore();
+        store = previewStore;
+        state.previewMode = true;
+        store.currentTeacherId = "preview-teacher";
+        state.dashboardClassId = "preview-class";
+        state.dashboardOperation = "all";
+        state.dashboardTag = "all";
+        state.selectedOperation = "addition";
+        state.selectedLevelId = "A2";
+        state.student = null;
+        state.active = null;
+        state.results = null;
+        state.reviewIndex = 0;
+        state.message = "Preview mode is using temporary demo data.";
+      }
+
+      function enterPreview() {
+        preparePreview();
+        state.view = "preview";
+        render();
+      }
+
+      function exitPreview() {
+        stopTimer();
+        previewStore = null;
+        store = liveStore;
+        state.previewMode = false;
+        state.view = "home";
+        state.dashboardClassId = store.lastClassId || null;
+        state.dashboardOperation = "all";
+        state.dashboardTag = "all";
+        state.student = null;
+        state.active = null;
+        state.results = null;
+        state.reviewIndex = 0;
+        state.message = "";
+        render();
+      }
+
+      function previewStudent() {
+        return {
+          id: "preview-student-ava",
+          alias: "Ava",
+          classId: "preview-class",
+          teacherId: "preview-teacher"
+        };
+      }
+
+      function setPreviewResult() {
+        var session = store.sessions.find(function (item) { return item.mistakes && item.mistakes.length; }) || store.sessions[0];
+        state.results = JSON.parse(JSON.stringify(session));
+        state.reviewIndex = 0;
+      }
+
+      function previewGo(target) {
+        preparePreview();
+        stopTimer();
+        state.message = "";
+        state.active = null;
+        state.results = null;
+        if (target === "map") {
+          state.student = null;
+          state.view = "preview";
+          render();
+          return;
+        }
+        if (target === "landing") {
+          state.student = null;
+          state.view = "home";
+          render();
+          return;
+        }
+        if (target === "join") {
+          state.student = null;
+          state.view = "student-join";
+          render();
+          return;
+        }
+        if (target === "levels") {
+          state.student = previewStudent();
+          state.selectedOperation = "addition";
+          state.selectedLevelId = "A2";
+          state.view = "student-menu";
+          render();
+          return;
+        }
+        if (target === "practice") {
+          state.student = previewStudent();
+          state.selectedOperation = "addition";
+          state.selectedLevelId = "A2";
+          startSession("practice");
+          return;
+        }
+        if (target === "sprint") {
+          state.student = previewStudent();
+          state.selectedOperation = "mixed";
+          state.selectedLevelId = "X3";
+          startSession("sprint");
+          return;
+        }
+        if (target === "results") {
+          state.student = previewStudent();
+          setPreviewResult();
+          state.view = "results";
+          render();
+          return;
+        }
+        if (target === "review") {
+          state.student = previewStudent();
+          setPreviewResult();
+          state.view = "review";
+          render();
+          return;
+        }
+        if (target === "login") {
+          state.student = null;
+          store.currentTeacherId = null;
+          state.authMode = "login";
+          state.view = "auth";
+          render();
+          return;
+        }
+        if (target === "dashboard") {
+          state.student = null;
+          store.currentTeacherId = "preview-teacher";
+          state.dashboardClassId = "preview-class";
+          state.view = "dashboard";
+          render();
+        }
+      }
+
+      function uid(prefix) {
+        return prefix + "_" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+      }
+
+      function escapeHTML(value) {
+        return String(value == null ? "" : value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      function todayKey(dateValue) {
+        var d = dateValue ? new Date(dateValue) : new Date();
+        return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+      }
+
+      function daysAgo(dateValue) {
+        if (!dateValue) return 9999;
+        var then = new Date(dateValue).getTime();
+        return Math.floor((Date.now() - then) / 86400000);
+      }
+
+      function formatDateTime(dateValue) {
+        if (!dateValue) return "Never";
+        return new Date(dateValue).toLocaleString([], {
+          day: "numeric",
+          month: "short",
+          hour: "numeric",
+          minute: "2-digit"
+        });
+      }
+
+      function formatDate(dateValue) {
+        if (!dateValue) return "Never";
+        return new Date(dateValue).toLocaleDateString([], { day: "numeric", month: "short" });
+      }
+
+      function choice(items) {
+        return items[Math.floor(Math.random() * items.length)];
+      }
+
+      function rand(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+      }
+
+      function shufflePair(a, b) {
+        return Math.random() > 0.5 ? [a, b] : [b, a];
+      }
+
+      function levelById(id) {
+        return LEVELS.find(function (level) { return level.id === id; }) || LEVELS[0];
+      }
+
+      function operationLabel(id) {
+        var op = OPERATIONS.find(function (item) { return item.id === id; });
+        return op ? op.label : id;
+      }
+
+      function teacher() {
+        return store.teachers.find(function (item) { return item.id === store.currentTeacherId; }) || null;
+      }
+
+      function classesForTeacher() {
+        var t = teacher();
+        if (!t) return [];
+        return store.classes.filter(function (item) { return item.teacherId === t.id && !item.deletedAt; });
+      }
+
+      function selectedClass() {
+        var classes = classesForTeacher();
+        if (!classes.length) return null;
+        var found = classes.find(function (item) { return item.id === state.dashboardClassId; });
+        if (found) return found;
+        state.dashboardClassId = classes[0].id;
+        saveStore();
+        return classes[0];
+      }
+
+      function studentsForClass(classId) {
+        return store.students.filter(function (item) { return item.classId === classId && !item.deletedAt; });
+      }
+
+      function sessionsForClass(classId) {
+        return store.sessions.filter(function (item) { return item.classId === classId; });
+      }
+
+      function sessionsForStudent(studentId) {
+        return store.sessions.filter(function (item) { return item.studentId === studentId; });
+      }
+
+      async function hashText(text) {
+        if (window.crypto && window.crypto.subtle && window.TextEncoder) {
+          var bytes = new TextEncoder().encode(text);
+          var digest = await window.crypto.subtle.digest("SHA-256", bytes);
+          return Array.from(new Uint8Array(digest)).map(function (b) {
+            return b.toString(16).padStart(2, "0");
+          }).join("");
+        }
+        try {
+          return "demo-" + btoa(unescape(encodeURIComponent(text)));
+        } catch (error) {
+          return "demo-" + String(text).split("").reverse().join("");
+        }
+      }
+
+      function randomClassCode() {
+        var chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+        var out = [];
+        for (var group = 0; group < 3; group += 1) {
+          var chunk = "";
+          for (var i = 0; i < 3; i += 1) {
+            chunk += chars[rand(0, chars.length - 1)];
+          }
+          out.push(chunk);
+        }
+        return out.join("-");
+      }
+
+      function uniqueClassCode() {
+        var code = randomClassCode();
+        while (store.classes.some(function (item) { return item.code === code && !item.deletedAt; })) {
+          code = randomClassCode();
+        }
+        return code;
+      }
+
+      function question(text, answer, operation, tags) {
+        return {
+          text: text,
+          answer: answer,
+          operation: operation,
+          tags: tags || []
+        };
+      }
+
+      function generateQuestion(levelId) {
+        var level = levelById(levelId);
+        var id = level.id;
+
+        if (id === "A1") {
+          var sumA1 = rand(2, 10);
+          var aA1 = rand(0, sumA1);
+          return question(aA1 + " + " + (sumA1 - aA1), sumA1, "addition", level.tags);
+        }
+
+        if (id === "A2") {
+          var pairA2 = choice([[1, 9], [2, 8], [3, 7], [4, 6], [5, 5]]);
+          var orderedA2 = shufflePair(pairA2[0], pairA2[1]);
+          return question(orderedA2[0] + " + " + orderedA2[1], 10, "addition", level.tags);
+        }
+
+        if (id === "A3") {
+          var knownA3 = rand(1, 9);
+          var missingA3 = 10 - knownA3;
+          if (Math.random() > 0.5) return question(knownA3 + " + ? = 10", missingA3, "addition", level.tags);
+          return question("? + " + knownA3 + " = 10", missingA3, "addition", level.tags);
+        }
+
+        if (id === "A4") {
+          var sumA4 = rand(6, 20);
+          var aA4 = rand(0, sumA4);
+          return question(aA4 + " + " + (sumA4 - aA4), sumA4, "addition", level.tags);
+        }
+
+        if (id === "A5") {
+          var targetA5 = choice([5, 15, 25, 35]);
+          var aA5 = rand(Math.max(0, targetA5 - 20), targetA5);
+          return question(aA5 + " + " + (targetA5 - aA5), targetA5, "addition", level.tags);
+        }
+
+        if (id === "A6") {
+          var aA6 = rand(6, 9);
+          var bA6 = rand(10 - aA6 + 1, 9);
+          return question(aA6 + " + " + bA6, aA6 + bA6, "addition", level.tags);
+        }
+
+        if (id === "A7") return generateQuestion(choice(["A1", "A2", "A4", "A5", "A6"]));
+
+        if (id === "S1") {
+          var topS1 = rand(1, 10);
+          var subS1 = rand(0, topS1);
+          return question(topS1 + " - " + subS1, topS1 - subS1, "subtraction", level.tags);
+        }
+
+        if (id === "S2") {
+          var subS2 = rand(1, 9);
+          return question("10 - " + subS2, 10 - subS2, "subtraction", level.tags);
+        }
+
+        if (id === "S3") {
+          var resultS3 = rand(1, 9);
+          if (Math.random() > 0.5) return question("10 - ? = " + resultS3, 10 - resultS3, "subtraction", level.tags);
+          return question("? - " + (10 - resultS3) + " = " + resultS3, 10, "subtraction", level.tags);
+        }
+
+        if (id === "S4") {
+          var topS4 = rand(5, 20);
+          var subS4 = rand(0, topS4);
+          return question(topS4 + " - " + subS4, topS4 - subS4, "subtraction", level.tags);
+        }
+
+        if (id === "S5") {
+          var targetS5 = choice([5, 15, 25]);
+          var subS5 = rand(1, 20);
+          return question((targetS5 + subS5) + " - " + subS5, targetS5, "subtraction", level.tags);
+        }
+
+        if (id === "S6") {
+          var topS6 = rand(11, 20);
+          var answerS6 = rand(1, 9);
+          var subThroughTen = topS6 - answerS6;
+          return question(topS6 + " - " + subThroughTen, answerS6, "subtraction", level.tags);
+        }
+
+        if (id === "S7") return generateQuestion(choice(["S1", "S2", "S4", "S5", "S6"]));
+
+        if (id === "M1") {
+          var factorM1 = choice([2, 5, 10]);
+          var otherM1 = rand(0, 12);
+          var orderedM1 = shufflePair(factorM1, otherM1);
+          return question(orderedM1[0] + " x " + orderedM1[1], factorM1 * otherM1, "multiplication", level.tags);
+        }
+
+        if (id === "M2") {
+          var otherM2 = rand(0, 12);
+          var orderedM2 = shufflePair(5, otherM2);
+          return question(orderedM2[0] + " x " + orderedM2[1], 5 * otherM2, "multiplication", level.tags);
+        }
+
+        if (id === "M3") {
+          var factorM3 = 5;
+          var otherM3 = rand(1, 12);
+          var orderedM3 = shufflePair(factorM3, otherM3);
+          return question(orderedM3[0] + " x " + orderedM3[1], factorM3 * otherM3, "multiplication", level.tags);
+        }
+
+        if (id === "M4") {
+          var factorM4 = choice([3, 4]);
+          var otherM4 = rand(0, 12);
+          var orderedM4 = shufflePair(factorM4, otherM4);
+          return question(orderedM4[0] + " x " + orderedM4[1], factorM4 * otherM4, "multiplication", level.tags);
+        }
+
+        if (id === "M5") {
+          var factorM5 = choice([6, 7, 8, 9]);
+          var otherM5 = rand(0, 12);
+          var orderedM5 = shufflePair(factorM5, otherM5);
+          return question(orderedM5[0] + " x " + orderedM5[1], factorM5 * otherM5, "multiplication", level.tags);
+        }
+
+        if (id === "M6") {
+          var aM6 = rand(0, 12);
+          var bM6 = rand(0, 12);
+          return question(aM6 + " x " + bM6, aM6 * bM6, "multiplication", level.tags);
+        }
+
+        if (id === "D1") {
+          var divisorD1 = choice([2, 5, 10]);
+          var quotientD1 = rand(0, 12);
+          return question((divisorD1 * quotientD1) + " / " + divisorD1, quotientD1, "division", level.tags);
+        }
+
+        if (id === "D2") {
+          var quotientD2 = rand(0, 12);
+          return question((5 * quotientD2) + " / 5", quotientD2, "division", level.tags);
+        }
+
+        if (id === "D3") {
+          var divisorD3 = choice([5, 10]);
+          var quotientD3 = rand(0, 12);
+          return question((divisorD3 * quotientD3) + " / " + divisorD3, quotientD3, "division", level.tags);
+        }
+
+        if (id === "D4") {
+          var divisorD4 = rand(2, 12);
+          var quotientD4 = rand(1, 12);
+          return question((divisorD4 * quotientD4) + " / " + divisorD4, quotientD4, "division", level.tags);
+        }
+
+        if (id === "D5") return generateQuestion(choice(["D1", "D2", "D3", "D4"]));
+
+        if (id === "X1") return generateQuestion(choice(["A1", "S1"]));
+        if (id === "X2") return generateQuestion(choice(["A2", "A3", "S2", "S3"]));
+        if (id === "X3") return generateQuestion(choice(["A5", "S5", "M2", "M3", "D2"]));
+        if (id === "X4") return generateQuestion(choice(["M1", "D1", "D3"]));
+        if (id === "X5") return generateQuestion(choice(["A1", "A2", "S1", "S2", "M1", "D1"]));
+        if (id === "X6") return generateQuestion(choice(["A4", "A6", "S4", "S6", "M4", "M5", "D4"]));
+
+        return generateQuestion("A1");
+      }
+
+      function setView(view) {
+        stopTimer();
+        state.view = view;
+        state.message = "";
+        state.active = null;
+        state.results = null;
+        render();
+      }
+
+      function stopTimer() {
+        if (timerId) {
+          clearInterval(timerId);
+          timerId = null;
+        }
+      }
+
+      function startTimer() {
+        stopTimer();
+        timerId = setInterval(function () {
+          if (!state.active || state.active.mode !== "sprint") {
+            stopTimer();
+            return;
+          }
+          state.active.timeLeft -= 1;
+          if (state.active.timeLeft <= 0) {
+            finishSession();
+          } else {
+            render();
+            setTimeout(focusAnswer, 0);
+          }
+        }, 1000);
+      }
+
+      function header() {
+        var t = teacher();
+        return [
+          '<div class="topbar">',
+          '  <button class="brand btn ghost" data-action="home" title="Home">',
+          '    <span class="brand-mark">FS</span><span>Fluency Sprint</span>',
+          '  </button>',
+          '  <div class="toolbar">',
+          t ? '<span class="pill">Teacher: ' + escapeHTML(t.displayName || t.email) + '</span><button class="btn ghost" data-action="teacher-dashboard" title="Teacher dashboard">Dashboard</button><button class="btn ghost" data-action="teacher-logout" title="Sign out">Sign out</button>' : '',
+          state.student ? '<span class="pill">Student: ' + escapeHTML(state.student.alias) + '</span><button class="btn ghost" data-action="student-logout" title="Student sign out">Leave</button>' : '',
+          '  </div>',
+          '</div>'
+        ].join("") + previewBar();
+      }
+
+      function previewBar() {
+        if (!state.previewMode) return "";
+        return [
+          '<div class="preview-strip">',
+          '  <strong>Preview mode</strong>',
+          '  <div class="preview-nav">',
+          '    <button data-action="preview-go" data-target="map">Map</button>',
+          '    <button data-action="preview-go" data-target="landing">Landing</button>',
+          '    <button data-action="preview-go" data-target="join">Student join</button>',
+          '    <button data-action="preview-go" data-target="levels">Levels</button>',
+          '    <button data-action="preview-go" data-target="practice">Practice</button>',
+          '    <button data-action="preview-go" data-target="sprint">Sprint</button>',
+          '    <button data-action="preview-go" data-target="results">Results</button>',
+          '    <button data-action="preview-go" data-target="review">Mistakes</button>',
+          '    <button data-action="preview-go" data-target="login">Teacher login</button>',
+          '    <button data-action="preview-go" data-target="dashboard">Dashboard</button>',
+          '  </div>',
+          '  <button class="btn ghost" data-action="exit-preview">Exit preview</button>',
+          '</div>'
+        ].join("");
+      }
+
+      function homeView() {
+        return [
+          '<div class="page">',
+          header(),
+          '<main class="shell">',
+          '  <section class="hero">',
+          '    <div class="eyebrow">Number facts, fast and friendly</div>',
+          '    <h1>Fluency <span style="color: var(--teal)">Sprint</span></h1>',
+          '    <p class="lead">Pick how you want to start.</p>',
+          '  </section>',
+          '  <section class="grid three">',
+          '    <button class="tile" data-action="student-start">',
+          '      <span class="iconbox">A+</span>',
+          '      <h2>Student practice</h2>',
+          '      <p class="muted">Enter a class code, alias, and PIN to start practising.</p>',
+          '      <strong style="color: var(--teal)">Start</strong>',
+          '    </button>',
+          '    <button class="tile" data-action="teacher-start">',
+          '      <span class="iconbox">T</span>',
+          '      <h2>Teacher dashboard</h2>',
+          '      <p class="muted">Create classes, add students, and view progress over time.</p>',
+          '      <strong style="color: var(--coral)">Open dashboard</strong>',
+          '    </button>',
+          '    <button class="tile" data-action="preview-start">',
+          '      <span class="iconbox">P</span>',
+          '      <h2>Preview mode</h2>',
+          '      <p class="muted">Explore every major screen with demo class data.</p>',
+          '      <strong style="color: var(--blue)">Preview</strong>',
+          '    </button>',
+          '  </section>',
+          '  <p class="footer-note tiny">Local prototype. No student emails required.</p>',
+          '</main>',
+          '</div>'
+        ].join("");
+      }
+
+      function previewView() {
+        return [
+          '<div class="page">',
+          header(),
+          '<main class="shell stack">',
+          '  <section class="between">',
+          '    <div>',
+          '      <h2>Preview map</h2>',
+          '      <p class="muted">Demo data is temporary and separate from your saved local records.</p>',
+          '    </div>',
+          '    <button class="btn ghost" data-action="exit-preview">Exit preview</button>',
+          '  </section>',
+          messageHTML(),
+          '  <section class="grid three">',
+          previewTile("join", "Student join", "Class code, alias, and PIN entry.", "S"),
+          previewTile("levels", "Level selection", "Operation ladders and specific skill levels.", "L"),
+          previewTile("practice", "Practice mode", "Untimed questions with retry feedback.", "P"),
+          previewTile("sprint", "100-second sprint", "Timed fluency challenge.", "100"),
+          previewTile("results", "Results", "Score, accuracy, streak, and missed facts.", "R"),
+          previewTile("review", "Mistakes review", "Missed questions one at a time.", "?"),
+          previewTile("login", "Teacher login", "Teacher account entry point.", "T"),
+          previewTile("dashboard", "Teacher dashboard", "Participation, growth charts, and class data.", "D"),
+          previewTile("landing", "Landing screen", "The first screen students and teachers see.", "FS"),
+          '  </section>',
+          '  <section class="notice small"><strong>Demo class:</strong> Year 4 Fluency Group, code MTH-204-FS. Demo students include Ava, Noah, Mia, and Eli.</section>',
+          '</main>',
+          '</div>'
+        ].join("");
+      }
+
+      function previewTile(target, title, detail, icon) {
+        return [
+          '<button class="tile" data-action="preview-go" data-target="' + target + '">',
+          '  <span class="iconbox">' + escapeHTML(icon) + '</span>',
+          '  <h3>' + escapeHTML(title) + '</h3>',
+          '  <p class="muted">' + escapeHTML(detail) + '</p>',
+          '</button>'
+        ].join("");
+      }
+
+      function authView() {
+        var loginActive = state.authMode === "login";
+        return [
+          '<div class="page">',
+          header(),
+          '<main class="shell stack">',
+          '  <section class="between">',
+          '    <div>',
+          '      <h2>Teacher access</h2>',
+          '      <p class="muted">This local version stores teacher login details in this browser only. Production should use managed authentication.</p>',
+          '    </div>',
+          '    <button class="btn ghost" data-action="home">Home</button>',
+          '  </section>',
+          messageHTML(),
+          '  <div class="tabs">',
+          '    <button class="tab ' + (loginActive ? "active" : "") + '" data-action="auth-mode" data-mode="login">Log in</button>',
+          '    <button class="tab ' + (!loginActive ? "active" : "") + '" data-action="auth-mode" data-mode="signup">Create account</button>',
+          '  </div>',
+          loginActive ? teacherLoginForm() : teacherSignupForm(),
+          '  <div class="notice small"><strong>Privacy note:</strong> Teacher email is used for login in this prototype. Student accounts use alias and PIN only.</div>',
+          '</main>',
+          '</div>'
+        ].join("");
+      }
+
+      function teacherLoginForm() {
+        return [
+          '<form class="panel section stack" data-form="teacher-login">',
+          '  <label>Email<input name="email" type="email" autocomplete="email" value="' + (state.previewMode ? "teacher@example.school" : "") + '" required></label>',
+          '  <label>Password<input name="password" type="password" autocomplete="current-password" value="' + (state.previewMode ? "preview123" : "") + '" required></label>',
+          '  <button class="btn primary" type="submit">Log in</button>',
+          '</form>'
+        ].join("");
+      }
+
+      function teacherSignupForm() {
+        return [
+          '<form class="panel section stack" data-form="teacher-signup">',
+          '  <label>Display name<input name="displayName" type="text" autocomplete="name" placeholder="Ms Taylor" required></label>',
+          '  <label>Email<input name="email" type="email" autocomplete="email" required></label>',
+          '  <label>Password<input name="password" type="password" autocomplete="new-password" minlength="8" required></label>',
+          '  <button class="btn primary" type="submit">Create teacher account</button>',
+          '</form>'
+        ].join("");
+      }
+
+      function studentJoinView() {
+        if (state.student) return studentMenuView();
+        return [
+          '<div class="page">',
+          header(),
+          '<main class="shell stack">',
+          '  <section class="between">',
+          '    <div>',
+          '      <h2>Student practice</h2>',
+          '      <p class="muted">Use the class code from your teacher.</p>',
+          '    </div>',
+          '    <button class="btn ghost" data-action="home">Home</button>',
+          '  </section>',
+          messageHTML(),
+          '  <form class="panel section stack" data-form="student-join">',
+          '    <label>Class code<input name="code" type="text" placeholder="ABC-123-XYZ" value="' + (state.previewMode ? "MTH-204-FS" : "") + '" required></label>',
+          '    <label>Your alias or first name<input name="alias" type="text" placeholder="Mia" value="' + (state.previewMode ? "Ava" : "") + '" required></label>',
+          '    <label>PIN<input name="pin" inputmode="numeric" type="password" placeholder="4 or more digits" value="' + (state.previewMode ? "1234" : "") + '" required></label>',
+          '    <button class="btn primary" type="submit">Join class</button>',
+          '  </form>',
+          '</main>',
+          '</div>'
+        ].join("");
+      }
+
+      function studentMenuView() {
+        var levels = LEVELS.filter(function (level) { return level.operation === state.selectedOperation; });
+        if (!levels.some(function (level) { return level.id === state.selectedLevelId; })) {
+          state.selectedLevelId = levels[0].id;
+        }
+        return [
+          '<div class="page">',
+          header(),
+          '<main class="shell stack">',
+          '  <section class="between">',
+          '    <div>',
+          '      <h2>Choose your sprint</h2>',
+          '      <p class="muted">' + escapeHTML(state.student.alias) + ', pick a skill to practise.</p>',
+          '    </div>',
+          '    <button class="btn ghost" data-action="home">Home</button>',
+          '  </section>',
+          messageHTML(),
+          '  <section class="panel section stack">',
+          '    <div class="between">',
+          '      <h3>Mode</h3>',
+          '      <div class="tabs">',
+          '        <button class="tab active" data-action="start-mode" data-mode="practice">Practice</button>',
+          '        <button class="tab active" data-action="start-mode" data-mode="sprint">100-second sprint</button>',
+          '      </div>',
+          '    </div>',
+          '    <div>',
+          '      <h3>Operation</h3>',
+          '      <div class="tabs">' + operationTabs() + '</div>',
+          '    </div>',
+          '    <div>',
+          '      <h3>Level</h3>',
+          '      <div class="level-list">' + levels.map(levelButton).join("") + '</div>',
+          '    </div>',
+          '    <div class="row">',
+          '      <button class="btn primary" data-action="begin-session" data-mode="practice">Practice</button>',
+          '      <button class="btn gold" data-action="begin-session" data-mode="sprint">100-second sprint</button>',
+          '    </div>',
+          '  </section>',
+          '</main>',
+          '</div>'
+        ].join("");
+      }
+
+      function operationTabs() {
+        return OPERATIONS.map(function (op) {
+          return '<button class="tab ' + (state.selectedOperation === op.id ? "active" : "") + '" data-action="select-operation" data-operation="' + op.id + '">' + escapeHTML(op.label) + '</button>';
+        }).join("");
+      }
+
+      function levelButton(level) {
+        return [
+          '<button class="level ' + (state.selectedLevelId === level.id ? "active" : "") + '" data-action="select-level" data-level="' + level.id + '">',
+          '  <span class="level-code">' + level.id + '</span>',
+          '  <strong>' + escapeHTML(level.name) + '</strong>',
+          '  <div class="tiny muted">' + level.tags.map(tagLabel).join(" | ") + '</div>',
+          '</button>'
+        ].join("");
+      }
+
+      function tagLabel(tag) {
+        var labels = {
+          friends10: "Friends of 10",
+          ending5: "Ends in 5",
+          missing: "Missing number",
+          bridge: "Bridge to 10",
+          times5: "5-times facts",
+          times10: "10-times facts",
+          divide5: "Divide by 5",
+          divide10: "Divide by 10"
+        };
+        return labels[tag] || tag;
+      }
+
+      function startSession(mode) {
+        var level = levelById(state.selectedLevelId);
+        state.active = {
+          mode: mode,
+          levelId: level.id,
+          levelName: level.name,
+          levelOperation: level.operation,
+          startedAt: Date.now(),
+          timeLeft: mode === "sprint" ? 100 : null,
+          attempted: 0,
+          correct: 0,
+          streak: 0,
+          bestStreak: 0,
+          mistakes: [],
+          input: "",
+          tries: 0,
+          pendingWrong: null,
+          feedback: "",
+          question: generateQuestion(level.id)
+        };
+        state.results = null;
+        state.view = "session";
+        render();
+        if (mode === "sprint") startTimer();
+        setTimeout(focusAnswer, 30);
+      }
+
+      function sessionView() {
+        var active = state.active;
+        if (!active) return studentMenuView();
+        var accuracy = active.attempted ? Math.round((active.correct / active.attempted) * 100) : 100;
+        return [
+          '<div class="page">',
+          header(),
+          '<main class="shell stack">',
+          '  <section class="between">',
+          '    <div>',
+          '      <h2>' + (active.mode === "sprint" ? "100-second sprint" : "Practice mode") + '</h2>',
+          '      <p class="muted">' + escapeHTML(active.levelId + ": " + active.levelName) + '</p>',
+          '    </div>',
+          '    <div class="row">',
+          active.mode === "sprint" ? '<span class="pill">Time: ' + active.timeLeft + 's</span>' : '<span class="pill">No timer</span>',
+          '      <button class="btn ghost" data-action="finish-session">Finish</button>',
+          '    </div>',
+          '  </section>',
+          '  <section class="stats">',
+          statHTML("Correct", active.correct),
+          statHTML("Tried", active.attempted),
+          statHTML("Accuracy", accuracy + "%"),
+          statHTML("Streak", active.streak),
+          '  </section>',
+          '  <section class="practice-layout">',
+          '    <form class="panel question stack" data-form="answer">',
+          '      <div class="pill" style="margin: 0 auto">' + escapeHTML(operationLabel(active.question.operation)) + '</div>',
+          '      <div class="question-text">' + escapeHTML(active.question.text) + '</div>',
+          '      <input id="answerInput" class="answer-input" name="answer" inputmode="numeric" autocomplete="off" value="' + escapeHTML(active.input) + '" aria-label="Answer">',
+          active.feedback ? '<div class="notice ' + (active.feedback.indexOf("Correct") === 0 ? "success" : "danger") + '">' + escapeHTML(active.feedback) + '</div>' : '',
+          '      <button class="btn primary" type="submit">Enter</button>',
+          '    </form>',
+          '    <aside class="panel section stack">',
+          '      <h3>Keypad</h3>',
+          '      <div class="keypad">' + keypadHTML() + '</div>',
+          '      <div class="notice tiny">Keyboard input works too. Incorrect answers get one retry.</div>',
+          '    </aside>',
+          '  </section>',
+          '</main>',
+          '</div>'
+        ].join("");
+      }
+
+      function statHTML(label, value) {
+        return '<div class="stat"><strong>' + escapeHTML(value) + '</strong><span class="tiny muted">' + escapeHTML(label) + '</span></div>';
+      }
+
+      function keypadHTML() {
+        var keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];
+        return keys.map(function (key) {
+          return '<button class="key" type="button" data-action="keypad" data-key="' + key + '">' + key + '</button>';
+        }).join("") +
+          '<button class="key" type="button" data-action="backspace" title="Backspace">Del</button>' +
+          '<button class="key enter" type="button" data-action="submit-answer">Enter</button>';
+      }
+
+      function focusAnswer() {
+        var input = document.getElementById("answerInput");
+        if (input) input.focus();
+      }
+
+      function updateInputFromDom() {
+        var input = document.getElementById("answerInput");
+        if (input && state.active) state.active.input = input.value.replace(/[^\d-]/g, "").slice(0, 6);
+      }
+
+      function submitAnswer() {
+        if (!state.active) return;
+        updateInputFromDom();
+        var active = state.active;
+        var raw = active.input.trim();
+        if (!raw) {
+          active.feedback = "Type an answer first.";
+          render();
+          setTimeout(focusAnswer, 30);
+          return;
+        }
+        var submitted = Number(raw);
+        var q = active.question;
+        if (submitted === q.answer) {
+          active.correct += 1;
+          active.attempted += 1;
+          active.streak += 1;
+          active.bestStreak = Math.max(active.bestStreak, active.streak);
+          if (active.pendingWrong != null) {
+            active.mistakes.push({
+              question: q.text,
+              studentAnswer: active.pendingWrong,
+              correctAnswer: q.answer,
+              operation: q.operation,
+              levelId: active.levelId,
+              recovered: true,
+              tags: q.tags
+            });
+          }
+          active.feedback = "Correct.";
+          active.input = "";
+          render();
+          setTimeout(nextQuestion, 420);
+          return;
+        }
+        if (active.tries === 0) {
+          active.tries = 1;
+          active.pendingWrong = raw;
+          active.feedback = "Try once more.";
+          active.input = "";
+          render();
+          setTimeout(focusAnswer, 30);
+          return;
+        }
+        active.attempted += 1;
+        active.streak = 0;
+        active.mistakes.push({
+          question: q.text,
+          studentAnswer: active.pendingWrong ? active.pendingWrong + ", then " + raw : raw,
+          correctAnswer: q.answer,
+          operation: q.operation,
+          levelId: active.levelId,
+          recovered: false,
+          tags: q.tags
+        });
+        active.feedback = "Answer: " + q.answer;
+        active.input = "";
+        render();
+        setTimeout(nextQuestion, 800);
+      }
+
+      function nextQuestion() {
+        if (!state.active) return;
+        state.active.question = generateQuestion(state.active.levelId);
+        state.active.tries = 0;
+        state.active.pendingWrong = null;
+        state.active.feedback = "";
+        state.active.input = "";
+        render();
+        setTimeout(focusAnswer, 30);
+      }
+
+      function finishSession() {
+        if (!state.active) return;
+        stopTimer();
+        var active = state.active;
+        var level = levelById(active.levelId);
+        var timeSpent = active.mode === "sprint" ? 100 - Math.max(active.timeLeft || 0, 0) : Math.round((Date.now() - active.startedAt) / 1000);
+        var accuracy = active.attempted ? Math.round((active.correct / active.attempted) * 100) : 0;
+        var session = {
+          id: uid("session"),
+          studentId: state.student ? state.student.id : null,
+          studentAlias: state.student ? state.student.alias : "Guest",
+          classId: state.student ? state.student.classId : null,
+          teacherId: state.student ? state.student.teacherId : null,
+          createdAt: new Date().toISOString(),
+          mode: active.mode,
+          operation: level.operation,
+          levelId: active.levelId,
+          levelName: active.levelName,
+          tags: level.tags,
+          attempted: active.attempted,
+          correct: active.correct,
+          accuracy: accuracy,
+          bestStreak: active.bestStreak,
+          timeSpent: timeSpent,
+          score: active.correct,
+          mistakes: active.mistakes
+        };
+        if (state.student) {
+          store.sessions.push(session);
+          saveStore();
+        }
+        state.results = session;
+        state.active = null;
+        state.view = "results";
+        render();
+      }
+
+      function resultsView() {
+        var r = state.results;
+        if (!r) return studentMenuView();
+        return [
+          '<div class="page">',
+          header(),
+          '<main class="shell stack">',
+          '  <section class="between">',
+          '    <div>',
+          '      <h2>Results</h2>',
+          '      <p class="muted">' + escapeHTML(r.levelId + ": " + r.levelName) + '</p>',
+          '    </div>',
+          '    <button class="btn ghost" data-action="student-menu">Choose another level</button>',
+          '  </section>',
+          '  <section class="stats">',
+          statHTML("Correct", r.correct),
+          statHTML("Attempted", r.attempted),
+          statHTML("Accuracy", r.accuracy + "%"),
+          statHTML("Best streak", r.bestStreak),
+          '  </section>',
+          '  <section class="grid two">',
+          '    <button class="tile" data-action="retry-level"><span class="iconbox">R</span><h3>Try again</h3><p class="muted">Repeat the same level.</p></button>',
+          '    <button class="tile" data-action="review-mistakes" ' + (r.mistakes.length ? "" : "disabled") + '><span class="iconbox">?</span><h3>Review mistakes</h3><p class="muted">' + r.mistakes.length + ' items to revisit.</p></button>',
+          '  </section>',
+          mistakeTable(r.mistakes),
+          '</main>',
+          '</div>'
+        ].join("");
+      }
+
+      function mistakeTable(mistakes) {
+        if (!mistakes.length) return '<div class="empty">No mistakes saved for this session.</div>';
+        return [
+          '<section class="panel section stack">',
+          '  <h3>Mistakes</h3>',
+          '  <table><thead><tr><th>Question</th><th>Your answer</th><th>Correct</th><th>Status</th></tr></thead><tbody>',
+          mistakes.map(function (m) {
+            return '<tr><td>' + escapeHTML(m.question) + '</td><td>' + escapeHTML(m.studentAnswer) + '</td><td>' + escapeHTML(m.correctAnswer) + '</td><td>' + (m.recovered ? "Fixed on retry" : "Needs practice") + '</td></tr>';
+          }).join(""),
+          '  </tbody></table>',
+          '</section>'
+        ].join("");
+      }
+
+      function reviewView() {
+        var r = state.results;
+        if (!r || !r.mistakes.length) return resultsView();
+        var index = Math.min(state.reviewIndex, r.mistakes.length - 1);
+        var item = r.mistakes[index];
+        return [
+          '<div class="page">',
+          header(),
+          '<main class="shell stack">',
+          '  <section class="between">',
+          '    <div><h2>Review mistakes</h2><p class="muted">Question ' + (index + 1) + ' of ' + r.mistakes.length + '</p></div>',
+          '    <button class="btn ghost" data-action="back-to-results">Results</button>',
+          '  </section>',
+          '  <section class="panel question stack">',
+          '    <div class="question-text">' + escapeHTML(item.question) + '</div>',
+          '    <div class="notice">Correct answer: <strong>' + escapeHTML(item.correctAnswer) + '</strong></div>',
+          '    <div class="row" style="justify-content:center">',
+          '      <button class="btn ghost" data-action="review-prev" ' + (index === 0 ? "disabled" : "") + '>Back</button>',
+          '      <button class="btn primary" data-action="review-next" ' + (index === r.mistakes.length - 1 ? "disabled" : "") + '>Next</button>',
+          '    </div>',
+          '  </section>',
+          '</main>',
+          '</div>'
+        ].join("");
+      }
+
+      function dashboardView() {
+        if (!teacher()) return authView();
+        var classes = classesForTeacher();
+        var klass = selectedClass();
+        return [
+          '<div class="page">',
+          header(),
+          '<main class="shell stack">',
+          '  <section class="between">',
+          '    <div><h2>Teacher dashboard</h2><p class="muted">Track participation and growth over time.</p></div>',
+          '    <button class="btn ghost" data-action="home">Home</button>',
+          '  </section>',
+          messageHTML(),
+          '  <section class="notice small"><strong>Prototype boundary:</strong> This version stores data locally in this browser. For real classrooms, move the same model to a protected backend with verified teacher auth and row-level access rules.</section>',
+          '  <section class="dashboard-grid">',
+          '    <aside class="stack">',
+          createClassForm(),
+          classListHTML(classes, klass),
+          '    </aside>',
+          '    <div class="stack">',
+          klass ? classDashboardHTML(klass) : '<div class="empty">Create a class to begin.</div>',
+          '    </div>',
+          '  </section>',
+          '</main>',
+          '</div>'
+        ].join("");
+      }
+
+      function createClassForm() {
+        return [
+          '<form class="panel section stack" data-form="create-class">',
+          '  <h3>Create class</h3>',
+          '  <label>Class name<input name="className" type="text" placeholder="Year 4 Maths" required></label>',
+          '  <button class="btn primary" type="submit">Create class</button>',
+          '</form>'
+        ].join("");
+      }
+
+      function classListHTML(classes, klass) {
+        if (!classes.length) return '<div class="empty">No classes yet.</div>';
+        return [
+          '<section class="panel section stack">',
+          '  <h3>Your classes</h3>',
+          '  <div class="class-list">',
+          classes.map(function (item) {
+            return [
+              '<button class="class-button ' + (klass && klass.id === item.id ? "active" : "") + '" data-action="select-class" data-class="' + item.id + '">',
+              '  <strong>' + escapeHTML(item.name) + '</strong>',
+              '  <div class="tiny muted">Code: ' + escapeHTML(item.code) + '</div>',
+              '</button>'
+            ].join("");
+          }).join(""),
+          '  </div>',
+          '</section>'
+        ].join("");
+      }
+
+      function classDashboardHTML(klass) {
+        var students = studentsForClass(klass.id);
+        var sessions = sessionsForClass(klass.id);
+        var today = todayKey();
+        var practicedToday = unique(sessions.filter(function (s) { return todayKey(s.createdAt) === today; }).map(function (s) { return s.studentId; })).length;
+        var practicedWeek = unique(sessions.filter(function (s) { return daysAgo(s.createdAt) <= 7; }).map(function (s) { return s.studentId; })).length;
+        var needsFollowUp = students.filter(function (student) {
+          var last = lastSessionForStudent(student.id);
+          return !last || daysAgo(last.createdAt) > 7;
+        }).length;
+        var avgAccuracy = sessions.length ? Math.round(avg(sessions.map(function (s) { return s.accuracy; }))) : 0;
+        return [
+          '<section class="panel section stack">',
+          '  <div class="between">',
+          '    <div>',
+          '      <h3>' + escapeHTML(klass.name) + '</h3>',
+          '      <p class="muted">Class code: <strong>' + escapeHTML(klass.code) + '</strong></p>',
+          '    </div>',
+          '    <div class="row">',
+          '      <button class="btn ghost" data-action="rotate-code" data-class="' + klass.id + '">Rotate code</button>',
+          '      <button class="btn ghost" data-action="export-csv" data-class="' + klass.id + '">Export CSV</button>',
+          '      <button class="btn warn" data-action="delete-class" data-class="' + klass.id + '">Delete</button>',
+          '    </div>',
+          '  </div>',
+          '  <div class="stats">',
+          statHTML("Students", students.length),
+          statHTML("Practised today", practicedToday),
+          statHTML("This week", practicedWeek),
+          statHTML("Needs follow-up", needsFollowUp),
+          statHTML("Sessions", sessions.length),
+          statHTML("Average accuracy", avgAccuracy + "%"),
+          statHTML("Best score", sessions.length ? Math.max.apply(null, sessions.map(function (s) { return s.score; })) : 0),
+          statHTML("Best streak", sessions.length ? Math.max.apply(null, sessions.map(function (s) { return s.bestStreak; })) : 0),
+          '  </div>',
+          '</section>',
+          addStudentForm(klass),
+          growthPanel(klass, sessions),
+          studentTable(klass, students),
+          recentSessionsTable(sessions)
+        ].join("");
+      }
+
+      function addStudentForm(klass) {
+        return [
+          '<form class="panel section stack" data-form="add-student">',
+          '  <h3>Add student</h3>',
+          '  <input type="hidden" name="classId" value="' + escapeHTML(klass.id) + '">',
+          '  <div class="grid two">',
+          '    <label>Alias or first name<input name="alias" type="text" placeholder="Mia" required></label>',
+          '    <label>PIN<input name="pin" inputmode="numeric" type="text" minlength="4" placeholder="1234" required></label>',
+          '  </div>',
+          '  <button class="btn primary" type="submit">Add student</button>',
+          '</form>'
+        ].join("");
+      }
+
+      function growthPanel(klass, sessions) {
+        var filtered = filterSessions(sessions);
+        return [
+          '<section class="panel section stack">',
+          '  <div class="between">',
+          '    <div><h3>Growth over time</h3><p class="muted">Filter by operation or key pathway.</p></div>',
+          '    <div class="row">',
+          '      <select data-action="dashboard-operation" aria-label="Operation filter">',
+          '        <option value="all"' + (state.dashboardOperation === "all" ? " selected" : "") + '>All operations</option>',
+          operationOption("addition"),
+          operationOption("subtraction"),
+          operationOption("multiplication"),
+          operationOption("division"),
+          operationOption("mixed"),
+          '      </select>',
+          '      <select data-action="dashboard-tag" aria-label="Skill filter">',
+          tagOption("all", "All skills"),
+          tagOption("friends10", "Friends of 10"),
+          tagOption("ending5", "Facts ending in 5"),
+          tagOption("times5", "5-times-table facts"),
+          '      </select>',
+          '    </div>',
+          '  </div>',
+          filtered.length ? chartHTML(filtered, "accuracy", "Accuracy over time") : '<div class="empty">No sessions match this filter yet.</div>',
+          filtered.length ? chartHTML(filtered, "score", "Score over time") : '',
+          '</section>'
+        ].join("");
+      }
+
+      function operationOption(id) {
+        return '<option value="' + id + '"' + (state.dashboardOperation === id ? " selected" : "") + '>' + escapeHTML(operationLabel(id)) + '</option>';
+      }
+
+      function tagOption(id, label) {
+        return '<option value="' + id + '"' + (state.dashboardTag === id ? " selected" : "") + '>' + escapeHTML(label) + '</option>';
+      }
+
+      function filterSessions(sessions) {
+        return sessions.filter(function (session) {
+          var operationOK = state.dashboardOperation === "all" || session.operation === state.dashboardOperation || (state.dashboardOperation === "mixed" && session.operation === "mixed");
+          var tagOK = state.dashboardTag === "all" || (session.tags || []).indexOf(state.dashboardTag) >= 0 || session.mistakes.some(function (m) {
+            return (m.tags || []).indexOf(state.dashboardTag) >= 0;
+          });
+          return operationOK && tagOK;
+        }).sort(function (a, b) {
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        });
+      }
+
+      function chartHTML(sessions, metric, title) {
+        var w = 720;
+        var h = 220;
+        var pad = 34;
+        var values = sessions.map(function (session) { return Number(session[metric]) || 0; });
+        var maxValue = metric === "accuracy" ? 100 : Math.max(10, Math.max.apply(null, values));
+        var minValue = 0;
+        var points = values.map(function (value, index) {
+          var x = sessions.length === 1 ? w / 2 : pad + (index * (w - pad * 2)) / (sessions.length - 1);
+          var y = h - pad - ((value - minValue) / (maxValue - minValue || 1)) * (h - pad * 2);
+          return [x, y, value, sessions[index]];
+        });
+        var poly = points.map(function (p) { return p[0].toFixed(1) + "," + p[1].toFixed(1); }).join(" ");
+        return [
+          '<div>',
+          '  <div class="between"><strong>' + escapeHTML(title) + '</strong><span class="tiny muted">' + sessions.length + ' sessions</span></div>',
+          '  <svg class="chart" viewBox="0 0 ' + w + ' ' + h + '" role="img" aria-label="' + escapeHTML(title) + '">',
+          '    <line x1="' + pad + '" y1="' + (h - pad) + '" x2="' + (w - pad) + '" y2="' + (h - pad) + '" stroke="#d7deea" stroke-width="2"></line>',
+          '    <line x1="' + pad + '" y1="' + pad + '" x2="' + pad + '" y2="' + (h - pad) + '" stroke="#d7deea" stroke-width="2"></line>',
+          '    <polyline points="' + poly + '" fill="none" stroke="' + (metric === "accuracy" ? "#0f9f8f" : "#f05d4f") + '" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"></polyline>',
+          points.map(function (p) {
+            return '<circle cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="6" fill="white" stroke="' + (metric === "accuracy" ? "#0f9f8f" : "#f05d4f") + '" stroke-width="4"><title>' + escapeHTML(p[3].studentAlias + " - " + p[2] + (metric === "accuracy" ? "%" : "")) + '</title></circle>';
+          }).join(""),
+          '    <text x="' + pad + '" y="24" fill="#64748b" font-size="14">' + maxValue + (metric === "accuracy" ? "%" : "") + '</text>',
+          '    <text x="' + pad + '" y="' + (h - 8) + '" fill="#64748b" font-size="14">0</text>',
+          '  </svg>',
+          '</div>'
+        ].join("");
+      }
+
+      function studentTable(klass, students) {
+        if (!students.length) return '<div class="empty">Add students to start tracking participation.</div>';
+        return [
+          '<section class="panel section stack">',
+          '  <h3>Students</h3>',
+          '  <table><thead><tr><th>Student</th><th>Participation</th><th>Results</th><th>Operation strengths</th><th></th></tr></thead><tbody>',
+          students.map(function (student) {
+            var sessions = sessionsForStudent(student.id);
+            var last = sessions.length ? sessions.slice().sort(function (a, b) { return new Date(b.createdAt) - new Date(a.createdAt); })[0] : null;
+            var accuracy = sessions.length ? Math.round(avg(sessions.map(function (s) { return s.accuracy; }))) : 0;
+            var best = sessions.length ? Math.max.apply(null, sessions.map(function (s) { return s.score; })) : 0;
+            return [
+              '<tr>',
+              '<td><strong>' + escapeHTML(student.alias) + '</strong><div class="tiny muted">PIN set</div></td>',
+              '<td>' + (last ? formatDateTime(last.createdAt) : "No sessions") + '<div class="tiny muted">' + sessions.length + ' sessions</div></td>',
+              '<td>' + accuracy + '% avg<div class="tiny muted">Best score ' + best + '</div></td>',
+              '<td>' + operationSummary(student.id) + '</td>',
+              '<td><button class="btn ghost icon" data-action="delete-student" data-student="' + student.id + '" title="Delete student">x</button></td>',
+              '</tr>'
+            ].join("");
+          }).join(""),
+          '  </tbody></table>',
+          '</section>'
+        ].join("");
+      }
+
+      function operationSummary(studentId) {
+        var sessions = sessionsForStudent(studentId);
+        if (!sessions.length) return '<span class="muted">No data yet</span>';
+        return OPERATIONS.filter(function (op) { return op.id !== "mixed"; }).map(function (op) {
+          var opSessions = sessions.filter(function (s) { return s.operation === op.id; });
+          if (!opSessions.length) return '<span class="pill">' + escapeHTML(op.label) + ': --</span>';
+          var accuracy = Math.round(avg(opSessions.map(function (s) { return s.accuracy; })));
+          return '<span class="pill">' + escapeHTML(op.label) + ': ' + accuracy + '%</span>';
+        }).join(" ");
+      }
+
+      function recentSessionsTable(sessions) {
+        var recent = sessions.slice().sort(function (a, b) {
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        }).slice(0, 8);
+        if (!recent.length) return '<div class="empty">Recent sessions will appear here.</div>';
+        return [
+          '<section class="panel section stack">',
+          '  <h3>Recent activity</h3>',
+          '  <table><thead><tr><th>Student</th><th>When</th><th>Level</th><th>Score</th><th>Accuracy</th><th>Mistakes</th></tr></thead><tbody>',
+          recent.map(function (s) {
+            return '<tr><td>' + escapeHTML(s.studentAlias) + '</td><td>' + formatDateTime(s.createdAt) + '</td><td>' + escapeHTML(s.levelId) + '</td><td>' + s.score + '</td><td>' + s.accuracy + '%</td><td>' + s.mistakes.length + '</td></tr>';
+          }).join(""),
+          '  </tbody></table>',
+          '</section>'
+        ].join("");
+      }
+
+      function lastSessionForStudent(studentId) {
+        var sessions = sessionsForStudent(studentId).sort(function (a, b) {
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        });
+        return sessions[0] || null;
+      }
+
+      function unique(items) {
+        return Array.from(new Set(items.filter(Boolean)));
+      }
+
+      function avg(values) {
+        if (!values.length) return 0;
+        return values.reduce(function (sum, value) { return sum + Number(value || 0); }, 0) / values.length;
+      }
+
+      function messageHTML() {
+        if (!state.message) return "";
+        return '<div class="notice ' + (state.message.indexOf("Error:") === 0 ? "danger" : "success") + '">' + escapeHTML(state.message.replace(/^Error:\s*/, "")) + '</div>';
+      }
+
+      function exportCSV(classId) {
+        var klass = store.classes.find(function (item) { return item.id === classId; });
+        var sessions = sessionsForClass(classId);
+        var rows = [
+          ["student", "date", "mode", "operation", "level", "attempted", "correct", "accuracy", "best_streak", "time_spent_seconds", "mistakes"]
+        ].concat(sessions.map(function (s) {
+          return [s.studentAlias, s.createdAt, s.mode, s.operation, s.levelId, s.attempted, s.correct, s.accuracy, s.bestStreak, s.timeSpent, s.mistakes.length];
+        }));
+        var csv = rows.map(function (row) {
+          return row.map(function (cell) {
+            return '"' + String(cell == null ? "" : cell).replace(/"/g, '""') + '"';
+          }).join(",");
+        }).join("\n");
+        var blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = (klass ? klass.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase() : "class") + "-fluency-sprint.csv";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      }
+
+      async function handleForm(form) {
+        var kind = form.getAttribute("data-form");
+        var data = new FormData(form);
+        if (state.previewMode && kind === "teacher-login") {
+          store.currentTeacherId = "preview-teacher";
+          state.dashboardClassId = "preview-class";
+          state.view = "dashboard";
+          state.message = "Preview teacher signed in.";
+          render();
+          return;
+        }
+        if (kind === "teacher-signup") {
+          var email = String(data.get("email") || "").trim().toLowerCase();
+          var displayName = String(data.get("displayName") || "").trim();
+          var password = String(data.get("password") || "");
+          if (store.teachers.some(function (t) { return t.email === email; })) {
+            state.message = "Error: That teacher email already exists in this local prototype.";
+            render();
+            return;
+          }
+          var t = {
+            id: uid("teacher"),
+            email: email,
+            displayName: displayName,
+            passwordHash: await hashText("teacher:" + email + ":" + password),
+            createdAt: new Date().toISOString()
+          };
+          store.teachers.push(t);
+          store.currentTeacherId = t.id;
+          saveStore();
+          state.view = "dashboard";
+          state.message = "Teacher account created.";
+          render();
+          return;
+        }
+
+        if (kind === "teacher-login") {
+          var loginEmail = String(data.get("email") || "").trim().toLowerCase();
+          var loginPassword = String(data.get("password") || "");
+          var found = store.teachers.find(function (t) { return t.email === loginEmail; });
+          if (!found || found.passwordHash !== await hashText("teacher:" + loginEmail + ":" + loginPassword)) {
+            state.message = "Error: Login did not match a local teacher account.";
+            render();
+            return;
+          }
+          store.currentTeacherId = found.id;
+          saveStore();
+          state.view = "dashboard";
+          state.message = "Logged in.";
+          render();
+          return;
+        }
+
+        if (kind === "create-class") {
+          var currentTeacher = teacher();
+          if (!currentTeacher) return;
+          var name = String(data.get("className") || "").trim();
+          var klass = {
+            id: uid("class"),
+            teacherId: currentTeacher.id,
+            name: name,
+            code: uniqueClassCode(),
+            createdAt: new Date().toISOString()
+          };
+          store.classes.push(klass);
+          state.dashboardClassId = klass.id;
+          saveStore();
+          state.message = "Class created.";
+          render();
+          return;
+        }
+
+        if (kind === "add-student") {
+          var classId = String(data.get("classId") || "");
+          var alias = String(data.get("alias") || "").trim();
+          var pin = String(data.get("pin") || "").trim();
+          if (pin.length < 4) {
+            state.message = "Error: Use a PIN with at least 4 digits.";
+            render();
+            return;
+          }
+          var existing = studentsForClass(classId).some(function (student) {
+            return student.alias.toLowerCase() === alias.toLowerCase();
+          });
+          if (existing) {
+            state.message = "Error: That alias already exists in this class.";
+            render();
+            return;
+          }
+          var studentId = uid("student");
+          var klassForStudent = store.classes.find(function (item) { return item.id === classId; });
+          var student = {
+            id: studentId,
+            classId: classId,
+            teacherId: klassForStudent.teacherId,
+            alias: alias,
+            pinHash: await hashText("student:" + studentId + ":" + pin),
+            createdAt: new Date().toISOString()
+          };
+          store.students.push(student);
+          saveStore();
+          state.message = "Student added.";
+          render();
+          return;
+        }
+
+        if (kind === "student-join") {
+          if (state.previewMode) {
+            var previewCode = String(data.get("code") || "").trim().toUpperCase();
+            var previewAlias = String(data.get("alias") || "").trim();
+            var previewClass = store.classes.find(function (item) {
+              return item.code.toUpperCase() === previewCode && !item.deletedAt;
+            }) || store.classes[0];
+            var previewStudentMatch = studentsForClass(previewClass.id).find(function (student) {
+              return student.alias.toLowerCase() === previewAlias.toLowerCase();
+            }) || studentsForClass(previewClass.id)[0];
+            state.student = {
+              id: previewStudentMatch.id,
+              alias: previewStudentMatch.alias,
+              classId: previewClass.id,
+              teacherId: previewClass.teacherId
+            };
+            state.view = "student-menu";
+            state.message = "Preview student joined.";
+            render();
+            return;
+          }
+          var code = String(data.get("code") || "").trim().toUpperCase();
+          var joinAlias = String(data.get("alias") || "").trim();
+          var joinPin = String(data.get("pin") || "").trim();
+          var klassJoin = store.classes.find(function (item) {
+            return item.code.toUpperCase() === code && !item.deletedAt;
+          });
+          if (!klassJoin) {
+            state.message = "Error: Class code not found.";
+            render();
+            return;
+          }
+          var studentJoin = studentsForClass(klassJoin.id).find(function (student) {
+            return student.alias.toLowerCase() === joinAlias.toLowerCase();
+          });
+          if (!studentJoin || studentJoin.pinHash !== await hashText("student:" + studentJoin.id + ":" + joinPin)) {
+            state.message = "Error: Alias and PIN did not match this class.";
+            render();
+            return;
+          }
+          state.student = {
+            id: studentJoin.id,
+            alias: studentJoin.alias,
+            classId: klassJoin.id,
+            teacherId: klassJoin.teacherId
+          };
+          state.view = "student-menu";
+          state.message = "Welcome, " + studentJoin.alias + ".";
+          render();
+          return;
+        }
+
+        if (kind === "answer") {
+          submitAnswer();
+        }
+      }
+
+      function handleAction(button) {
+        var action = button.getAttribute("data-action");
+        if (action === "preview-start") {
+          enterPreview();
+          return;
+        }
+        if (action === "preview-go") {
+          previewGo(button.getAttribute("data-target"));
+          return;
+        }
+        if (action === "exit-preview") {
+          exitPreview();
+          return;
+        }
+        if (action === "home") setView("home");
+        if (action === "student-start") setView("student-join");
+        if (action === "teacher-start") {
+          state.view = teacher() ? "dashboard" : "auth";
+          render();
+        }
+        if (action === "teacher-dashboard") {
+          state.view = "dashboard";
+          render();
+        }
+        if (action === "auth-mode") {
+          state.authMode = button.getAttribute("data-mode");
+          state.message = "";
+          render();
+        }
+        if (action === "teacher-logout") {
+          if (state.previewMode) {
+            exitPreview();
+            return;
+          }
+          store.currentTeacherId = null;
+          saveStore();
+          state.view = "home";
+          render();
+        }
+        if (action === "student-logout") {
+          if (state.previewMode) {
+            state.student = null;
+            state.view = "preview";
+            render();
+            return;
+          }
+          state.student = null;
+          setView("home");
+        }
+        if (action === "select-operation") {
+          state.selectedOperation = button.getAttribute("data-operation");
+          var levels = LEVELS.filter(function (level) { return level.operation === state.selectedOperation; });
+          state.selectedLevelId = levels[0].id;
+          render();
+        }
+        if (action === "select-level") {
+          state.selectedLevelId = button.getAttribute("data-level");
+          render();
+        }
+        if (action === "start-mode") {
+          startSession(button.getAttribute("data-mode"));
+        }
+        if (action === "begin-session") {
+          startSession(button.getAttribute("data-mode"));
+        }
+        if (action === "keypad") {
+          if (!state.active) return;
+          updateInputFromDom();
+          state.active.input = (state.active.input + button.getAttribute("data-key")).slice(0, 6);
+          render();
+          setTimeout(focusAnswer, 30);
+        }
+        if (action === "backspace") {
+          if (!state.active) return;
+          updateInputFromDom();
+          state.active.input = state.active.input.slice(0, -1);
+          render();
+          setTimeout(focusAnswer, 30);
+        }
+        if (action === "submit-answer") submitAnswer();
+        if (action === "finish-session") finishSession();
+        if (action === "student-menu") setView("student-menu");
+        if (action === "retry-level") {
+          if (state.results) {
+            state.selectedLevelId = state.results.levelId;
+            startSession(state.results.mode);
+          }
+        }
+        if (action === "review-mistakes") {
+          state.reviewIndex = 0;
+          state.view = "review";
+          render();
+        }
+        if (action === "back-to-results") {
+          state.view = "results";
+          render();
+        }
+        if (action === "review-prev") {
+          state.reviewIndex = Math.max(0, state.reviewIndex - 1);
+          render();
+        }
+        if (action === "review-next") {
+          state.reviewIndex += 1;
+          render();
+        }
+        if (action === "select-class") {
+          state.dashboardClassId = button.getAttribute("data-class");
+          saveStore();
+          render();
+        }
+        if (action === "rotate-code") {
+          var classIdRotate = button.getAttribute("data-class");
+          var klassRotate = store.classes.find(function (item) { return item.id === classIdRotate; });
+          if (klassRotate && confirm("Rotate this class code? The old code will stop working.")) {
+            klassRotate.code = uniqueClassCode();
+            klassRotate.codeRotatedAt = new Date().toISOString();
+            saveStore();
+            state.message = "Class code rotated.";
+            render();
+          }
+        }
+        if (action === "delete-class") {
+          var classIdDelete = button.getAttribute("data-class");
+          if (confirm("Delete this class and hide its students? Saved sessions will remain in the local export data.")) {
+            var klassDelete = store.classes.find(function (item) { return item.id === classIdDelete; });
+            if (klassDelete) klassDelete.deletedAt = new Date().toISOString();
+            store.students.forEach(function (student) {
+              if (student.classId === classIdDelete) student.deletedAt = new Date().toISOString();
+            });
+            state.dashboardClassId = null;
+            saveStore();
+            state.message = "Class deleted.";
+            render();
+          }
+        }
+        if (action === "delete-student") {
+          var studentId = button.getAttribute("data-student");
+          if (confirm("Delete this student profile? Their old sessions stay in class history.")) {
+            var studentDelete = store.students.find(function (item) { return item.id === studentId; });
+            if (studentDelete) studentDelete.deletedAt = new Date().toISOString();
+            saveStore();
+            state.message = "Student deleted.";
+            render();
+          }
+        }
+        if (action === "export-csv") {
+          exportCSV(button.getAttribute("data-class"));
+        }
+      }
+
+      document.addEventListener("submit", function (event) {
+        var form = event.target.closest("form[data-form]");
+        if (!form) return;
+        event.preventDefault();
+        handleForm(form);
+      });
+
+      document.addEventListener("click", function (event) {
+        var button = event.target.closest("[data-action]");
+        if (!button) return;
+        var tag = button.tagName.toLowerCase();
+        if (tag === "select") return;
+        event.preventDefault();
+        handleAction(button);
+      });
+
+      document.addEventListener("change", function (event) {
+        var select = event.target.closest("select[data-action]");
+        if (!select) return;
+        if (select.getAttribute("data-action") === "dashboard-operation") {
+          state.dashboardOperation = select.value;
+          render();
+        }
+        if (select.getAttribute("data-action") === "dashboard-tag") {
+          state.dashboardTag = select.value;
+          render();
+        }
+      });
+
+      document.addEventListener("input", function (event) {
+        if (event.target && event.target.id === "answerInput" && state.active) {
+          state.active.input = event.target.value.replace(/[^\d-]/g, "").slice(0, 6);
+          event.target.value = state.active.input;
+        }
+      });
+
+      function render() {
+        if (state.view === "home") app.innerHTML = homeView();
+        if (state.view === "preview") app.innerHTML = previewView();
+        if (state.view === "auth") app.innerHTML = authView();
+        if (state.view === "student-join") app.innerHTML = studentJoinView();
+        if (state.view === "student-menu") app.innerHTML = studentMenuView();
+        if (state.view === "session") app.innerHTML = sessionView();
+        if (state.view === "results") app.innerHTML = resultsView();
+        if (state.view === "review") app.innerHTML = reviewView();
+        if (state.view === "dashboard") app.innerHTML = dashboardView();
+      }
+
+      render();
+    })();
+  </script>
+</body>
+</html>
