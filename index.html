@@ -637,11 +637,17 @@
 <body>
   <div id="app"></div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     (function () {
       "use strict";
 
       var STORE_KEY = "fluencySprintLocalV1";
+      var SUPABASE_URL = "https://vumbzfgpatojufdtfvni.supabase.co";
+      var SUPABASE_PUBLISHABLE_KEY = "sb_publishable_j588PG55dSjJ-DEQJGIgFQ_WRiNnY7V";
+      var supabaseClient = window.supabase
+        ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY)
+        : null;
       var app = document.getElementById("app");
       var timerId = null;
 
@@ -703,7 +709,13 @@
         results: null,
         reviewIndex: 0,
         message: "",
-        previewMode: false
+        previewMode: false,
+        backendMode: !!supabaseClient,
+        backendReady: !supabaseClient,
+        remoteTeacher: null,
+        remoteClasses: [],
+        remoteStudents: [],
+        remoteSessions: []
       };
 
       function defaultStore() {
@@ -729,9 +741,195 @@
       }
 
       function saveStore() {
-        if (state.previewMode) return;
+        if (state.previewMode || backendActive()) return;
         store.lastClassId = state.dashboardClassId;
         localStorage.setItem(STORE_KEY, JSON.stringify(store));
+      }
+
+      function backendActive() {
+        return !!(supabaseClient && state.backendMode && !state.previewMode);
+      }
+
+      function normalizeClass(row) {
+        return {
+          id: row.id,
+          teacherId: row.teacher_id,
+          name: row.name,
+          code: row.code,
+          codeRotatedAt: row.code_rotated_at,
+          createdAt: row.created_at,
+          deletedAt: row.deleted_at
+        };
+      }
+
+      function normalizeStudent(row) {
+        return {
+          id: row.id,
+          classId: row.class_id,
+          teacherId: row.teacher_id,
+          alias: row.alias,
+          createdAt: row.created_at,
+          deletedAt: row.deleted_at
+        };
+      }
+
+      function normalizeSession(row) {
+        return {
+          id: row.id,
+          studentId: row.student_id,
+          studentAlias: row.student_alias,
+          classId: row.class_id,
+          teacherId: row.teacher_id,
+          createdAt: row.created_at,
+          mode: row.mode,
+          operation: row.operation,
+          levelId: row.level_id,
+          levelName: row.level_name,
+          tags: row.tags || [],
+          attempted: row.attempted || 0,
+          correct: row.correct || 0,
+          accuracy: row.accuracy || 0,
+          bestStreak: row.best_streak || 0,
+          timeSpent: row.time_spent || 0,
+          score: row.score || 0,
+          mistakes: (row.mistakes || []).map(normalizeMistake)
+        };
+      }
+
+      function normalizeMistake(row) {
+        return {
+          question: row.question,
+          studentAnswer: row.student_answer,
+          correctAnswer: row.correct_answer,
+          operation: row.operation,
+          levelId: row.level_id,
+          tags: row.tags || [],
+          recovered: !!row.recovered
+        };
+      }
+
+      async function initializeBackend() {
+        if (!supabaseClient) return;
+        var response = await supabaseClient.auth.getUser();
+        if (response.data && response.data.user) {
+          state.remoteTeacher = {
+            id: response.data.user.id,
+            email: response.data.user.email,
+            displayName: response.data.user.user_metadata && response.data.user.user_metadata.display_name
+              ? response.data.user.user_metadata.display_name
+              : "Teacher"
+          };
+          await ensureRemoteProfile(state.remoteTeacher.displayName);
+          await loadRemoteDashboard();
+        }
+        state.backendReady = true;
+        render();
+      }
+
+      async function ensureRemoteProfile(displayName) {
+        if (!backendActive()) return;
+        var result = await supabaseClient.rpc("ensure_teacher_profile", {
+          p_display_name: displayName || "Teacher"
+        });
+        if (result.error) {
+          throw result.error;
+        }
+        if (result.data) {
+          state.remoteTeacher.displayName = result.data.display_name || state.remoteTeacher.displayName;
+        }
+      }
+
+      async function loadRemoteDashboard() {
+        if (!backendActive()) return;
+        var classesResult = await supabaseClient
+          .from("classes")
+          .select("*")
+          .is("deleted_at", null)
+          .order("created_at", { ascending: true });
+        if (classesResult.error) throw classesResult.error;
+        state.remoteClasses = (classesResult.data || []).map(normalizeClass);
+
+        var classIds = state.remoteClasses.map(function (item) { return item.id; });
+        if (!state.dashboardClassId && state.remoteClasses.length) {
+          state.dashboardClassId = state.remoteClasses[0].id;
+        }
+
+        if (!classIds.length) {
+          state.remoteStudents = [];
+          state.remoteSessions = [];
+          return;
+        }
+
+        var studentsResult = await supabaseClient
+          .from("students")
+          .select("id,class_id,teacher_id,alias,created_at,deleted_at")
+          .in("class_id", classIds)
+          .is("deleted_at", null)
+          .order("created_at", { ascending: true });
+        if (studentsResult.error) throw studentsResult.error;
+        state.remoteStudents = (studentsResult.data || []).map(normalizeStudent);
+
+        var sessionsResult = await supabaseClient
+          .from("sessions")
+          .select("*, mistakes(*)")
+          .in("class_id", classIds)
+          .order("created_at", { ascending: false })
+          .limit(300);
+        if (sessionsResult.error) throw sessionsResult.error;
+        state.remoteSessions = (sessionsResult.data || []).map(normalizeSession);
+      }
+
+      async function remoteTeacherLogin(email, password) {
+        var result = await supabaseClient.auth.signInWithPassword({
+          email: email,
+          password: password
+        });
+        if (result.error) throw result.error;
+        state.remoteTeacher = {
+          id: result.data.user.id,
+          email: result.data.user.email,
+          displayName: result.data.user.user_metadata && result.data.user.user_metadata.display_name
+            ? result.data.user.user_metadata.display_name
+            : "Teacher"
+        };
+        await ensureRemoteProfile(state.remoteTeacher.displayName);
+        await loadRemoteDashboard();
+      }
+
+      async function remoteTeacherSignup(displayName, email, password) {
+        var result = await supabaseClient.auth.signUp({
+          email: email,
+          password: password,
+          options: {
+            data: {
+              display_name: displayName || "Teacher"
+            }
+          }
+        });
+        if (result.error) throw result.error;
+        if (!result.data.session) {
+          state.remoteTeacher = null;
+          return { needsConfirmation: true };
+        }
+        state.remoteTeacher = result.data.user ? {
+          id: result.data.user.id,
+          email: result.data.user.email,
+          displayName: displayName || "Teacher"
+        } : null;
+        if (state.remoteTeacher) {
+          await ensureRemoteProfile(state.remoteTeacher.displayName);
+          await loadRemoteDashboard();
+        }
+        return { needsConfirmation: false };
+      }
+
+      async function remoteLogout() {
+        if (!supabaseClient) return;
+        await supabaseClient.auth.signOut();
+        state.remoteTeacher = null;
+        state.remoteClasses = [];
+        state.remoteStudents = [];
+        state.remoteSessions = [];
       }
 
       function buildPreviewStore() {
@@ -1025,10 +1223,14 @@
       }
 
       function teacher() {
+        if (backendActive()) return state.remoteTeacher;
         return store.teachers.find(function (item) { return item.id === store.currentTeacherId; }) || null;
       }
 
       function classesForTeacher() {
+        if (backendActive()) {
+          return state.remoteClasses.filter(function (item) { return !item.deletedAt; });
+        }
         var t = teacher();
         if (!t) return [];
         return store.classes.filter(function (item) { return item.teacherId === t.id && !item.deletedAt; });
@@ -1045,14 +1247,23 @@
       }
 
       function studentsForClass(classId) {
+        if (backendActive()) {
+          return state.remoteStudents.filter(function (item) { return item.classId === classId && !item.deletedAt; });
+        }
         return store.students.filter(function (item) { return item.classId === classId && !item.deletedAt; });
       }
 
       function sessionsForClass(classId) {
+        if (backendActive()) {
+          return state.remoteSessions.filter(function (item) { return item.classId === classId; });
+        }
         return store.sessions.filter(function (item) { return item.classId === classId; });
       }
 
       function sessionsForStudent(studentId) {
+        if (backendActive()) {
+          return state.remoteSessions.filter(function (item) { return item.studentId === studentId; });
+        }
         return store.sessions.filter(function (item) { return item.studentId === studentId; });
       }
 
@@ -1357,10 +1568,16 @@
           '      <strong style="color: var(--blue)">Preview</strong>',
           '    </button>',
           '  </section>',
-          '  <p class="footer-note tiny">Local prototype. No student emails required.</p>',
+          '  <p class="footer-note tiny">' + storageStatusText() + '</p>',
           '</main>',
           '</div>'
         ].join("");
+      }
+
+      function storageStatusText() {
+        if (state.previewMode) return "Preview mode uses temporary demo data.";
+        if (supabaseClient) return "Supabase shared storage enabled. Students do not need email accounts.";
+        return "Local prototype. No student emails required.";
       }
 
       function previewView() {
@@ -1712,7 +1929,7 @@
         setTimeout(focusAnswer, 30);
       }
 
-      function finishSession() {
+      async function finishSession() {
         if (!state.active) return;
         stopTimer();
         var active = state.active;
@@ -1739,7 +1956,30 @@
           score: active.correct,
           mistakes: active.mistakes
         };
-        if (state.student) {
+        if (backendActive() && state.student && state.student.accessToken) {
+          var result = await supabaseClient.rpc("submit_student_session", {
+            p_student_id: state.student.id,
+            p_access_token: state.student.accessToken,
+            p_mode: session.mode,
+            p_operation: session.operation,
+            p_level_id: session.levelId,
+            p_level_name: session.levelName,
+            p_tags: session.tags,
+            p_attempted: session.attempted,
+            p_correct: session.correct,
+            p_accuracy: session.accuracy,
+            p_best_streak: session.bestStreak,
+            p_time_spent: session.timeSpent,
+            p_score: session.score,
+            p_mistakes: session.mistakes
+          });
+          if (result.error) {
+            session.saveError = result.error.message;
+          } else {
+            session.synced = true;
+            session.id = result.data || session.id;
+          }
+        } else if (state.student) {
           store.sessions.push(session);
           saveStore();
         }
@@ -1769,6 +2009,8 @@
           statHTML("Accuracy", r.accuracy + "%"),
           statHTML("Best streak", r.bestStreak),
           '  </section>',
+          r.saveError ? '<div class="notice danger">Could not save to Supabase: ' + escapeHTML(r.saveError) + '</div>' : '',
+          r.synced ? '<div class="notice success">Saved to teacher dashboard.</div>' : '',
           '  <section class="grid two">',
           '    <button class="tile" data-action="retry-level"><span class="iconbox">R</span><h3>Try again</h3><p class="muted">Repeat the same level.</p></button>',
           '    <button class="tile" data-action="review-mistakes" ' + (r.mistakes.length ? "" : "disabled") + '><span class="iconbox">?</span><h3>Review mistakes</h3><p class="muted">' + r.mistakes.length + ' items to revisit.</p></button>',
@@ -1832,7 +2074,7 @@
           '    <button class="btn ghost" data-action="home">Home</button>',
           '  </section>',
           messageHTML(),
-          '  <section class="notice small"><strong>Prototype boundary:</strong> This version stores data locally in this browser. For real classrooms, move the same model to a protected backend with verified teacher auth and row-level access rules.</section>',
+          backendActive() ? '  <section class="notice success small"><strong>Shared storage active:</strong> Teacher data is saved in Supabase with row-level access rules. Students still use alias and PIN, not email.</section>' : '  <section class="notice small"><strong>Prototype boundary:</strong> This version stores data locally in this browser. For real classrooms, move the same model to a protected backend with verified teacher auth and row-level access rules.</section>',
           '  <section class="dashboard-grid">',
           '    <aside class="stack">',
           createClassForm(),
@@ -2121,6 +2363,73 @@
           render();
           return;
         }
+        if (backendActive() && kind === "teacher-signup") {
+          try {
+            var remoteDisplayName = String(data.get("displayName") || "").trim();
+            var remoteEmail = String(data.get("email") || "").trim().toLowerCase();
+            var remotePassword = String(data.get("password") || "");
+            var signupResult = await remoteTeacherSignup(remoteDisplayName, remoteEmail, remotePassword);
+            if (signupResult.needsConfirmation) {
+              state.view = "auth";
+              state.message = "Check your email to confirm the teacher account, then log in.";
+            } else {
+              state.view = "dashboard";
+              state.message = "Teacher account created.";
+            }
+          } catch (error) {
+            state.message = "Error: " + error.message;
+          }
+          render();
+          return;
+        }
+        if (backendActive() && kind === "teacher-login") {
+          try {
+            var backendEmail = String(data.get("email") || "").trim().toLowerCase();
+            var backendPassword = String(data.get("password") || "");
+            await remoteTeacherLogin(backendEmail, backendPassword);
+            state.view = "dashboard";
+            state.message = "Logged in.";
+          } catch (error) {
+            state.message = "Error: " + error.message;
+          }
+          render();
+          return;
+        }
+        if (backendActive() && kind === "create-class") {
+          try {
+            var remoteClassName = String(data.get("className") || "").trim();
+            var createResult = await supabaseClient.rpc("create_class", {
+              p_name: remoteClassName
+            });
+            if (createResult.error) throw createResult.error;
+            await loadRemoteDashboard();
+            state.dashboardClassId = createResult.data.id;
+            state.message = "Class created.";
+          } catch (error) {
+            state.message = "Error: " + error.message;
+          }
+          render();
+          return;
+        }
+        if (backendActive() && kind === "add-student") {
+          try {
+            var remoteClassId = String(data.get("classId") || "");
+            var remoteAlias = String(data.get("alias") || "").trim();
+            var remotePin = String(data.get("pin") || "").trim();
+            var addResult = await supabaseClient.rpc("create_student", {
+              p_class_id: remoteClassId,
+              p_alias: remoteAlias,
+              p_pin: remotePin
+            });
+            if (addResult.error) throw addResult.error;
+            await loadRemoteDashboard();
+            state.message = "Student added.";
+          } catch (error) {
+            state.message = "Error: " + error.message;
+          }
+          render();
+          return;
+        }
         if (kind === "teacher-signup") {
           var email = String(data.get("email") || "").trim().toLowerCase();
           var displayName = String(data.get("displayName") || "").trim();
@@ -2237,6 +2546,33 @@
             render();
             return;
           }
+          if (backendActive()) {
+            try {
+              var remoteCode = String(data.get("code") || "").trim().toUpperCase();
+              var joinRemoteAlias = String(data.get("alias") || "").trim();
+              var joinRemotePin = String(data.get("pin") || "").trim();
+              var joinResult = await supabaseClient.rpc("join_student", {
+                p_class_code: remoteCode,
+                p_alias: joinRemoteAlias,
+                p_pin: joinRemotePin
+              });
+              if (joinResult.error) throw joinResult.error;
+              var joined = Array.isArray(joinResult.data) ? joinResult.data[0] : joinResult.data;
+              state.student = {
+                id: joined.student_id,
+                alias: joined.alias,
+                classId: joined.class_id,
+                teacherId: joined.teacher_id,
+                accessToken: joined.access_token
+              };
+              state.view = "student-menu";
+              state.message = "Welcome, " + joined.alias + ".";
+            } catch (error) {
+              state.message = "Error: " + error.message;
+            }
+            render();
+            return;
+          }
           var code = String(data.get("code") || "").trim().toUpperCase();
           var joinAlias = String(data.get("alias") || "").trim();
           var joinPin = String(data.get("pin") || "").trim();
@@ -2273,7 +2609,7 @@
         }
       }
 
-      function handleAction(button) {
+      async function handleAction(button) {
         var action = button.getAttribute("data-action");
         if (action === "preview-start") {
           enterPreview();
@@ -2294,6 +2630,13 @@
           render();
         }
         if (action === "teacher-dashboard") {
+          if (backendActive() && teacher()) {
+            try {
+              await loadRemoteDashboard();
+            } catch (error) {
+              state.message = "Error: " + error.message;
+            }
+          }
           state.view = "dashboard";
           render();
         }
@@ -2305,6 +2648,13 @@
         if (action === "teacher-logout") {
           if (state.previewMode) {
             exitPreview();
+            return;
+          }
+          if (backendActive()) {
+            await remoteLogout();
+            state.view = "home";
+            state.message = "";
+            render();
             return;
           }
           store.currentTeacherId = null;
@@ -2386,6 +2736,22 @@
         if (action === "rotate-code") {
           var classIdRotate = button.getAttribute("data-class");
           var klassRotate = store.classes.find(function (item) { return item.id === classIdRotate; });
+          if (backendActive()) {
+            if (confirm("Rotate this class code? The old code will stop working.")) {
+              try {
+                var rotateResult = await supabaseClient.rpc("rotate_class_code", {
+                  p_class_id: classIdRotate
+                });
+                if (rotateResult.error) throw rotateResult.error;
+                await loadRemoteDashboard();
+                state.message = "Class code rotated.";
+              } catch (error) {
+                state.message = "Error: " + error.message;
+              }
+              render();
+            }
+            return;
+          }
           if (klassRotate && confirm("Rotate this class code? The old code will stop working.")) {
             klassRotate.code = uniqueClassCode();
             klassRotate.codeRotatedAt = new Date().toISOString();
@@ -2396,6 +2762,30 @@
         }
         if (action === "delete-class") {
           var classIdDelete = button.getAttribute("data-class");
+          if (backendActive()) {
+            if (confirm("Delete this class and hide its students? Saved sessions stay in the teacher history.")) {
+              try {
+                var deleteTime = new Date().toISOString();
+                var deleteClassResult = await supabaseClient
+                  .from("classes")
+                  .update({ deleted_at: deleteTime })
+                  .eq("id", classIdDelete);
+                if (deleteClassResult.error) throw deleteClassResult.error;
+                var deleteStudentsResult = await supabaseClient
+                  .from("students")
+                  .update({ deleted_at: deleteTime })
+                  .eq("class_id", classIdDelete);
+                if (deleteStudentsResult.error) throw deleteStudentsResult.error;
+                state.dashboardClassId = null;
+                await loadRemoteDashboard();
+                state.message = "Class deleted.";
+              } catch (error) {
+                state.message = "Error: " + error.message;
+              }
+              render();
+            }
+            return;
+          }
           if (confirm("Delete this class and hide its students? Saved sessions will remain in the local export data.")) {
             var klassDelete = store.classes.find(function (item) { return item.id === classIdDelete; });
             if (klassDelete) klassDelete.deletedAt = new Date().toISOString();
@@ -2410,6 +2800,23 @@
         }
         if (action === "delete-student") {
           var studentId = button.getAttribute("data-student");
+          if (backendActive()) {
+            if (confirm("Delete this student profile? Their old sessions stay in class history.")) {
+              try {
+                var deleteStudentResult = await supabaseClient
+                  .from("students")
+                  .update({ deleted_at: new Date().toISOString() })
+                  .eq("id", studentId);
+                if (deleteStudentResult.error) throw deleteStudentResult.error;
+                await loadRemoteDashboard();
+                state.message = "Student deleted.";
+              } catch (error) {
+                state.message = "Error: " + error.message;
+              }
+              render();
+            }
+            return;
+          }
           if (confirm("Delete this student profile? Their old sessions stay in class history.")) {
             var studentDelete = store.students.find(function (item) { return item.id === studentId; });
             if (studentDelete) studentDelete.deletedAt = new Date().toISOString();
@@ -2472,6 +2879,11 @@
       }
 
       render();
+      initializeBackend().catch(function (error) {
+        state.backendReady = true;
+        state.message = "Error: Supabase setup needs attention: " + error.message;
+        render();
+      });
     })();
   </script>
 </body>

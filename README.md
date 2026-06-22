@@ -20,12 +20,13 @@ This folder is ready to upload to a GitHub repository and publish with GitHub Pa
 
 ## Important Data Note
 
-This GitHub Pages version is a static app. It can run the practice tool and preview dashboard, but saved data currently lives in each browser's local storage.
+This GitHub Pages version now points at a Supabase project for shared teacher/class/student/session storage.
 
-That means the teacher dashboard will not yet collect results from different student devices. To make real shared classroom tracking work, connect the app to a backend such as:
+Before using real classroom data:
 
-- Google Sheets + Apps Script
-- Firebase
-- Supabase
+- Run `supabase-schema.sql` in the Supabase SQL Editor.
+- Keep the Supabase service role key private.
+- Use only the publishable/anon key in `index.html`.
+- Test with two teacher accounts to confirm one teacher cannot see another teacher's classes.
 
-For now, this is the right version for public preview, design testing, and planning the next build.
+The app still includes Preview Mode, which uses temporary demo data and does not touch Supabase.
