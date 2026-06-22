@@ -254,7 +254,11 @@ begin
     raise exception 'Not signed in';
   end if;
 
-  if not exists (select 1 from public.classes where id = p_class_id and teacher_id = auth.uid() and deleted_at is null) then
+  if not exists (
+    select 1
+    from public.classes as c
+    where c.id = p_class_id and c.teacher_id = auth.uid() and c.deleted_at is null
+  ) then
     raise exception 'Class not found';
   end if;
 
@@ -263,10 +267,10 @@ begin
     exit when not exists (select 1 from public.classes where code = new_code and deleted_at is null);
   end loop;
 
-  update public.classes
+  update public.classes as c
   set code = new_code, code_rotated_at = now()
-  where id = p_class_id and teacher_id = auth.uid()
-  returning * into klass;
+  where c.id = p_class_id and c.teacher_id = auth.uid()
+  returning c.* into klass;
 
   insert into public.audit_log (teacher_id, action, details)
   values (auth.uid(), 'class_code_rotated', jsonb_build_object('class_id', klass.id));
@@ -301,9 +305,9 @@ begin
     raise exception 'PIN must be at least 4 characters';
   end if;
 
-  select teacher_id into owner_id
-  from public.classes
-  where id = p_class_id and deleted_at is null;
+  select c.teacher_id into owner_id
+  from public.classes as c
+  where c.id = p_class_id and c.deleted_at is null;
 
   if owner_id is null or owner_id <> auth.uid() then
     raise exception 'Class not found';
@@ -353,10 +357,10 @@ begin
 
   token := encode(extensions.gen_random_bytes(32), 'hex');
 
-  update public.students
+  update public.students as s
   set student_token_hash = encode(extensions.digest(token, 'sha256'), 'hex'),
       student_token_expires_at = now() + interval '8 hours'
-  where id = student.id;
+  where s.id = student.id;
 
   return query
   select student.id, student.class_id, student.teacher_id, student.alias, token;
@@ -389,12 +393,12 @@ declare
   session_id uuid;
   mistake jsonb;
 begin
-  select * into student
-  from public.students
-  where id = p_student_id
-    and deleted_at is null
-    and student_token_hash = encode(extensions.digest(p_access_token, 'sha256'), 'hex')
-    and student_token_expires_at > now();
+  select s.* into student
+  from public.students as s
+  where s.id = p_student_id
+    and s.deleted_at is null
+    and s.student_token_hash = encode(extensions.digest(p_access_token, 'sha256'), 'hex')
+    and s.student_token_expires_at > now();
 
   if student.id is null then
     raise exception 'Student session expired or invalid';
@@ -462,14 +466,14 @@ begin
     raise exception 'PIN must be at least 4 characters';
   end if;
 
-  update public.students
+  update public.students as s
   set pin_hash = extensions.crypt(trim(p_new_pin), extensions.gen_salt('bf')),
       student_token_hash = null,
       student_token_expires_at = null
-  where id = p_student_id
-    and teacher_id = auth.uid()
-    and deleted_at is null
-  returning * into updated_student;
+  where s.id = p_student_id
+    and s.teacher_id = auth.uid()
+    and s.deleted_at is null
+  returning s.* into updated_student;
 
   if updated_student.id is null then
     raise exception 'Student not found';
