@@ -553,6 +553,53 @@
       padding: 1rem;
     }
 
+    .print-sheet {
+      display: none;
+    }
+
+    .login-card-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.8rem;
+    }
+
+    .login-card {
+      border: 2px solid var(--line);
+      border-radius: var(--radius);
+      background: white;
+      padding: 0.9rem;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 7rem;
+      gap: 0.8rem;
+      align-items: center;
+      min-height: 9rem;
+    }
+
+    .qr-slot {
+      width: 6.5rem;
+      height: 6.5rem;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--line);
+      background: white;
+      overflow: hidden;
+    }
+
+    .qr-slot img,
+    .qr-slot svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .pin-line {
+      border-bottom: 2px solid var(--ink);
+      display: inline-block;
+      min-width: 5.5rem;
+      height: 1.15rem;
+      vertical-align: middle;
+    }
+
     .preview-strip {
       margin: 0 clamp(1rem, 3vw, 2rem) 1rem;
       padding: 0.7rem;
@@ -632,11 +679,52 @@
         font-size: 3.3rem;
       }
     }
+
+    @media print {
+      body.printing-cards {
+        background: white;
+      }
+
+      body.printing-cards .topbar,
+      body.printing-cards .preview-strip,
+      body.printing-cards .shell > .between,
+      body.printing-cards .shell > .notice,
+      body.printing-cards .dashboard-grid > aside,
+      body.printing-cards .dashboard-grid > .stack > *:not(.print-sheet) {
+        display: none !important;
+      }
+
+      body.printing-cards .shell {
+        width: 100%;
+        padding: 0;
+      }
+
+      body.printing-cards .dashboard-grid {
+        display: block;
+      }
+
+      body.printing-cards .print-sheet {
+        display: block !important;
+        border: 0;
+        box-shadow: none;
+        padding: 0;
+      }
+
+      body.printing-cards .login-card-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      body.printing-cards .login-card {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+    }
   </style>
 </head>
 <body>
   <div id="app"></div>
 
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     (function () {
@@ -715,7 +803,9 @@
         remoteTeacher: null,
         remoteClasses: [],
         remoteStudents: [],
-        remoteSessions: []
+        remoteSessions: [],
+        prefillClassCode: "",
+        prefillAlias: ""
       };
 
       function defaultStore() {
@@ -767,6 +857,8 @@
           id: row.id,
           classId: row.class_id,
           teacherId: row.teacher_id,
+          firstName: row.first_name || "",
+          lastName: row.last_name || "",
           alias: row.alias,
           createdAt: row.created_at,
           deletedAt: row.deleted_at
@@ -862,7 +954,7 @@
 
         var studentsResult = await supabaseClient
           .from("students")
-          .select("id,class_id,teacher_id,alias,created_at,deleted_at")
+          .select("id,class_id,teacher_id,first_name,last_name,alias,created_at,deleted_at")
           .in("class_id", classIds)
           .is("deleted_at", null)
           .order("created_at", { ascending: true });
@@ -928,6 +1020,15 @@
         return window.location.origin + window.location.pathname;
       }
 
+      function applyInitialRoute() {
+        var params = new URLSearchParams(window.location.search || "");
+        if (params.get("join") === "1") {
+          state.view = "student-join";
+          state.prefillClassCode = params.get("classCode") || "";
+          state.prefillAlias = params.get("alias") || "";
+        }
+      }
+
       async function remoteLogout() {
         if (!supabaseClient) return;
         await supabaseClient.auth.signOut();
@@ -953,10 +1054,10 @@
           createdAt: previewDate(42)
         };
         var students = [
-          previewStudentRecord("preview-student-ava", "Ava", previewClass, 38),
-          previewStudentRecord("preview-student-noah", "Noah", previewClass, 36),
-          previewStudentRecord("preview-student-mia", "Mia", previewClass, 32),
-          previewStudentRecord("preview-student-eli", "Eli", previewClass, 30)
+          previewStudentRecord("preview-student-ava", "Ava", "Morgan", previewClass, 38),
+          previewStudentRecord("preview-student-noah", "Noah", "Patel", previewClass, 36),
+          previewStudentRecord("preview-student-mia", "Mia", "Smith", previewClass, 32),
+          previewStudentRecord("preview-student-eli", "Eli", "Nguyen", previewClass, 30)
         ];
         var sessions = [
           previewSession(students[0], 18, "sprint", "A2", 22, 15, 5, "6 + ? = 10", "5", 4),
@@ -982,12 +1083,14 @@
         };
       }
 
-      function previewStudentRecord(id, alias, klass, daysBack) {
+      function previewStudentRecord(id, firstName, lastName, klass, daysBack) {
         return {
           id: id,
           classId: klass.id,
           teacherId: klass.teacherId,
-          alias: alias,
+          firstName: firstName,
+          lastName: lastName,
+          alias: makeStudentAlias(firstName, lastName),
           pinHash: "preview-only",
           createdAt: previewDate(daysBack)
         };
@@ -1078,7 +1181,9 @@
       function previewStudent() {
         return {
           id: "preview-student-ava",
-          alias: "Ava",
+          firstName: "Ava",
+          lastName: "Morgan",
+          alias: "A Morgan",
           classId: "preview-class",
           teacherId: "preview-teacher"
         };
@@ -1609,7 +1714,7 @@
           previewTile("dashboard", "Teacher dashboard", "Participation, growth charts, and class data.", "D"),
           previewTile("landing", "Landing screen", "The first screen students and teachers see.", "FS"),
           '  </section>',
-          '  <section class="notice small"><strong>Demo class:</strong> Year 4 Fluency Group, code MTH-204-FS. Demo students include Ava, Noah, Mia, and Eli.</section>',
+          '  <section class="notice small"><strong>Demo class:</strong> Year 4 Fluency Group, code MTH-204-FS. Demo aliases include A Morgan, N Patel, M Smith, and E Nguyen.</section>',
           '</main>',
           '</div>'
         ].join("");
@@ -1644,7 +1749,7 @@
           '    <button class="tab ' + (!loginActive ? "active" : "") + '" data-action="auth-mode" data-mode="signup">Create account</button>',
           '  </div>',
           loginActive ? teacherLoginForm() : teacherSignupForm(),
-          '  <div class="notice small"><strong>Privacy note:</strong> Teacher email is used for login in this prototype. Student accounts use alias and PIN only.</div>',
+          '  <div class="notice small"><strong>Privacy note:</strong> Teacher email is used for login. Student accounts use alias and PIN only. Add only school-approved student details needed for classroom tracking.</div>',
           '</main>',
           '</div>'
         ].join("");
@@ -1673,6 +1778,8 @@
 
       function studentJoinView() {
         if (state.student) return studentMenuView();
+        var defaultClassCode = state.previewMode ? "MTH-204-FS" : state.prefillClassCode;
+        var defaultAlias = state.previewMode ? "A Morgan" : state.prefillAlias;
         return [
           '<div class="page">',
           header(),
@@ -1686,8 +1793,8 @@
           '  </section>',
           messageHTML(),
           '  <form class="panel section stack" data-form="student-join">',
-          '    <label>Class code<input name="code" type="text" placeholder="ABC-123-XYZ" value="' + (state.previewMode ? "MTH-204-FS" : "") + '" required></label>',
-          '    <label>Your alias or first name<input name="alias" type="text" placeholder="Mia" value="' + (state.previewMode ? "Ava" : "") + '" required></label>',
+          '    <label>Class code<input name="code" type="text" placeholder="ABC-123-XYZ" value="' + escapeHTML(defaultClassCode) + '" required></label>',
+          '    <label>Your alias<input name="alias" type="text" placeholder="M Smith" value="' + escapeHTML(defaultAlias) + '" required></label>',
           '    <label>PIN<input name="pin" inputmode="numeric" type="password" placeholder="4 or more digits" value="' + (state.previewMode ? "1234" : "") + '" required></label>',
           '    <button class="btn primary" type="submit">Join class</button>',
           '  </form>',
@@ -1767,6 +1874,31 @@
           divide10: "Divide by 10"
         };
         return labels[tag] || tag;
+      }
+
+      function makeStudentAlias(firstName, lastName) {
+        var first = String(firstName || "").trim();
+        var last = String(lastName || "").trim();
+        var initial = first ? first.charAt(0).toUpperCase() : "";
+        return (initial + " " + last).trim() || "Student";
+      }
+
+      function uniqueLocalAlias(classId, firstName, lastName) {
+        var base = makeStudentAlias(firstName, lastName);
+        var alias = base;
+        var count = 2;
+        while (studentsForClass(classId).some(function (student) {
+          return String(student.alias || "").toLowerCase() === alias.toLowerCase();
+        })) {
+          alias = base + " " + count;
+          count += 1;
+        }
+        return alias;
+      }
+
+      function studentFullName(student) {
+        var name = [student.firstName, student.lastName].filter(Boolean).join(" ").trim();
+        return name || student.alias || "Student";
       }
 
       function startSession(mode) {
@@ -2079,7 +2211,7 @@
           '    <button class="btn ghost" data-action="home">Home</button>',
           '  </section>',
           messageHTML(),
-          backendActive() ? '  <section class="notice success small"><strong>Shared storage active:</strong> Teacher data is saved in Supabase with row-level access rules. Students still use alias and PIN, not email.</section>' : '  <section class="notice small"><strong>Prototype boundary:</strong> This version stores data locally in this browser. For real classrooms, move the same model to a protected backend with verified teacher auth and row-level access rules.</section>',
+          backendActive() ? '  <section class="notice success small"><strong>Shared storage active:</strong> Teacher data is saved in Supabase with row-level access rules. Students use alias and PIN, not email. Use only with your school-approved consent or notification process.</section>' : '  <section class="notice small"><strong>Prototype boundary:</strong> This version stores data locally in this browser. For real classrooms, move the same model to a protected backend with verified teacher auth and row-level access rules.</section>',
           '  <section class="dashboard-grid">',
           '    <aside class="stack">',
           createClassForm(),
@@ -2142,6 +2274,7 @@
           '      <p class="muted">Class code: <strong>' + escapeHTML(klass.code) + '</strong></p>',
           '    </div>',
           '    <div class="row">',
+          '      <button class="btn ghost" data-action="print-login-cards" data-class="' + klass.id + '" ' + (students.length ? "" : "disabled") + '>Print QR cards</button>',
           '      <button class="btn ghost" data-action="rotate-code" data-class="' + klass.id + '">Rotate code</button>',
           '      <button class="btn ghost" data-action="export-csv" data-class="' + klass.id + '">Export CSV</button>',
           '      <button class="btn warn" data-action="delete-class" data-class="' + klass.id + '">Delete</button>',
@@ -2161,6 +2294,7 @@
           addStudentForm(klass),
           growthPanel(klass, sessions),
           studentTable(klass, students),
+          loginCardPrintSheet(klass, students),
           recentSessionsTable(sessions)
         ].join("");
       }
@@ -2170,10 +2304,12 @@
           '<form class="panel section stack" data-form="add-student">',
           '  <h3>Add student</h3>',
           '  <input type="hidden" name="classId" value="' + escapeHTML(klass.id) + '">',
-          '  <div class="grid two">',
-          '    <label>Alias or first name<input name="alias" type="text" placeholder="Mia" required></label>',
+          '  <div class="grid three">',
+          '    <label>First name<input name="firstName" type="text" placeholder="Mia" required></label>',
+          '    <label>Last name<input name="lastName" type="text" placeholder="Smith" required></label>',
           '    <label>PIN<input name="pin" inputmode="numeric" type="text" minlength="4" placeholder="1234" required></label>',
           '  </div>',
+          '  <div class="tiny muted">Student alias will be generated as first initial + surname, for example M Smith. Do not enter extra personal information.</div>',
           '  <button class="btn primary" type="submit">Add student</button>',
           '</form>'
         ].join("");
@@ -2249,7 +2385,7 @@
           '    <line x1="' + pad + '" y1="' + pad + '" x2="' + pad + '" y2="' + (h - pad) + '" stroke="#d7deea" stroke-width="2"></line>',
           '    <polyline points="' + poly + '" fill="none" stroke="' + (metric === "accuracy" ? "#0f9f8f" : "#f05d4f") + '" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"></polyline>',
           points.map(function (p) {
-            return '<circle cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="6" fill="white" stroke="' + (metric === "accuracy" ? "#0f9f8f" : "#f05d4f") + '" stroke-width="4"><title>' + escapeHTML(p[3].studentAlias + " - " + p[2] + (metric === "accuracy" ? "%" : "")) + '</title></circle>';
+            return '<circle cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="6" fill="white" stroke="' + (metric === "accuracy" ? "#0f9f8f" : "#f05d4f") + '" stroke-width="4"><title>' + escapeHTML(studentNameForSession(p[3]) + " - " + p[2] + (metric === "accuracy" ? "%" : "")) + '</title></circle>';
           }).join(""),
           '    <text x="' + pad + '" y="24" fill="#64748b" font-size="14">' + maxValue + (metric === "accuracy" ? "%" : "") + '</text>',
           '    <text x="' + pad + '" y="' + (h - 8) + '" fill="#64748b" font-size="14">0</text>',
@@ -2271,7 +2407,7 @@
             var best = sessions.length ? Math.max.apply(null, sessions.map(function (s) { return s.score; })) : 0;
             return [
               '<tr>',
-              '<td><strong>' + escapeHTML(student.alias) + '</strong><div class="tiny muted">PIN set</div></td>',
+              '<td><strong>' + escapeHTML(studentFullName(student)) + '</strong><div class="tiny muted">Alias: ' + escapeHTML(student.alias) + '</div></td>',
               '<td>' + studentLoginDetails(klass, student) + '</td>',
               '<td>' + (last ? formatDateTime(last.createdAt) : "No sessions") + '<div class="tiny muted">' + sessions.length + ' sessions</div></td>',
               '<td>' + accuracy + '% avg<div class="tiny muted">Best score ' + best + '</div></td>',
@@ -2300,6 +2436,71 @@
         ].join("");
       }
 
+      function loginCardPrintSheet(klass, students) {
+        if (!students.length) return "";
+        return [
+          '<section class="print-sheet panel section">',
+          '  <h2>Fluency Sprint login cards</h2>',
+          '  <p>Class: ' + escapeHTML(klass.name) + ' | Code: ' + escapeHTML(klass.code) + '</p>',
+          '  <div class="login-card-grid">',
+          students.map(function (student) {
+            return loginCardHTML(klass, student);
+          }).join(""),
+          '  </div>',
+          '</section>'
+        ].join("");
+      }
+
+      function loginCardHTML(klass, student) {
+        var joinUrl = studentJoinUrl(klass, student);
+        return [
+          '<article class="login-card">',
+          '  <div>',
+          '    <h3>' + escapeHTML(studentFullName(student)) + '</h3>',
+          '    <p class="small"><strong>Class code:</strong> ' + escapeHTML(klass.code) + '</p>',
+          '    <p class="small"><strong>Alias:</strong> ' + escapeHTML(student.alias) + '</p>',
+          '    <p class="small"><strong>PIN:</strong> <span class="pin-line"></span></p>',
+          '    <p class="tiny muted">Private login card. Scan the QR code, then enter your PIN.</p>',
+          '  </div>',
+          '  <div class="qr-slot" data-qr="' + escapeHTML(joinUrl) + '"><span class="tiny muted">QR</span></div>',
+          '</article>'
+        ].join("");
+      }
+
+      function studentJoinUrl(klass, student) {
+        var base = window.location.origin + window.location.pathname;
+        return base + "?join=1&classCode=" + encodeURIComponent(klass.code) + "&alias=" + encodeURIComponent(student.alias);
+      }
+
+      function hydrateQRCodes() {
+        var slots = document.querySelectorAll(".qr-slot[data-qr]");
+        slots.forEach(function (slot) {
+          var value = slot.getAttribute("data-qr");
+          if (!value) return;
+          if (!window.qrcode) {
+            slot.innerHTML = '<span class="tiny muted">QR library unavailable</span>';
+            return;
+          }
+          try {
+            var qr = window.qrcode(0, "M");
+            qr.addData(value);
+            qr.make();
+            slot.innerHTML = qr.createSvgTag(4, 1);
+          } catch (error) {
+            slot.innerHTML = '<span class="tiny muted">QR unavailable</span>';
+          }
+        });
+      }
+
+      function printLoginCards() {
+        hydrateQRCodes();
+        document.body.classList.add("printing-cards");
+        window.print();
+        setTimeout(function () {
+          document.body.classList.remove("printing-cards");
+        }, 700);
+      }
+
       function operationSummary(studentId) {
         var sessions = sessionsForStudent(studentId);
         if (!sessions.length) return '<span class="muted">No data yet</span>';
@@ -2321,7 +2522,7 @@
           '  <h3>Recent activity</h3>',
           '  <table><thead><tr><th>Student</th><th>When</th><th>Level</th><th>Score</th><th>Accuracy</th><th>Mistakes</th></tr></thead><tbody>',
           recent.map(function (s) {
-            return '<tr><td>' + escapeHTML(s.studentAlias) + '</td><td>' + formatDateTime(s.createdAt) + '</td><td>' + escapeHTML(s.levelId) + '</td><td>' + s.score + '</td><td>' + s.accuracy + '%</td><td>' + s.mistakes.length + '</td></tr>';
+            return '<tr><td>' + escapeHTML(studentNameForSession(s)) + '<div class="tiny muted">' + escapeHTML(s.studentAlias) + '</div></td><td>' + formatDateTime(s.createdAt) + '</td><td>' + escapeHTML(s.levelId) + '</td><td>' + s.score + '</td><td>' + s.accuracy + '%</td><td>' + s.mistakes.length + '</td></tr>';
           }).join(""),
           '  </tbody></table>',
           '</section>'
@@ -2344,6 +2545,13 @@
         return values.reduce(function (sum, value) { return sum + Number(value || 0); }, 0) / values.length;
       }
 
+      function studentNameForSession(session) {
+        var student = studentsForClass(session.classId).find(function (item) {
+          return item.id === session.studentId;
+        });
+        return student ? studentFullName(student) : session.studentAlias;
+      }
+
       function messageHTML() {
         if (!state.message) return "";
         return '<div class="notice ' + (state.message.indexOf("Error:") === 0 ? "danger" : "success") + '">' + escapeHTML(state.message.replace(/^Error:\s*/, "")) + '</div>';
@@ -2353,9 +2561,9 @@
         var klass = store.classes.find(function (item) { return item.id === classId; });
         var sessions = sessionsForClass(classId);
         var rows = [
-          ["student", "date", "mode", "operation", "level", "attempted", "correct", "accuracy", "best_streak", "time_spent_seconds", "mistakes"]
+          ["student", "alias", "date", "mode", "operation", "level", "attempted", "correct", "accuracy", "best_streak", "time_spent_seconds", "mistakes"]
         ].concat(sessions.map(function (s) {
-          return [s.studentAlias, s.createdAt, s.mode, s.operation, s.levelId, s.attempted, s.correct, s.accuracy, s.bestStreak, s.timeSpent, s.mistakes.length];
+          return [studentNameForSession(s), s.studentAlias, s.createdAt, s.mode, s.operation, s.levelId, s.attempted, s.correct, s.accuracy, s.bestStreak, s.timeSpent, s.mistakes.length];
         }));
         var csv = rows.map(function (row) {
           return row.map(function (cell) {
@@ -2435,11 +2643,13 @@
         if (backendActive() && kind === "add-student") {
           try {
             var remoteClassId = String(data.get("classId") || "");
-            var remoteAlias = String(data.get("alias") || "").trim();
+            var remoteFirstName = String(data.get("firstName") || "").trim();
+            var remoteLastName = String(data.get("lastName") || "").trim();
             var remotePin = String(data.get("pin") || "").trim();
             var addResult = await supabaseClient.rpc("create_student", {
               p_class_id: remoteClassId,
-              p_alias: remoteAlias,
+              p_first_name: remoteFirstName,
+              p_last_name: remoteLastName,
               p_pin: remotePin
             });
             if (addResult.error) throw addResult.error;
@@ -2531,7 +2741,9 @@
 
         if (kind === "add-student") {
           var classId = String(data.get("classId") || "");
-          var alias = String(data.get("alias") || "").trim();
+          var firstName = String(data.get("firstName") || "").trim();
+          var lastName = String(data.get("lastName") || "").trim();
+          var alias = uniqueLocalAlias(classId, firstName, lastName);
           var pin = String(data.get("pin") || "").trim();
           if (pin.length < 4) {
             state.message = "Error: Use a PIN with at least 4 digits.";
@@ -2552,6 +2764,8 @@
             id: studentId,
             classId: classId,
             teacherId: klassForStudent.teacherId,
+            firstName: firstName,
+            lastName: lastName,
             alias: alias,
             pinHash: await hashText("student:" + studentId + ":" + pin),
             createdAt: new Date().toISOString()
@@ -2822,22 +3036,15 @@
         if (action === "delete-class") {
           var classIdDelete = button.getAttribute("data-class");
           if (backendActive()) {
-            if (confirm("Delete this class and hide its students? Saved sessions stay in the teacher history.")) {
+            if (confirm("Remove this class? Student names and aliases will be anonymised. Scores stay in class history.")) {
               try {
-                var deleteTime = new Date().toISOString();
-                var deleteClassResult = await supabaseClient
-                  .from("classes")
-                  .update({ deleted_at: deleteTime })
-                  .eq("id", classIdDelete);
+                var deleteClassResult = await supabaseClient.rpc("delete_class", {
+                  p_class_id: classIdDelete
+                });
                 if (deleteClassResult.error) throw deleteClassResult.error;
-                var deleteStudentsResult = await supabaseClient
-                  .from("students")
-                  .update({ deleted_at: deleteTime })
-                  .eq("class_id", classIdDelete);
-                if (deleteStudentsResult.error) throw deleteStudentsResult.error;
                 state.dashboardClassId = null;
                 await loadRemoteDashboard();
-                state.message = "Class deleted.";
+                state.message = "Class removed and student details anonymised.";
               } catch (error) {
                 state.message = "Error: " + error.message;
               }
@@ -2845,30 +3052,38 @@
             }
             return;
           }
-          if (confirm("Delete this class and hide its students? Saved sessions will remain in the local export data.")) {
+          if (confirm("Remove this class? Student names and aliases will be anonymised. Scores stay in class history.")) {
             var klassDelete = store.classes.find(function (item) { return item.id === classIdDelete; });
             if (klassDelete) klassDelete.deletedAt = new Date().toISOString();
             store.students.forEach(function (student) {
-              if (student.classId === classIdDelete) student.deletedAt = new Date().toISOString();
+              if (student.classId === classIdDelete) {
+                student.firstName = "";
+                student.lastName = "";
+                student.alias = "Deleted student";
+                student.pinHash = "removed";
+                student.deletedAt = new Date().toISOString();
+              }
+            });
+            store.sessions.forEach(function (session) {
+              if (session.classId === classIdDelete) session.studentAlias = "Deleted student";
             });
             state.dashboardClassId = null;
             saveStore();
-            state.message = "Class deleted.";
+            state.message = "Class removed and student details anonymised.";
             render();
           }
         }
         if (action === "delete-student") {
           var studentId = button.getAttribute("data-student");
           if (backendActive()) {
-            if (confirm("Delete this student profile? Their old sessions stay in class history.")) {
+            if (confirm("Remove this student? Their name and alias will be anonymised. Scores stay in class history.")) {
               try {
-                var deleteStudentResult = await supabaseClient
-                  .from("students")
-                  .update({ deleted_at: new Date().toISOString() })
-                  .eq("id", studentId);
+                var deleteStudentResult = await supabaseClient.rpc("delete_student", {
+                  p_student_id: studentId
+                });
                 if (deleteStudentResult.error) throw deleteStudentResult.error;
                 await loadRemoteDashboard();
-                state.message = "Student deleted.";
+                state.message = "Student removed and details anonymised.";
               } catch (error) {
                 state.message = "Error: " + error.message;
               }
@@ -2876,16 +3091,28 @@
             }
             return;
           }
-          if (confirm("Delete this student profile? Their old sessions stay in class history.")) {
+          if (confirm("Remove this student? Their name and alias will be anonymised. Scores stay in class history.")) {
             var studentDelete = store.students.find(function (item) { return item.id === studentId; });
-            if (studentDelete) studentDelete.deletedAt = new Date().toISOString();
+            if (studentDelete) {
+              studentDelete.firstName = "";
+              studentDelete.lastName = "";
+              studentDelete.alias = "Deleted student";
+              studentDelete.pinHash = "removed";
+              studentDelete.deletedAt = new Date().toISOString();
+            }
+            store.sessions.forEach(function (session) {
+              if (session.studentId === studentId) session.studentAlias = "Deleted student";
+            });
             saveStore();
-            state.message = "Student deleted.";
+            state.message = "Student removed and details anonymised.";
             render();
           }
         }
         if (action === "export-csv") {
           exportCSV(button.getAttribute("data-class"));
+        }
+        if (action === "print-login-cards") {
+          printLoginCards();
         }
       }
 
@@ -2935,8 +3162,10 @@
         if (state.view === "results") app.innerHTML = resultsView();
         if (state.view === "review") app.innerHTML = reviewView();
         if (state.view === "dashboard") app.innerHTML = dashboardView();
+        hydrateQRCodes();
       }
 
+      applyInitialRoute();
       render();
       initializeBackend().catch(function (error) {
         state.backendReady = true;

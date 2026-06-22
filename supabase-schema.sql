@@ -25,6 +25,8 @@ create table if not exists public.students (
   id uuid primary key default gen_random_uuid(),
   class_id uuid not null references public.classes(id) on delete cascade,
   teacher_id uuid not null references auth.users(id) on delete cascade,
+  first_name text not null default '',
+  last_name text not null default '',
   alias text not null,
   pin_hash text not null,
   student_token_hash text,
@@ -36,6 +38,12 @@ create table if not exists public.students (
 create unique index if not exists students_class_alias_active_idx
   on public.students (class_id, lower(alias))
   where deleted_at is null;
+
+alter table public.students
+  add column if not exists first_name text not null default '';
+
+alter table public.students
+  add column if not exists last_name text not null default '';
 
 create table if not exists public.sessions (
   id uuid primary key default gen_random_uuid(),
@@ -89,9 +97,17 @@ alter table public.mistakes enable row level security;
 alter table public.audit_log enable row level security;
 
 grant usage on schema public to anon, authenticated;
-grant select, insert, update, delete on public.teacher_profiles to authenticated;
-grant select, insert, update, delete on public.classes to authenticated;
-grant select, insert, update, delete on public.students to authenticated;
+
+revoke all on public.teacher_profiles from anon, authenticated;
+revoke all on public.classes from anon, authenticated;
+revoke all on public.students from anon, authenticated;
+revoke all on public.sessions from anon, authenticated;
+revoke all on public.mistakes from anon, authenticated;
+revoke all on public.audit_log from anon, authenticated;
+
+grant select on public.teacher_profiles to authenticated;
+grant select on public.classes to authenticated;
+grant select on public.students to authenticated;
 grant select on public.sessions to authenticated;
 grant select on public.mistakes to authenticated;
 grant select on public.audit_log to authenticated;
@@ -184,6 +200,40 @@ begin
     end if;
   end loop;
   return code;
+end;
+$$;
+
+create or replace function public.generate_student_alias(p_class_id uuid, p_first_name text, p_last_name text)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  base_alias text;
+  candidate text;
+  suffix integer := 2;
+begin
+  base_alias := trim(upper(left(trim(coalesce(p_first_name, '')), 1)) || ' ' || trim(coalesce(p_last_name, '')));
+
+  if base_alias = '' then
+    base_alias := 'Student';
+  end if;
+
+  candidate := base_alias;
+
+  while exists (
+    select 1
+    from public.students as s
+    where s.class_id = p_class_id
+      and lower(s.alias) = lower(candidate)
+      and s.deleted_at is null
+  ) loop
+    candidate := base_alias || ' ' || suffix;
+    suffix := suffix + 1;
+  end loop;
+
+  return candidate;
 end;
 $$;
 
@@ -280,11 +330,14 @@ end;
 $$;
 
 drop function if exists public.create_student(uuid, text, text);
-create function public.create_student(p_class_id uuid, p_alias text, p_pin text)
+drop function if exists public.create_student(uuid, text, text, text);
+create function public.create_student(p_class_id uuid, p_first_name text, p_last_name text, p_pin text)
 returns table (
   id uuid,
   class_id uuid,
   teacher_id uuid,
+  first_name text,
+  last_name text,
   alias text,
   created_at timestamptz,
   deleted_at timestamptz
@@ -295,6 +348,7 @@ set search_path = public
 as $$
 declare
   owner_id uuid;
+  generated_alias text;
   new_student public.students;
 begin
   if auth.uid() is null then
@@ -313,8 +367,17 @@ begin
     raise exception 'Class not found';
   end if;
 
-  insert into public.students (class_id, teacher_id, alias, pin_hash)
-  values (p_class_id, auth.uid(), trim(p_alias), extensions.crypt(trim(p_pin), extensions.gen_salt('bf')))
+  generated_alias := public.generate_student_alias(p_class_id, p_first_name, p_last_name);
+
+  insert into public.students (class_id, teacher_id, first_name, last_name, alias, pin_hash)
+  values (
+    p_class_id,
+    auth.uid(),
+    trim(p_first_name),
+    trim(p_last_name),
+    generated_alias,
+    extensions.crypt(trim(p_pin), extensions.gen_salt('bf'))
+  )
   returning * into new_student;
 
   insert into public.audit_log (teacher_id, action, details)
@@ -322,6 +385,7 @@ begin
 
   return query
   select new_student.id, new_student.class_id, new_student.teacher_id,
+         new_student.first_name, new_student.last_name,
          new_student.alias, new_student.created_at, new_student.deleted_at;
 end;
 $$;
@@ -488,10 +552,107 @@ begin
 end;
 $$;
 
+create or replace function public.delete_student(p_student_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  target_student public.students;
+  removed_at timestamptz := now();
+begin
+  if auth.uid() is null then
+    raise exception 'Not signed in';
+  end if;
+
+  select s.* into target_student
+  from public.students as s
+  where s.id = p_student_id
+    and s.teacher_id = auth.uid()
+    and s.deleted_at is null;
+
+  if target_student.id is null then
+    raise exception 'Student not found';
+  end if;
+
+  update public.students as s
+  set first_name = '',
+      last_name = '',
+      alias = 'Deleted student',
+      pin_hash = extensions.crypt(encode(extensions.gen_random_bytes(16), 'hex'), extensions.gen_salt('bf')),
+      student_token_hash = null,
+      student_token_expires_at = null,
+      deleted_at = removed_at
+  where s.id = target_student.id;
+
+  update public.sessions as sess
+  set student_alias = 'Deleted student'
+  where sess.student_id = target_student.id
+    and sess.teacher_id = auth.uid();
+
+  insert into public.audit_log (teacher_id, action, details)
+  values (auth.uid(), 'student_deleted_anonymised', jsonb_build_object('student_id', target_student.id, 'class_id', target_student.class_id));
+end;
+$$;
+
+create or replace function public.delete_class(p_class_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  target_class public.classes;
+  removed_at timestamptz := now();
+begin
+  if auth.uid() is null then
+    raise exception 'Not signed in';
+  end if;
+
+  select c.* into target_class
+  from public.classes as c
+  where c.id = p_class_id
+    and c.teacher_id = auth.uid()
+    and c.deleted_at is null;
+
+  if target_class.id is null then
+    raise exception 'Class not found';
+  end if;
+
+  update public.classes as c
+  set deleted_at = removed_at
+  where c.id = target_class.id;
+
+  update public.students as s
+  set first_name = '',
+      last_name = '',
+      alias = 'Deleted student',
+      pin_hash = extensions.crypt(encode(extensions.gen_random_bytes(16), 'hex'), extensions.gen_salt('bf')),
+      student_token_hash = null,
+      student_token_expires_at = null,
+      deleted_at = removed_at
+  where s.class_id = target_class.id
+    and s.teacher_id = auth.uid()
+    and s.deleted_at is null;
+
+  update public.sessions as sess
+  set student_alias = 'Deleted student'
+  where sess.class_id = target_class.id
+    and sess.teacher_id = auth.uid();
+
+  insert into public.audit_log (teacher_id, action, details)
+  values (auth.uid(), 'class_deleted_anonymised', jsonb_build_object('class_id', target_class.id));
+end;
+$$;
+
 grant execute on function public.ensure_teacher_profile(text) to authenticated;
 grant execute on function public.create_class(text) to authenticated;
 grant execute on function public.rotate_class_code(uuid) to authenticated;
-grant execute on function public.create_student(uuid, text, text) to authenticated;
+grant execute on function public.generate_student_alias(uuid, text, text) to authenticated;
+grant execute on function public.create_student(uuid, text, text, text) to authenticated;
 grant execute on function public.reset_student_pin(uuid, text) to authenticated;
+grant execute on function public.delete_student(uuid) to authenticated;
+grant execute on function public.delete_class(uuid) to authenticated;
 grant execute on function public.join_student(text, text, text) to anon, authenticated;
 grant execute on function public.submit_student_session(uuid, text, text, text, text, text, text[], integer, integer, integer, integer, integer, integer, jsonb) to anon, authenticated;
