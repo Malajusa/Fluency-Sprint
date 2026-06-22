@@ -901,6 +901,7 @@
           email: email,
           password: password,
           options: {
+            emailRedirectTo: appPublicUrl(),
             data: {
               display_name: displayName || "Teacher"
             }
@@ -921,6 +922,10 @@
           await loadRemoteDashboard();
         }
         return { needsConfirmation: false };
+      }
+
+      function appPublicUrl() {
+        return window.location.origin + window.location.pathname;
       }
 
       async function remoteLogout() {
