@@ -1634,7 +1634,7 @@
           '  <section class="between">',
           '    <div>',
           '      <h2>Teacher access</h2>',
-          '      <p class="muted">This local version stores teacher login details in this browser only. Production should use managed authentication.</p>',
+          '      <p class="muted">' + (supabaseClient ? "Teacher login uses Supabase Auth. Student accounts use alias and PIN." : "This local version stores teacher login details in this browser only. Production should use managed authentication.") + '</p>',
           '    </div>',
           '    <button class="btn ghost" data-action="home">Home</button>',
           '  </section>',
@@ -2263,7 +2263,7 @@
         return [
           '<section class="panel section stack">',
           '  <h3>Students</h3>',
-          '  <table><thead><tr><th>Student</th><th>Participation</th><th>Results</th><th>Operation strengths</th><th></th></tr></thead><tbody>',
+          '  <table><thead><tr><th>Student</th><th>Login details</th><th>Participation</th><th>Results</th><th>Operation strengths</th><th></th></tr></thead><tbody>',
           students.map(function (student) {
             var sessions = sessionsForStudent(student.id);
             var last = sessions.length ? sessions.slice().sort(function (a, b) { return new Date(b.createdAt) - new Date(a.createdAt); })[0] : null;
@@ -2272,6 +2272,7 @@
             return [
               '<tr>',
               '<td><strong>' + escapeHTML(student.alias) + '</strong><div class="tiny muted">PIN set</div></td>',
+              '<td>' + studentLoginDetails(klass, student) + '</td>',
               '<td>' + (last ? formatDateTime(last.createdAt) : "No sessions") + '<div class="tiny muted">' + sessions.length + ' sessions</div></td>',
               '<td>' + accuracy + '% avg<div class="tiny muted">Best score ' + best + '</div></td>',
               '<td>' + operationSummary(student.id) + '</td>',
@@ -2281,6 +2282,21 @@
           }).join(""),
           '  </tbody></table>',
           '</section>'
+        ].join("");
+      }
+
+      function studentLoginDetails(klass, student) {
+        return [
+          '<div class="stack" style="gap:0.45rem">',
+          '  <div><strong>Code:</strong> ' + escapeHTML(klass.code) + '</div>',
+          '  <div><strong>Alias:</strong> ' + escapeHTML(student.alias) + '</div>',
+          '  <form class="row" style="gap:0.35rem" data-form="reset-student-pin">',
+          '    <input type="hidden" name="studentId" value="' + escapeHTML(student.id) + '">',
+          '    <input name="pin" inputmode="numeric" type="text" minlength="4" placeholder="New PIN" aria-label="New PIN for ' + escapeHTML(student.alias) + '">',
+          '    <button class="btn ghost" type="submit">Set PIN</button>',
+          '  </form>',
+          '  <div class="tiny muted">PINs are hidden after saving. Reset if a student forgets.</div>',
+          '</div>'
         ].join("");
       }
 
@@ -2428,7 +2444,24 @@
             });
             if (addResult.error) throw addResult.error;
             await loadRemoteDashboard();
-            state.message = "Student added.";
+            state.message = "Student added. Give them the class code, their alias, and the PIN you set.";
+          } catch (error) {
+            state.message = "Error: " + error.message;
+          }
+          render();
+          return;
+        }
+        if (backendActive() && kind === "reset-student-pin") {
+          try {
+            var resetStudentId = String(data.get("studentId") || "");
+            var resetPin = String(data.get("pin") || "").trim();
+            var resetResult = await supabaseClient.rpc("reset_student_pin", {
+              p_student_id: resetStudentId,
+              p_new_pin: resetPin
+            });
+            if (resetResult.error) throw resetResult.error;
+            await loadRemoteDashboard();
+            state.message = "Student PIN updated.";
           } catch (error) {
             state.message = "Error: " + error.message;
           }
@@ -2525,7 +2558,28 @@
           };
           store.students.push(student);
           saveStore();
-          state.message = "Student added.";
+          state.message = "Student added. Give them the class code, their alias, and the PIN you set.";
+          render();
+          return;
+        }
+
+        if (kind === "reset-student-pin") {
+          var resetLocalStudentId = String(data.get("studentId") || "");
+          var resetLocalPin = String(data.get("pin") || "").trim();
+          if (resetLocalPin.length < 4) {
+            state.message = "Error: Use a PIN with at least 4 digits.";
+            render();
+            return;
+          }
+          var resetLocalStudent = store.students.find(function (student) { return student.id === resetLocalStudentId; });
+          if (!resetLocalStudent) {
+            state.message = "Error: Student not found.";
+            render();
+            return;
+          }
+          resetLocalStudent.pinHash = await hashText("student:" + resetLocalStudent.id + ":" + resetLocalPin);
+          saveStore();
+          state.message = "Student PIN updated.";
           render();
           return;
         }

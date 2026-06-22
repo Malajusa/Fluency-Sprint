@@ -1,7 +1,8 @@
 -- Fluency Sprint Supabase setup
 -- Paste this into Supabase SQL Editor and run it once.
 
-create extension if not exists pgcrypto;
+create schema if not exists extensions;
+create extension if not exists pgcrypto with schema extensions;
 
 create table if not exists public.teacher_profiles (
   id uuid primary key references auth.users(id) on delete cascade,
@@ -309,7 +310,7 @@ begin
   end if;
 
   insert into public.students (class_id, teacher_id, alias, pin_hash)
-  values (p_class_id, auth.uid(), trim(p_alias), crypt(trim(p_pin), gen_salt('bf')))
+  values (p_class_id, auth.uid(), trim(p_alias), extensions.crypt(trim(p_pin), extensions.gen_salt('bf')))
   returning * into new_student;
 
   insert into public.audit_log (teacher_id, action, details)
@@ -346,14 +347,14 @@ begin
     and s.deleted_at is null
   limit 1;
 
-  if student.id is null or student.pin_hash <> crypt(trim(p_pin), student.pin_hash) then
+  if student.id is null or student.pin_hash <> extensions.crypt(trim(p_pin), student.pin_hash) then
     raise exception 'Class code, alias, or PIN did not match';
   end if;
 
-  token := encode(gen_random_bytes(32), 'hex');
+  token := encode(extensions.gen_random_bytes(32), 'hex');
 
   update public.students
-  set student_token_hash = encode(digest(token, 'sha256'), 'hex'),
+  set student_token_hash = encode(extensions.digest(token, 'sha256'), 'hex'),
       student_token_expires_at = now() + interval '8 hours'
   where id = student.id;
 
@@ -392,7 +393,7 @@ begin
   from public.students
   where id = p_student_id
     and deleted_at is null
-    and student_token_hash = encode(digest(p_access_token, 'sha256'), 'hex')
+    and student_token_hash = encode(extensions.digest(p_access_token, 'sha256'), 'hex')
     and student_token_expires_at > now();
 
   if student.id is null then
@@ -437,9 +438,56 @@ begin
 end;
 $$;
 
+create or replace function public.reset_student_pin(p_student_id uuid, p_new_pin text)
+returns table (
+  id uuid,
+  class_id uuid,
+  teacher_id uuid,
+  alias text,
+  created_at timestamptz,
+  deleted_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  updated_student public.students;
+begin
+  if auth.uid() is null then
+    raise exception 'Not signed in';
+  end if;
+
+  if length(trim(p_new_pin)) < 4 then
+    raise exception 'PIN must be at least 4 characters';
+  end if;
+
+  update public.students
+  set pin_hash = extensions.crypt(trim(p_new_pin), extensions.gen_salt('bf')),
+      student_token_hash = null,
+      student_token_expires_at = null
+  where id = p_student_id
+    and teacher_id = auth.uid()
+    and deleted_at is null
+  returning * into updated_student;
+
+  if updated_student.id is null then
+    raise exception 'Student not found';
+  end if;
+
+  insert into public.audit_log (teacher_id, action, details)
+  values (auth.uid(), 'student_pin_reset', jsonb_build_object('student_id', updated_student.id, 'class_id', updated_student.class_id));
+
+  return query
+  select updated_student.id, updated_student.class_id, updated_student.teacher_id,
+         updated_student.alias, updated_student.created_at, updated_student.deleted_at;
+end;
+$$;
+
 grant execute on function public.ensure_teacher_profile(text) to authenticated;
 grant execute on function public.create_class(text) to authenticated;
 grant execute on function public.rotate_class_code(uuid) to authenticated;
 grant execute on function public.create_student(uuid, text, text) to authenticated;
+grant execute on function public.reset_student_pin(uuid, text) to authenticated;
 grant execute on function public.join_student(text, text, text) to anon, authenticated;
 grant execute on function public.submit_student_session(uuid, text, text, text, text, text, text[], integer, integer, integer, integer, integer, integer, jsonb) to anon, authenticated;
