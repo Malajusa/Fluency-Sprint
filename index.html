@@ -1761,9 +1761,21 @@
           previewSession(students[1], 16, "practice", "S2", 16, 10, 4, "10 - 6", "5", 4),
           previewSession(students[1], 9, "sprint", "S5", 20, 15, 5, "20 - 5", "10", 15),
           previewSession(students[1], 2, "sprint", "M2", 26, 21, 8, "5 x 7", "30", 35),
+          previewSession(students[1], 5, "sprint", "M7", 30, 22, 7, "7 x 6", "40", 42, {
+            levelName: "Chosen tables: 6s and 7s",
+            tags: ["multiplication", "customTables", "times6", "times7"]
+          }),
           previewSession(students[2], 20, "sprint", "M1", 18, 12, 4, "2 x 8", "14", 16),
           previewSession(students[2], 13, "practice", "M2", 18, 14, 5, "5 x 9", "40", 45),
+          previewSession(students[2], 6, "sprint", "M7", 34, 27, 9, "0 x 8", "8", 0, {
+            levelName: "All multiplication facts (0-12)",
+            tags: ["multiplication", "customTables", "allMultiplication", "zeroFacts", "times2", "times3", "times4", "times5", "times6", "times7", "times8", "times9", "times10", "times11", "times12"]
+          }),
           previewSession(students[2], 3, "sprint", "D2", 24, 19, 7, "35 / 5", "6", 7),
+          previewSession(students[3], 8, "practice", "D6", 22, 16, 5, "42 / 6", "8", 7, {
+            levelName: "Division facts: 6s",
+            tags: ["division", "customTables", "times6", "reverseDivision"]
+          }),
           previewSession(students[3], 28, "practice", "A1", 12, 9, 3, "4 + 5", "8", 9),
           previewSession(students[3], 15, "sprint", "X2", 18, 13, 4, "10 - ? = 4", "5", 6)
         ];
@@ -1790,8 +1802,10 @@
         };
       }
 
-      function previewSession(student, daysBack, mode, levelId, attempted, correct, bestStreak, missedQuestion, studentAnswer, correctAnswer) {
+      function previewSession(student, daysBack, mode, levelId, attempted, correct, bestStreak, missedQuestion, studentAnswer, correctAnswer, options) {
         var level = levelById(levelId);
+        var settings = options || {};
+        var tags = settings.tags || level.tags;
         var accuracy = attempted ? Math.round((correct / attempted) * 100) : 0;
         return {
           id: uid("preview_session"),
@@ -1801,10 +1815,10 @@
           teacherId: student.teacherId,
           createdAt: previewDate(daysBack),
           mode: mode,
-          operation: level.operation,
+          operation: settings.operation || level.operation,
           levelId: level.id,
-          levelName: level.name,
-          tags: level.tags,
+          levelName: settings.levelName || level.name,
+          tags: tags,
           attempted: attempted,
           correct: correct,
           accuracy: accuracy,
@@ -1815,10 +1829,10 @@
             question: missedQuestion,
             studentAnswer: String(studentAnswer),
             correctAnswer: correctAnswer,
-            operation: level.operation,
+            operation: settings.operation || level.operation,
             levelId: level.id,
             recovered: false,
-            tags: level.tags
+            tags: tags
           }]
         };
       }
@@ -2808,6 +2822,8 @@
           missing: "Missing number",
           bridge: "Bridge to 10",
           customTables: "Chosen tables",
+          allMultiplication: "All multiplication",
+          zeroFacts: "0x facts",
           reverseDivision: "Reverse division",
           times5: "5-times facts",
           times10: "10-times facts",
@@ -3713,6 +3729,16 @@
         });
       }
 
+      function sessionMatchesTable(session, table) {
+        return sessionHasTag(session, "times" + table) || sessionHasTag(session, "divide" + table);
+      }
+
+      function sessionsForStudentTable(studentId, table, operation) {
+        return sessionsForStudent(studentId).filter(function (session) {
+          return sessionMatchesOperation(session, operation) && sessionMatchesTable(session, table);
+        });
+      }
+
       function proficiencyForSessions(sessions) {
         if (!sessions.length) return { label: "No data", className: "none", sessions: 0, accuracy: null };
         var accuracy = Math.round(avg(sessions.map(function (session) { return session.accuracy; })));
@@ -3725,19 +3751,26 @@
         return '<span class="proficiency ' + profile.className + '">' + escapeHTML(profile.label) + '</span>';
       }
 
-      function tableProfileForStudent(studentId, table) {
-        return proficiencyForSessions(sessionsWithTag(sessionsForStudent(studentId), "times" + table));
+      function tableProfileForStudent(studentId, table, operation) {
+        return proficiencyForSessions(sessionsForStudentTable(studentId, table, operation));
       }
 
       function timesTableClassProfile(students) {
         if (!students.length) return "";
         return [
+          operationTableClassProfile(students, "multiplication", "Multiplication table profile", "Class evidence by selected multiplication table."),
+          operationTableClassProfile(students, "division", "Division table profile", "Class evidence by selected division table and reverse division facts.")
+        ].join("");
+      }
+
+      function operationTableClassProfile(students, operation, title, intro) {
+        return [
           '<section class="panel section stack">',
-          '  <div><h3>Times table profile</h3><p class="muted">Class evidence by table from tagged multiplication sessions.</p></div>',
+          '  <div><h3>' + escapeHTML(title) + '</h3><p class="muted">' + escapeHTML(intro) + '</p></div>',
           '  <table><thead><tr><th>Table</th><th>Secure</th><th>Building</th><th>Focus</th><th>No data</th><th>Average</th></tr></thead><tbody>',
           TIMES_TABLES.map(function (table) {
             var profiles = students.map(function (student) {
-              return tableProfileForStudent(student.id, table);
+              return tableProfileForStudent(student.id, table, operation);
             });
             var withAccuracy = profiles.filter(function (profile) { return profile.accuracy != null; });
             var average = withAccuracy.length ? Math.round(avg(withAccuracy.map(function (profile) { return profile.accuracy; }))) + "%" : "--";
@@ -3759,11 +3792,18 @@
 
       function timesTableStudentProfile(student) {
         return [
+          operationTableStudentProfile(student, "multiplication", "Multiplication tables", "Multiplication evidence by selected table for " + student.alias + "."),
+          operationTableStudentProfile(student, "division", "Division tables", "Division evidence by selected table for " + student.alias + ".")
+        ].join("");
+      }
+
+      function operationTableStudentProfile(student, operation, title, intro) {
+        return [
           '<section class="panel section stack">',
-          '  <div><h3>Times table profile</h3><p class="muted">Evidence by table for ' + escapeHTML(student.alias) + '.</p></div>',
+          '  <div><h3>' + escapeHTML(title) + '</h3><p class="muted">' + escapeHTML(intro) + '</p></div>',
           '  <table><thead><tr><th>Table</th><th>Proficiency</th><th>Sessions</th><th>Average accuracy</th></tr></thead><tbody>',
           TIMES_TABLES.map(function (table) {
-            var profile = tableProfileForStudent(student.id, table);
+            var profile = tableProfileForStudent(student.id, table, operation);
             return [
               '<tr>',
               '<td><strong>' + table + 's</strong></td>',
@@ -3959,6 +3999,8 @@
           tagOption("ending5", "Facts ending in 5"),
           tagOption("times5", "5-times-table facts"),
           tagOption("customTables", "Chosen times tables"),
+          tagOption("allMultiplication", "All multiplication 0-12"),
+          tagOption("zeroFacts", "0x facts"),
           tagOption("reverseDivision", "Reverse division facts"),
           TIMES_TABLES.map(function (table) { return tagOption("times" + table, table + "-times facts"); }).join(""),
           '      </select>',
