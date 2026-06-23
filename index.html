@@ -117,6 +117,7 @@
 
     button {
       cursor: pointer;
+      touch-action: manipulation;
     }
 
     button:disabled {
@@ -261,6 +262,7 @@
       color: var(--ink);
       text-align: left;
       transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+      touch-action: manipulation;
     }
 
     .tile:hover,
@@ -327,7 +329,7 @@
     }
 
     .btn {
-      min-height: 2.6rem;
+      min-height: 2.75rem;
       border: 2px solid transparent;
       border-radius: 8px;
       padding: 0.65rem 0.95rem;
@@ -433,6 +435,8 @@
       color: var(--ink);
       padding: 0.55rem 0.85rem;
       font-weight: 900;
+      min-height: 2.75rem;
+      touch-action: manipulation;
     }
 
     .tab.active {
@@ -509,7 +513,7 @@
     }
 
     .check-choice {
-      min-height: 3.1rem;
+      min-height: 3.25rem;
       border: 2px solid var(--line);
       border-radius: var(--radius);
       background: white;
@@ -522,11 +526,12 @@
       cursor: pointer;
       user-select: none;
       -webkit-user-select: none;
+      touch-action: manipulation;
     }
 
     .check-choice input {
-      width: 1.1rem;
-      min-height: 1.1rem;
+      width: 1.25rem;
+      min-height: 1.25rem;
       accent-color: var(--teal);
       flex: 0 0 auto;
     }
@@ -553,7 +558,7 @@
     select,
     textarea {
       width: 100%;
-      min-height: 2.75rem;
+      min-height: 3rem;
       border: 2px solid var(--line);
       border-radius: 8px;
       background: white;
@@ -608,6 +613,7 @@
       border-radius: var(--radius);
       padding: 0.85rem;
       text-align: left;
+      touch-action: manipulation;
     }
 
     .level.active {
@@ -669,6 +675,45 @@
       touch-action: manipulation;
       user-select: none;
       -webkit-user-select: none;
+    }
+
+    .student-shell {
+      padding-top: 0.75rem;
+    }
+
+    .student-join-card {
+      max-width: 44rem;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .student-menu-panel {
+      gap: 1.15rem;
+    }
+
+    .action-row .btn {
+      flex: 1 1 13rem;
+    }
+
+    .session-shell {
+      padding-bottom: 1.25rem;
+    }
+
+    .session-practice {
+      align-items: stretch;
+    }
+
+    .session-practice .question,
+    .keypad-panel {
+      height: 100%;
+    }
+
+    .keypad-panel {
+      justify-content: start;
+    }
+
+    .result-actions .tile {
+      min-height: 8.5rem;
     }
 
     .key.enter {
@@ -897,6 +942,116 @@
       }
     }
 
+    @media (min-width: 768px) and (max-width: 1180px) {
+      .shell {
+        width: min(100% - 1.5rem, 1040px);
+        padding: 0.75rem 0 2rem;
+      }
+
+      .topbar {
+        padding: 0.75rem 1rem;
+      }
+
+      .tile {
+        min-height: 8.5rem;
+        padding: 1rem;
+      }
+
+      .btn,
+      .tab {
+        min-height: 3rem;
+        padding: 0.7rem 0.95rem;
+      }
+
+      .tabs {
+        gap: 0.6rem;
+      }
+
+      .level-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .level {
+        min-height: 5.1rem;
+        padding: 0.85rem;
+      }
+
+      .table-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.65rem;
+      }
+
+      .check-choice {
+        min-height: 3.5rem;
+        padding: 0.7rem 0.85rem;
+        font-size: 1.02rem;
+      }
+
+      .session-stats {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.55rem;
+      }
+
+      .session-stats .stat {
+        padding: 0.65rem;
+      }
+
+      .session-stats .stat strong {
+        font-size: 1.25rem;
+      }
+
+      .session-practice {
+        gap: 0.75rem;
+      }
+
+      .session-practice .question {
+        padding: 1rem;
+      }
+
+      .question-text {
+        font-size: clamp(3.2rem, 9vw, 5.6rem);
+        margin: 0.65rem 0;
+      }
+
+      .answer-input {
+        min-height: 4.5rem;
+        max-width: 16rem;
+      }
+
+      .keypad-panel {
+        padding: 0.8rem;
+        gap: 0.65rem;
+      }
+
+      .keypad {
+        gap: 0.55rem;
+      }
+
+      .key {
+        min-height: 4.35rem;
+        font-size: 1.45rem;
+      }
+
+      body[data-keypad-size="large"] .key {
+        min-height: 4.8rem;
+      }
+    }
+
+    @media (min-width: 861px) and (max-width: 1180px) and (orientation: landscape) {
+      .practice-layout {
+        grid-template-columns: minmax(0, 1fr) minmax(15rem, 19rem);
+      }
+
+      .session-shell h2 {
+        font-size: clamp(1.6rem, 3vw, 2.3rem);
+      }
+
+      .keypad-panel h3,
+      .keypad-panel .notice {
+        display: none;
+      }
+    }
+
     @media (max-width: 520px) {
       .shell {
         width: min(100% - 1rem, 1180px);
@@ -917,6 +1072,171 @@
 
       .question-text {
         font-size: 3.3rem;
+      }
+    }
+
+    @media (max-width: 860px) {
+      .shell {
+        width: min(100% - 1rem, 1180px);
+        padding: 0.5rem 0 1.5rem;
+      }
+
+      .topbar {
+        gap: 0.65rem;
+        padding: 0.75rem;
+      }
+
+      .brand {
+        font-size: 1rem;
+      }
+
+      .brand-mark {
+        width: 2rem;
+        height: 2rem;
+      }
+
+      .toolbar {
+        gap: 0.4rem;
+      }
+
+      .toolbar .btn,
+      .toolbar .pill {
+        min-height: 2.55rem;
+        padding: 0.55rem 0.7rem;
+      }
+
+      .btn,
+      .tab {
+        min-height: 3rem;
+      }
+
+      .tabs .tab {
+        flex: 1 1 10rem;
+      }
+
+      .tile {
+        min-height: 7.5rem;
+        padding: 1rem;
+      }
+
+      .level-list {
+        gap: 0.6rem;
+      }
+
+      .level {
+        min-height: 4.9rem;
+      }
+
+      .table-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .check-choice {
+        min-height: 3.55rem;
+        font-size: 1.02rem;
+      }
+
+      .session-shell {
+        padding-top: 0.25rem;
+      }
+
+      .session-shell h2 {
+        font-size: clamp(1.45rem, 5vw, 2.1rem);
+      }
+
+      .session-shell .between {
+        gap: 0.55rem;
+      }
+
+      .session-stats {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.45rem;
+      }
+
+      .session-stats .stat {
+        padding: 0.55rem 0.35rem;
+        text-align: center;
+      }
+
+      .session-stats .stat strong {
+        font-size: 1.15rem;
+      }
+
+      .session-practice {
+        gap: 0.65rem;
+      }
+
+      .session-practice .question {
+        padding: 0.85rem;
+      }
+
+      .question-text {
+        font-size: clamp(3.1rem, 14vw, 6rem);
+        margin: 0.45rem 0;
+      }
+
+      .answer-input {
+        min-height: 4.4rem;
+        max-width: min(100%, 18rem);
+      }
+
+      .keypad-panel {
+        padding: 0.7rem;
+      }
+
+      .keypad-panel h3,
+      .keypad-panel .notice {
+        display: none;
+      }
+
+      .keypad {
+        gap: 0.5rem;
+      }
+
+      .key {
+        min-height: clamp(3.65rem, 10vw, 4.8rem);
+      }
+
+      .result-actions .tile {
+        min-height: 7rem;
+      }
+
+      table {
+        display: block;
+        overflow-x: auto;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .topbar {
+        align-items: stretch;
+      }
+
+      .toolbar {
+        width: 100%;
+      }
+
+      .toolbar .btn {
+        flex: 1 1 auto;
+      }
+
+      .table-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .session-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .key {
+        min-height: 3.55rem;
+      }
+    }
+
+    @media (hover: none) {
+      .tile:hover {
+        transform: none;
+        box-shadow: none;
       }
     }
 
@@ -2131,7 +2451,7 @@
         return [
           '<div class="page">',
           header(),
-          '<main class="shell stack">',
+          '<main class="shell stack student-shell">',
           '  <section class="between">',
           '    <div>',
           '      <h2>Preview map</h2>',
@@ -2258,7 +2578,7 @@
         return [
           '<div class="page">',
           header(),
-          '<main class="shell stack">',
+          '<main class="shell stack student-shell">',
           '  <section class="between">',
           '    <div>',
           '      <h2>Student practice</h2>',
@@ -2267,7 +2587,7 @@
           '    <button class="btn ghost" data-action="home">Home</button>',
           '  </section>',
           messageHTML(),
-          '  <form class="panel section stack" data-form="student-join">',
+          '  <form class="panel section stack student-join-card" data-form="student-join">',
           '    <label>Class code<input name="code" type="text" placeholder="ABC-123-XYZ" value="' + escapeHTML(defaultClassCode) + '" required></label>',
           '    <label>Your alias<input name="alias" type="text" placeholder="M Smith" value="' + escapeHTML(defaultAlias) + '" required></label>',
           '    <label>PIN<input name="pin" inputmode="numeric" type="password" placeholder="4 or more digits" value="' + (state.previewMode ? "1234" : "") + '" required></label>',
@@ -2286,7 +2606,7 @@
         return [
           '<div class="page">',
           header(),
-          '<main class="shell stack">',
+          '<main class="shell stack student-shell">',
           '  <section class="between">',
           '    <div>',
           '      <h2>Choose your sprint</h2>',
@@ -2295,7 +2615,7 @@
           '    <button class="btn ghost" data-action="home">Home</button>',
           '  </section>',
           messageHTML(),
-          '  <section class="panel section stack">',
+          '  <section class="panel section stack student-menu-panel">',
           '    <div class="between">',
           '      <h3>Mode</h3>',
           '      <div class="tabs">',
@@ -2312,7 +2632,7 @@
           '      <div class="level-list">' + levels.map(levelButton).join("") + '</div>',
           '    </div>',
           customMultiplicationPanel(),
-          '    <div class="row">',
+          '    <div class="row action-row">',
           '      <button class="btn primary" data-action="begin-session" data-mode="practice">Practice</button>',
           '      <button class="btn gold" data-action="begin-session" data-mode="sprint">100-second sprint</button>',
           '    </div>',
@@ -2594,7 +2914,7 @@
         return [
           '<div class="page">',
           header(),
-          '<main class="shell stack">',
+          '<main class="shell stack session-shell">',
           '  <section class="between">',
           '    <div>',
           '      <h2>' + (active.mode === "sprint" ? "100-second sprint" : "Practice mode") + '</h2>',
@@ -2605,20 +2925,20 @@
           '      <button class="btn ghost" data-action="finish-session">Finish</button>',
           '    </div>',
           '  </section>',
-          '  <section class="stats">',
+          '  <section class="stats session-stats">',
           statHTML("Correct", active.correct),
           statHTML("Attempts", active.attempted),
           statHTML("Accuracy", accuracy + "%"),
           statHTML("Streak", active.streak),
           '  </section>',
-          '  <section class="practice-layout">',
+          '  <section class="practice-layout session-practice">',
           '    <form class="panel question stack" data-form="answer">',
           '      <div class="pill" style="margin: 0 auto">' + escapeHTML(operationLabel(active.question.operation)) + '</div>',
           '      <div class="question-text">' + escapeHTML(active.question.text) + '</div>',
           '      <input id="answerInput" class="answer-input" name="answer" inputmode="numeric" enterkeyhint="done" pattern="[0-9-]*" autocomplete="off" spellcheck="false" value="' + escapeHTML(active.input) + '" aria-label="Answer">',
           active.feedback ? '<div class="notice ' + (active.feedback.indexOf("Correct") === 0 ? "success" : "danger") + '">' + escapeHTML(active.feedback) + '</div>' : '',
           '    </form>',
-          '    <aside class="panel section stack">',
+          '    <aside class="panel section stack keypad-panel">',
           '      <h3>Keypad</h3>',
           '      <div class="keypad">' + keypadHTML() + '</div>',
           '      <div class="notice tiny">Keyboard input works too. Incorrect answers get one retry.</div>',
@@ -2855,7 +3175,7 @@
         return [
           '<div class="page">',
           header(),
-          '<main class="shell stack">',
+          '<main class="shell stack student-shell results-shell">',
           '  <section class="between">',
           '    <div>',
           '      <h2>Results</h2>',
@@ -2871,7 +3191,7 @@
           '  </section>',
           r.saveError ? '<div class="notice danger">Could not save to Supabase: ' + escapeHTML(r.saveError) + '</div>' : '',
           r.synced ? '<div class="notice success">Saved to teacher dashboard.</div>' : '',
-          '  <section class="grid two">',
+          '  <section class="grid two result-actions">',
           '    <button class="tile" data-action="retry-level"><span class="iconbox">R</span><h3>Try again</h3><p class="muted">Repeat the same level.</p></button>',
           '    <button class="tile" data-action="review-mistakes" ' + (r.mistakes.length ? "" : "disabled") + '><span class="iconbox">?</span><h3>Review mistakes</h3><p class="muted">' + r.mistakes.length + ' items to revisit.</p></button>',
           '  </section>',
@@ -2904,12 +3224,12 @@
         return [
           '<div class="page">',
           header(),
-          '<main class="shell stack">',
+          '<main class="shell stack student-shell review-shell">',
           '  <section class="between">',
           '    <div><h2>Review mistakes</h2><p class="muted">Question ' + (index + 1) + ' of ' + r.mistakes.length + '</p></div>',
           '    <button class="btn ghost" data-action="back-to-results">Results</button>',
           '  </section>',
-          '  <section class="panel question stack">',
+          '  <section class="panel question stack review-card">',
           '    <div class="question-text">' + escapeHTML(item.question) + '</div>',
           '    <div class="notice">Correct answer: <strong>' + escapeHTML(item.correctAnswer) + '</strong></div>',
           '    <div class="row" style="justify-content:center">',
