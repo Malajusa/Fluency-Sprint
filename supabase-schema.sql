@@ -506,6 +506,109 @@ begin
 end;
 $$;
 
+create or replace function public.student_session_history(
+  p_student_id uuid,
+  p_access_token text
+)
+returns table (
+  id uuid,
+  class_id uuid,
+  student_id uuid,
+  teacher_id uuid,
+  student_alias text,
+  mode text,
+  operation text,
+  level_id text,
+  level_name text,
+  tags text[],
+  attempted integer,
+  correct integer,
+  accuracy integer,
+  best_streak integer,
+  time_spent integer,
+  score integer,
+  created_at timestamptz,
+  mistakes jsonb
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  student public.students;
+begin
+  select s.* into student
+  from public.students as s
+  where s.id = p_student_id
+    and s.deleted_at is null
+    and s.student_token_hash = encode(extensions.digest(p_access_token, 'sha256'), 'hex')
+    and s.student_token_expires_at > now();
+
+  if student.id is null then
+    raise exception 'Student session expired or invalid';
+  end if;
+
+  return query
+  select
+    sess.id,
+    sess.class_id,
+    sess.student_id,
+    sess.teacher_id,
+    sess.student_alias,
+    sess.mode,
+    sess.operation,
+    sess.level_id,
+    sess.level_name,
+    sess.tags,
+    sess.attempted,
+    sess.correct,
+    sess.accuracy,
+    sess.best_streak,
+    sess.time_spent,
+    sess.score,
+    sess.created_at,
+    coalesce(
+      jsonb_agg(
+        jsonb_build_object(
+          'question', m.question,
+          'student_answer', m.student_answer,
+          'correct_answer', m.correct_answer,
+          'operation', m.operation,
+          'level_id', m.level_id,
+          'tags', m.tags,
+          'recovered', m.recovered
+        )
+        order by m.created_at
+      ) filter (where m.id is not null),
+      '[]'::jsonb
+    ) as mistakes
+  from public.sessions as sess
+  left join public.mistakes as m on m.session_id = sess.id
+  where sess.student_id = student.id
+    and sess.class_id = student.class_id
+  group by
+    sess.id,
+    sess.class_id,
+    sess.student_id,
+    sess.teacher_id,
+    sess.student_alias,
+    sess.mode,
+    sess.operation,
+    sess.level_id,
+    sess.level_name,
+    sess.tags,
+    sess.attempted,
+    sess.correct,
+    sess.accuracy,
+    sess.best_streak,
+    sess.time_spent,
+    sess.score,
+    sess.created_at
+  order by sess.created_at desc
+  limit 200;
+end;
+$$;
+
 create or replace function public.reset_student_pin(p_student_id uuid, p_new_pin text)
 returns table (
   id uuid,
@@ -656,3 +759,4 @@ grant execute on function public.delete_student(uuid) to authenticated;
 grant execute on function public.delete_class(uuid) to authenticated;
 grant execute on function public.join_student(text, text, text) to anon, authenticated;
 grant execute on function public.submit_student_session(uuid, text, text, text, text, text, text[], integer, integer, integer, integer, integer, integer, jsonb) to anon, authenticated;
+grant execute on function public.student_session_history(uuid, text) to anon, authenticated;

@@ -791,6 +791,8 @@
         dashboardClassId: store.lastClassId || null,
         dashboardOperation: "all",
         dashboardTag: "all",
+        dashboardStudentId: null,
+        dashboardLevelId: null,
         authMode: "login",
         student: null,
         active: null,
@@ -804,6 +806,7 @@
         remoteClasses: [],
         remoteStudents: [],
         remoteSessions: [],
+        studentHistoryError: "",
         prefillClassCode: "",
         prefillAlias: ""
       };
@@ -971,6 +974,23 @@
         state.remoteSessions = (sessionsResult.data || []).map(normalizeSession);
       }
 
+      async function loadRemoteStudentHistory() {
+        if (!backendActive() || !state.student || !state.student.accessToken) return;
+        state.studentHistoryError = "";
+        var result = await supabaseClient.rpc("student_session_history", {
+          p_student_id: state.student.id,
+          p_access_token: state.student.accessToken
+        });
+        if (result.error) {
+          state.studentHistoryError = result.error.message;
+          return;
+        }
+        var studentSessions = (result.data || []).map(normalizeSession);
+        state.remoteSessions = state.remoteSessions.filter(function (session) {
+          return session.studentId !== state.student.id;
+        }).concat(studentSessions);
+      }
+
       async function remoteTeacherLogin(email, password) {
         var result = await supabaseClient.auth.signInWithPassword({
           email: email,
@@ -1036,6 +1056,7 @@
         state.remoteClasses = [];
         state.remoteStudents = [];
         state.remoteSessions = [];
+        state.studentHistoryError = "";
       }
 
       function buildPreviewStore() {
@@ -1842,6 +1863,7 @@
           '      <button class="btn gold" data-action="begin-session" data-mode="sprint">100-second sprint</button>',
           '    </div>',
           '  </section>',
+          studentChallengeProgressPanel(state.student.id, state.selectedLevelId, "Your challenge graph"),
           '</main>',
           '</div>'
         ].join("");
@@ -2166,6 +2188,9 @@
           } else {
             session.synced = true;
             session.id = result.data || session.id;
+            state.remoteSessions = state.remoteSessions.filter(function (item) {
+              return item.id !== session.id;
+            }).concat([session]);
           }
         } else if (state.student) {
           store.sessions.push(session);
@@ -2203,6 +2228,7 @@
           '    <button class="tile" data-action="retry-level"><span class="iconbox">R</span><h3>Try again</h3><p class="muted">Repeat the same level.</p></button>',
           '    <button class="tile" data-action="review-mistakes" ' + (r.mistakes.length ? "" : "disabled") + '><span class="iconbox">?</span><h3>Review mistakes</h3><p class="muted">' + r.mistakes.length + ' items to revisit.</p></button>',
           '  </section>',
+          state.student ? studentChallengeProgressPanel(state.student.id, r.levelId, "This challenge graph") : '',
           mistakeTable(r.mistakes),
           '</main>',
           '</div>'
@@ -2344,6 +2370,8 @@
           '</section>',
           addStudentForm(klass),
           growthPanel(klass, sessions),
+          classProfileTable(students),
+          teacherStudentChallengePanel(students),
           studentTable(klass, students),
           loginCardPrintSheet(klass, students),
           recentSessionsTable(sessions)
@@ -2442,6 +2470,142 @@
           '    <text x="' + pad + '" y="' + (h - 8) + '" fill="#64748b" font-size="14">0</text>',
           '  </svg>',
           '</div>'
+        ].join("");
+      }
+
+      function levelLabel(levelId) {
+        var level = levelById(levelId);
+        return level.id + ": " + level.name;
+      }
+
+      function levelOptions(selectedLevelId) {
+        return LEVELS.map(function (level) {
+          return '<option value="' + escapeHTML(level.id) + '"' + (selectedLevelId === level.id ? " selected" : "") + '>' + escapeHTML(levelLabel(level.id)) + '</option>';
+        }).join("");
+      }
+
+      function sessionsForChallenge(studentId, levelId) {
+        return sessionsForStudent(studentId).filter(function (session) {
+          return session.levelId === levelId;
+        }).sort(function (a, b) {
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        });
+      }
+
+      function scoreStats(sessions) {
+        var ordered = sessions.slice().sort(function (a, b) {
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        });
+        var scores = ordered.map(function (session) {
+          return Number(session.score) || 0;
+        });
+        if (!scores.length) return { initial: null, high: null, median: null };
+        return {
+          initial: scores[0],
+          high: Math.max.apply(null, scores),
+          median: median(scores)
+        };
+      }
+
+      function formatScore(value) {
+        if (value == null || !isFinite(value)) return "--";
+        return Math.round(value) === value ? String(value) : value.toFixed(1);
+      }
+
+      function studentChallengeProgressPanel(studentId, levelId, title, framed, showHistoryError) {
+        var useFrame = framed !== false;
+        var showError = showHistoryError !== false;
+        var level = levelById(levelId);
+        var sessions = sessionsForChallenge(studentId, level.id);
+        var stats = scoreStats(sessions);
+        return [
+          useFrame ? '<section class="panel section stack">' : '<div class="stack">',
+          '  <div class="between">',
+          '    <div><h3>' + escapeHTML(title) + '</h3><p class="muted">' + escapeHTML(levelLabel(level.id)) + '</p></div>',
+          '    <span class="pill">' + sessions.length + ' sessions</span>',
+          '  </div>',
+          showError && state.studentHistoryError ? '<div class="notice small">Saved history is not available yet: ' + escapeHTML(state.studentHistoryError) + '</div>' : '',
+          '  <div class="stats">',
+          statHTML("Initial score", formatScore(stats.initial)),
+          statHTML("High score", formatScore(stats.high)),
+          statHTML("Median score", formatScore(stats.median)),
+          statHTML("Latest score", sessions.length ? sessions[sessions.length - 1].score : "--"),
+          '  </div>',
+          sessions.length ? chartHTML(sessions, "score", "Score trend") : '<div class="empty">No saved sessions for this challenge yet.</div>',
+          sessions.length ? chartHTML(sessions, "accuracy", "Accuracy trend") : '',
+          useFrame ? '</section>' : '</div>'
+        ].join("");
+      }
+
+      function classProfileTable(students) {
+        if (!students.length) return "";
+        return [
+          '<section class="panel section stack">',
+          '  <div><h3>Class profile</h3><p class="muted">Initial, high, and median score for each student across all saved sessions.</p></div>',
+          '  <table><thead><tr><th>Student</th><th>Initial score</th><th>High score</th><th>Median score</th><th>Sessions</th><th>Latest challenge</th></tr></thead><tbody>',
+          students.map(function (student) {
+            var sessions = sessionsForStudent(student.id);
+            var ordered = sessions.slice().sort(function (a, b) {
+              return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+            });
+            var stats = scoreStats(ordered);
+            var latest = ordered[ordered.length - 1] || null;
+            return [
+              '<tr>',
+              '<td><strong>' + escapeHTML(student.alias) + '</strong><div class="tiny muted">' + escapeHTML(studentFullName(student)) + '</div></td>',
+              '<td>' + formatScore(stats.initial) + '</td>',
+              '<td>' + formatScore(stats.high) + '</td>',
+              '<td>' + formatScore(stats.median) + '</td>',
+              '<td>' + sessions.length + '</td>',
+              '<td>' + (latest ? escapeHTML(latest.levelId) + '<div class="tiny muted">' + formatDateTime(latest.createdAt) + '</div>' : '--') + '</td>',
+              '</tr>'
+            ].join("");
+          }).join(""),
+          '  </tbody></table>',
+          '</section>'
+        ].join("");
+      }
+
+      function selectedDashboardStudent(students) {
+        if (!students.length) return null;
+        var selected = students.find(function (student) {
+          return student.id === state.dashboardStudentId;
+        });
+        if (selected) return selected;
+        state.dashboardStudentId = students[0].id;
+        return students[0];
+      }
+
+      function selectedDashboardLevelId(student) {
+        if (state.dashboardLevelId && LEVELS.some(function (level) { return level.id === state.dashboardLevelId; })) {
+          return state.dashboardLevelId;
+        }
+        var latest = sessionsForStudent(student.id).slice().sort(function (a, b) {
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        })[0];
+        state.dashboardLevelId = latest ? latest.levelId : "A1";
+        return state.dashboardLevelId;
+      }
+
+      function teacherStudentChallengePanel(students) {
+        if (!students.length) return "";
+        var student = selectedDashboardStudent(students);
+        var levelId = selectedDashboardLevelId(student);
+        return [
+          '<section class="panel section stack">',
+          '  <div class="between">',
+          '    <div><h3>Individual challenge graphs</h3><p class="muted">Choose a student and challenge to view their score line graph.</p></div>',
+          '    <div class="row">',
+          '      <select data-action="dashboard-student" aria-label="Student graph selector">',
+          students.map(function (item) {
+            return '<option value="' + escapeHTML(item.id) + '"' + (item.id === student.id ? " selected" : "") + '>' + escapeHTML(studentFullName(item) + " (" + item.alias + ")") + '</option>';
+          }).join(""),
+          '      </select>',
+          '      <select data-action="dashboard-level" aria-label="Challenge graph selector">' + levelOptions(levelId) + '</select>',
+          '    </div>',
+          '  </div>',
+          studentChallengeProgressPanel(student.id, levelId, "Selected student graph", false, false),
+          '</section>'
         ].join("");
       }
 
@@ -2594,6 +2758,18 @@
       function avg(values) {
         if (!values.length) return 0;
         return values.reduce(function (sum, value) { return sum + Number(value || 0); }, 0) / values.length;
+      }
+
+      function median(values) {
+        if (!values.length) return 0;
+        var sorted = values.slice().map(function (value) {
+          return Number(value) || 0;
+        }).sort(function (a, b) {
+          return a - b;
+        });
+        var middle = Math.floor(sorted.length / 2);
+        if (sorted.length % 2) return sorted[middle];
+        return (sorted[middle - 1] + sorted[middle]) / 2;
       }
 
       function studentNameForSession(session) {
@@ -2889,6 +3065,7 @@
                 teacherId: joined.teacher_id,
                 accessToken: joined.access_token
               };
+              await loadRemoteStudentHistory();
               state.view = "student-menu";
               state.message = "Welcome, " + joined.alias + ".";
             } catch (error) {
@@ -3221,6 +3398,15 @@
         }
         if (select.getAttribute("data-action") === "dashboard-tag") {
           state.dashboardTag = select.value;
+          render();
+        }
+        if (select.getAttribute("data-action") === "dashboard-student") {
+          state.dashboardStudentId = select.value;
+          state.dashboardLevelId = null;
+          render();
+        }
+        if (select.getAttribute("data-action") === "dashboard-level") {
+          state.dashboardLevelId = select.value;
           render();
         }
       });
