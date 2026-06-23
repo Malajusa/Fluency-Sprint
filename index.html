@@ -464,6 +464,46 @@
       background: linear-gradient(135deg, #05070d 0 50%, #ffffff 50% 100%);
     }
 
+    .table-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(4.6rem, 1fr));
+      gap: 0.55rem;
+    }
+
+    .check-choice {
+      min-height: 3.1rem;
+      border: 2px solid var(--line);
+      border-radius: var(--radius);
+      background: white;
+      color: var(--ink);
+      padding: 0.6rem 0.7rem;
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      font-weight: 900;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .check-choice input {
+      width: 1.1rem;
+      min-height: 1.1rem;
+      accent-color: var(--teal);
+      flex: 0 0 auto;
+    }
+
+    .check-choice.active {
+      border-color: var(--teal);
+      background: #e8fbf8;
+      color: var(--teal-dark);
+    }
+
+    body[data-theme="contrast"] .check-choice.active {
+      background: var(--ink);
+      color: white;
+    }
+
     label {
       display: grid;
       gap: 0.35rem;
@@ -925,6 +965,7 @@
         { id: "M4", operation: "multiplication", name: "3s and 4s", tags: ["times3", "times4"] },
         { id: "M5", operation: "multiplication", name: "6s, 7s, 8s, and 9s", tags: ["times6", "times7", "times8", "times9"] },
         { id: "M6", operation: "multiplication", name: "Mixed multiplication fluency", tags: ["multiplication"] },
+        { id: "M7", operation: "multiplication", name: "Choose times tables", tags: ["multiplication", "customTables"] },
         { id: "D1", operation: "division", name: "Divide by 2, 5, and 10", tags: ["divide2", "divide5", "divide10"] },
         { id: "D2", operation: "division", name: "Division facts connected to the 5-times-table", tags: ["divide5", "times5"] },
         { id: "D3", operation: "division", name: "Division with 5s and 10s", tags: ["divide5", "divide10"] },
@@ -950,6 +991,7 @@
         { id: "normal", label: "Normal" },
         { id: "large", label: "Large" }
       ];
+      var TIMES_TABLES = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
       var liveStore = loadStore();
       var savedAppearance = loadAppearance();
@@ -980,6 +1022,8 @@
         studentHistoryError: "",
         recentPins: {},
         appearance: savedAppearance,
+        multiplicationTables: [6, 7],
+        includeReverseDivision: false,
         prefillClassCode: "",
         prefillAlias: ""
       };
@@ -1583,6 +1627,70 @@
         return Math.random() > 0.5 ? [a, b] : [b, a];
       }
 
+      function normalizeTables(tables) {
+        var seen = {};
+        var selected = (Array.isArray(tables) ? tables : []).map(function (table) {
+          return Number(table);
+        }).filter(function (table) {
+          return TIMES_TABLES.indexOf(table) >= 0 && !seen[table] && (seen[table] = true);
+        });
+        if (!selected.length) selected = [6, 7];
+        return TIMES_TABLES.filter(function (table) {
+          return selected.indexOf(table) >= 0;
+        });
+      }
+
+      function currentMultiplicationOptions() {
+        return {
+          tables: normalizeTables(state.multiplicationTables),
+          includeReverseDivision: !!state.includeReverseDivision
+        };
+      }
+
+      function tableTags(tables) {
+        return normalizeTables(tables).map(function (table) {
+          return "times" + table;
+        });
+      }
+
+      function customMultiplicationTags(options) {
+        var settings = options || currentMultiplicationOptions();
+        var tags = ["multiplication", "customTables"].concat(tableTags(settings.tables));
+        if (settings.includeReverseDivision) tags = tags.concat(["division", "reverseDivision"]);
+        return tags;
+      }
+
+      function tableListLabel(tables) {
+        var labels = normalizeTables(tables).map(function (table) {
+          return table + "s";
+        });
+        if (labels.length === 1) return labels[0];
+        return labels.slice(0, -1).join(", ") + " and " + labels[labels.length - 1];
+      }
+
+      function customMultiplicationLevelName(options) {
+        var settings = options || currentMultiplicationOptions();
+        var label = "Chosen tables: " + tableListLabel(settings.tables);
+        if (settings.includeReverseDivision) label += " with reverse division";
+        return label;
+      }
+
+      function toggleMultiplicationTable(table) {
+        var selected = normalizeTables(state.multiplicationTables);
+        var index = selected.indexOf(table);
+        if (index >= 0) {
+          if (selected.length === 1) {
+            state.message = "Choose at least one times table.";
+            return;
+          }
+          selected.splice(index, 1);
+        } else if (TIMES_TABLES.indexOf(table) >= 0) {
+          selected.push(table);
+        }
+        state.multiplicationTables = normalizeTables(selected);
+        state.message = "";
+      }
+
       function levelById(id) {
         return LEVELS.find(function (level) { return level.id === id; }) || LEVELS[0];
       }
@@ -1682,7 +1790,20 @@
         };
       }
 
-      function generateQuestion(levelId) {
+      function generateCustomMultiplicationQuestion(options) {
+        var settings = options || currentMultiplicationOptions();
+        var tables = normalizeTables(settings.tables);
+        var factor = choice(tables);
+        var other = rand(0, 12);
+        var tags = customMultiplicationTags(settings);
+        if (settings.includeReverseDivision && Math.random() > 0.5) {
+          return question((factor * other) + " / " + factor, other, "division", tags);
+        }
+        var ordered = shufflePair(factor, other);
+        return question(ordered[0] + " x " + ordered[1], factor * other, "multiplication", tags);
+      }
+
+      function generateQuestion(levelId, options) {
         var level = levelById(levelId);
         var id = level.id;
 
@@ -1803,6 +1924,8 @@
           var bM6 = rand(0, 12);
           return question(aM6 + " x " + bM6, aM6 * bM6, "multiplication", level.tags);
         }
+
+        if (id === "M7") return generateCustomMultiplicationQuestion(options);
 
         if (id === "D1") {
           var divisorD1 = choice([2, 5, 10]);
@@ -2137,6 +2260,7 @@
           '      <h3>Level</h3>',
           '      <div class="level-list">' + levels.map(levelButton).join("") + '</div>',
           '    </div>',
+          customMultiplicationPanel(),
           '    <div class="row">',
           '      <button class="btn primary" data-action="begin-session" data-mode="practice">Practice</button>',
           '      <button class="btn gold" data-action="begin-session" data-mode="sprint">100-second sprint</button>',
@@ -2164,17 +2288,53 @@
         ].join("");
       }
 
+      function customMultiplicationPanel() {
+        if (state.selectedOperation !== "multiplication" || state.selectedLevelId !== "M7") return "";
+        return [
+          '    <div class="stack">',
+          '      <div class="between">',
+          '        <h3>Tables</h3>',
+          '        <span class="pill">' + escapeHTML(tableListLabel(state.multiplicationTables)) + '</span>',
+          '      </div>',
+          '      <div class="table-grid">' + TIMES_TABLES.map(tableCheckbox).join("") + '</div>',
+          '      ' + reverseDivisionToggle(),
+          '    </div>'
+        ].join("");
+      }
+
+      function tableCheckbox(table) {
+        var active = normalizeTables(state.multiplicationTables).indexOf(table) >= 0;
+        return [
+          '<label class="check-choice ' + (active ? "active" : "") + '" data-action="toggle-table" data-table="' + table + '">',
+          '  <input type="checkbox" ' + (active ? "checked" : "") + ' aria-label="' + table + ' times table">',
+          '  <span>' + table + 's</span>',
+          '</label>'
+        ].join("");
+      }
+
+      function reverseDivisionToggle() {
+        return [
+          '<label class="check-choice ' + (state.includeReverseDivision ? "active" : "") + '" data-action="toggle-reverse-division">',
+          '  <input type="checkbox" ' + (state.includeReverseDivision ? "checked" : "") + ' aria-label="Reverse division facts">',
+          '  <span>Reverse division facts</span>',
+          '</label>'
+        ].join("");
+      }
+
       function tagLabel(tag) {
         var labels = {
           friends10: "Friends of 10",
           ending5: "Ends in 5",
           missing: "Missing number",
           bridge: "Bridge to 10",
+          customTables: "Chosen tables",
+          reverseDivision: "Reverse division",
           times5: "5-times facts",
           times10: "10-times facts",
           divide5: "Divide by 5",
           divide10: "Divide by 10"
         };
+        if (/^times\d+$/.test(tag)) return tag.replace("times", "") + "-times facts";
         return labels[tag] || tag;
       }
 
@@ -2217,11 +2377,16 @@
 
       function startSession(mode) {
         var level = levelById(state.selectedLevelId);
+        var practiceOptions = level.id === "M7" ? currentMultiplicationOptions() : null;
+        var sessionTags = practiceOptions ? customMultiplicationTags(practiceOptions) : level.tags;
+        var sessionLevelName = practiceOptions ? customMultiplicationLevelName(practiceOptions) : level.name;
         state.active = {
           mode: mode,
           levelId: level.id,
-          levelName: level.name,
+          levelName: sessionLevelName,
           levelOperation: level.operation,
+          sessionTags: sessionTags,
+          practiceOptions: practiceOptions,
           startedAt: Date.now(),
           timeLeft: mode === "sprint" ? 100 : null,
           attempted: 0,
@@ -2233,7 +2398,7 @@
           tries: 0,
           pendingWrong: null,
           feedback: "",
-          question: generateQuestion(level.id)
+          question: generateQuestion(level.id, practiceOptions)
         };
         state.results = null;
         state.view = "session";
@@ -2419,7 +2584,7 @@
 
       function nextQuestion() {
         if (!state.active) return;
-        state.active.question = generateQuestion(state.active.levelId);
+        state.active.question = generateQuestion(state.active.levelId, state.active.practiceOptions);
         state.active.tries = 0;
         state.active.pendingWrong = null;
         state.active.feedback = "";
@@ -2458,7 +2623,8 @@
           operation: level.operation,
           levelId: active.levelId,
           levelName: active.levelName,
-          tags: level.tags,
+          tags: active.sessionTags || level.tags,
+          practiceOptions: active.practiceOptions,
           attempted: active.attempted,
           correct: active.correct,
           accuracy: accuracy,
@@ -2714,6 +2880,9 @@
           tagOption("friends10", "Friends of 10"),
           tagOption("ending5", "Facts ending in 5"),
           tagOption("times5", "5-times-table facts"),
+          tagOption("customTables", "Chosen times tables"),
+          tagOption("reverseDivision", "Reverse division facts"),
+          TIMES_TABLES.map(function (table) { return tagOption("times" + table, table + "-times facts"); }).join(""),
           '      </select>',
           '    </div>',
           '  </div>',
@@ -2733,8 +2902,9 @@
 
       function filterSessions(sessions) {
         return sessions.filter(function (session) {
-          var operationOK = state.dashboardOperation === "all" || session.operation === state.dashboardOperation || (state.dashboardOperation === "mixed" && session.operation === "mixed");
-          var tagOK = state.dashboardTag === "all" || (session.tags || []).indexOf(state.dashboardTag) >= 0 || session.mistakes.some(function (m) {
+          var tags = session.tags || [];
+          var operationOK = state.dashboardOperation === "all" || session.operation === state.dashboardOperation || tags.indexOf(state.dashboardOperation) >= 0;
+          var tagOK = state.dashboardTag === "all" || tags.indexOf(state.dashboardTag) >= 0 || session.mistakes.some(function (m) {
             return (m.tags || []).indexOf(state.dashboardTag) >= 0;
           });
           return operationOK && tagOK;
@@ -3503,6 +3673,16 @@
         }
         if (action === "select-level") {
           state.selectedLevelId = button.getAttribute("data-level");
+          state.message = "";
+          render();
+        }
+        if (action === "toggle-table") {
+          toggleMultiplicationTable(Number(button.getAttribute("data-table")));
+          render();
+        }
+        if (action === "toggle-reverse-division") {
+          state.includeReverseDivision = !state.includeReverseDivision;
+          state.message = "";
           render();
         }
         if (action === "start-mode") {
@@ -3548,6 +3728,10 @@
         if (action === "retry-level") {
           if (state.results) {
             state.selectedLevelId = state.results.levelId;
+            if (state.results.practiceOptions) {
+              state.multiplicationTables = normalizeTables(state.results.practiceOptions.tables);
+              state.includeReverseDivision = !!state.results.practiceOptions.includeReverseDivision;
+            }
             startSession(state.results.mode);
           }
         }
