@@ -382,6 +382,44 @@
       font-size: 0.82rem;
     }
 
+    .proficiency {
+      display: inline-flex;
+      align-items: center;
+      min-height: 1.9rem;
+      padding: 0.3rem 0.55rem;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: white;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .proficiency.secure {
+      border-color: #b6e4bd;
+      background: #ecfff0;
+      color: #215b2b;
+    }
+
+    .proficiency.building {
+      border-color: #f3d28b;
+      background: #fff8df;
+      color: #5f4608;
+    }
+
+    .proficiency.focus {
+      border-color: #ffc7bd;
+      background: #fff1ef;
+      color: #84251d;
+    }
+
+    .proficiency.none {
+      border-color: #d7deea;
+      background: #f8fafc;
+      color: #64748b;
+    }
+
     .tabs {
       display: flex;
       flex-wrap: wrap;
@@ -1006,6 +1044,9 @@
         dashboardTag: "all",
         dashboardStudentId: null,
         dashboardLevelId: null,
+        resultsMode: "class",
+        resultsStudentId: null,
+        resultsLevelId: null,
         authMode: "login",
         student: null,
         active: null,
@@ -2005,7 +2046,7 @@
           '  </button>',
           '  <div class="toolbar">',
           appearanceButton,
-          t ? '<span class="pill">Teacher: ' + escapeHTML(t.displayName || t.email) + '</span><button class="btn ghost" data-action="teacher-dashboard" title="Teacher dashboard">Dashboard</button><button class="btn ghost" data-action="teacher-logout" title="Sign out">Sign out</button>' : '',
+          t ? '<span class="pill">Teacher: ' + escapeHTML(t.displayName || t.email) + '</span><button class="btn ghost" data-action="teacher-dashboard" title="Teacher dashboard">Dashboard</button><button class="btn ghost" data-action="teacher-results" title="Teacher results">Results</button><button class="btn ghost" data-action="teacher-logout" title="Sign out">Sign out</button>' : '',
           state.student ? '<span class="pill">Student: ' + escapeHTML(state.student.alias) + '</span><button class="btn ghost" data-action="student-logout" title="Student sign out">Leave</button>' : '',
           '  </div>',
           '</div>'
@@ -2752,7 +2793,10 @@
           '<main class="shell stack">',
           '  <section class="between">',
           '    <div><h2>Teacher dashboard</h2><p class="muted">Track participation and growth over time.</p></div>',
-          '    <button class="btn ghost" data-action="home">Home</button>',
+          '    <div class="row">',
+          '      <button class="btn ghost" data-action="teacher-results">Results</button>',
+          '      <button class="btn ghost" data-action="home">Home</button>',
+          '    </div>',
           '  </section>',
           messageHTML(),
           backendActive() ? '  <section class="notice success small"><strong>Shared storage active:</strong> Teacher data is saved in Supabase with row-level access rules. Students use alias and PIN, not email. Use only with your school-approved consent or notification process.</section>' : '  <section class="notice small"><strong>Prototype boundary:</strong> This version stores data locally in this browser. For real classrooms, move the same model to a protected backend with verified teacher auth and row-level access rules.</section>',
@@ -2836,13 +2880,309 @@
           '  </div>',
           '</section>',
           addStudentForm(klass),
-          growthPanel(klass, sessions),
-          classProfileTable(students),
-          teacherStudentChallengePanel(students),
           studentTable(klass, students),
           loginCardPrintSheet(klass, students),
           recentSessionsTable(sessions)
         ].join("");
+      }
+
+      function teacherResultsView() {
+        if (!teacher()) return authView();
+        var classes = classesForTeacher();
+        var klass = selectedClass();
+        return [
+          '<div class="page">',
+          header(),
+          '<main class="shell stack">',
+          '  <section class="between">',
+          '    <div><h2>Teacher results</h2><p class="muted">Class, challenge, and student views from saved sessions.</p></div>',
+          '    <div class="row">',
+          '      <button class="btn ghost" data-action="teacher-dashboard">Dashboard</button>',
+          '      <button class="btn ghost" data-action="home">Home</button>',
+          '    </div>',
+          '  </section>',
+          messageHTML(),
+          classes.length ? resultsControls(classes, klass) : '<div class="empty">Create a class before viewing results.</div>',
+          klass ? resultsBody(klass) : '',
+          '</main>',
+          '</div>'
+        ].join("");
+      }
+
+      function resultsControls(classes, klass) {
+        return [
+          '<section class="panel section stack">',
+          '  <div class="between">',
+          '    <label>Class<select data-action="results-class" aria-label="Results class selector">',
+          classes.map(function (item) {
+            return '<option value="' + escapeHTML(item.id) + '"' + (klass && klass.id === item.id ? " selected" : "") + '>' + escapeHTML(item.name) + '</option>';
+          }).join(""),
+          '    </select></label>',
+          '    <div class="tabs">',
+          resultsModeTab("class", "Class"),
+          resultsModeTab("challenge", "Challenge"),
+          resultsModeTab("student", "Student"),
+          '    </div>',
+          '  </div>',
+          '</section>'
+        ].join("");
+      }
+
+      function resultsModeTab(id, label) {
+        return '<button class="tab ' + (state.resultsMode === id ? "active" : "") + '" data-action="results-mode" data-mode="' + id + '">' + escapeHTML(label) + '</button>';
+      }
+
+      function resultsBody(klass) {
+        if (state.resultsMode === "challenge") return challengeResultsPanel(klass);
+        if (state.resultsMode === "student") return studentResultsPanel(klass);
+        return classResultsPanel(klass);
+      }
+
+      function classResultsPanel(klass) {
+        var students = studentsForClass(klass.id);
+        var sessions = sessionsForClass(klass.id);
+        return [
+          classResultsSummary(klass, students, sessions),
+          growthPanel(klass, sessions),
+          classProfileTable(students),
+          timesTableClassProfile(students)
+        ].join("");
+      }
+
+      function classResultsSummary(klass, students, sessions) {
+        var avgAccuracy = sessions.length ? Math.round(avg(sessions.map(function (s) { return s.accuracy; }))) : 0;
+        return [
+          '<section class="panel section stack">',
+          '  <div><h3>' + escapeHTML(klass.name) + '</h3><p class="muted">Class profile from saved results.</p></div>',
+          '  <div class="stats">',
+          statHTML("Students", students.length),
+          statHTML("Sessions", sessions.length),
+          statHTML("Average accuracy", avgAccuracy + "%"),
+          statHTML("Best score", sessions.length ? Math.max.apply(null, sessions.map(function (s) { return s.score; })) : 0),
+          '  </div>',
+          '</section>'
+        ].join("");
+      }
+
+      function selectedResultsStudent(students) {
+        if (!students.length) return null;
+        var selected = students.find(function (student) {
+          return student.id === state.resultsStudentId;
+        });
+        if (selected) return selected;
+        state.resultsStudentId = students[0].id;
+        return students[0];
+      }
+
+      function selectedResultsLevelId(sessions) {
+        if (state.resultsLevelId && LEVELS.some(function (level) { return level.id === state.resultsLevelId; })) {
+          return state.resultsLevelId;
+        }
+        var latest = sessions.slice().sort(function (a, b) {
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        })[0];
+        state.resultsLevelId = latest ? latest.levelId : "A1";
+        return state.resultsLevelId;
+      }
+
+      function challengeResultsPanel(klass) {
+        var students = studentsForClass(klass.id);
+        var sessions = sessionsForClass(klass.id);
+        var levelId = selectedResultsLevelId(sessions);
+        var levelSessions = sessionsForClassChallenge(klass.id, levelId);
+        var stats = scoreStats(levelSessions);
+        return [
+          '<section class="panel section stack">',
+          '  <div class="between">',
+          '    <div><h3>Challenge results</h3><p class="muted">' + escapeHTML(levelLabel(levelId)) + '</p></div>',
+          '    <select data-action="results-level" aria-label="Results challenge selector">' + levelOptions(levelId) + '</select>',
+          '  </div>',
+          '  <div class="stats">',
+          statHTML("Sessions", levelSessions.length),
+          statHTML("Initial score", formatScore(stats.initial)),
+          statHTML("High score", formatScore(stats.high)),
+          statHTML("Median score", formatScore(stats.median)),
+          '  </div>',
+          levelSessions.length ? chartHTML(levelSessions, "score", "Class score trend") : '<div class="empty">No saved sessions for this challenge yet.</div>',
+          levelSessions.length ? chartHTML(levelSessions, "accuracy", "Class accuracy trend") : '',
+          '</section>',
+          challengeProfileTable(students, levelId)
+        ].join("");
+      }
+
+      function challengeProfileTable(students, levelId) {
+        if (!students.length) return "";
+        return [
+          '<section class="panel section stack">',
+          '  <div><h3>Challenge profile</h3><p class="muted">Initial, high, and median score for each student on this challenge.</p></div>',
+          '  <table><thead><tr><th>Student</th><th>Initial</th><th>High</th><th>Median</th><th>Latest</th><th>Sessions</th></tr></thead><tbody>',
+          students.map(function (student) {
+            var sessions = sessionsForChallenge(student.id, levelId);
+            var stats = scoreStats(sessions);
+            var latest = sessions[sessions.length - 1] || null;
+            return [
+              '<tr>',
+              '<td><strong>' + escapeHTML(student.alias) + '</strong></td>',
+              '<td>' + formatScore(stats.initial) + '</td>',
+              '<td>' + formatScore(stats.high) + '</td>',
+              '<td>' + formatScore(stats.median) + '</td>',
+              '<td>' + (latest ? latest.score + '<div class="tiny muted">' + formatDateTime(latest.createdAt) + '</div>' : '--') + '</td>',
+              '<td>' + sessions.length + '</td>',
+              '</tr>'
+            ].join("");
+          }).join(""),
+          '  </tbody></table>',
+          '</section>'
+        ].join("");
+      }
+
+      function studentResultsPanel(klass) {
+        var students = studentsForClass(klass.id);
+        if (!students.length) return '<div class="empty">Add students before viewing student results.</div>';
+        var student = selectedResultsStudent(students);
+        var sessions = sessionsForStudent(student.id);
+        var levelId = selectedResultsLevelId(sessions);
+        return [
+          '<section class="panel section stack">',
+          '  <div class="between">',
+          '    <div><h3>Student results</h3><p class="muted">' + escapeHTML(studentOptionLabel(student)) + '</p></div>',
+          '    <div class="row">',
+          '      <select data-action="results-student" aria-label="Results student selector">',
+          students.map(function (item) {
+            return '<option value="' + escapeHTML(item.id) + '"' + (item.id === student.id ? " selected" : "") + '>' + escapeHTML(studentOptionLabel(item)) + '</option>';
+          }).join(""),
+          '      </select>',
+          '      <select data-action="results-level" aria-label="Results challenge selector">' + levelOptions(levelId) + '</select>',
+          '    </div>',
+          '  </div>',
+          studentResultsSummary(sessions),
+          '</section>',
+          studentChallengeProgressPanel(student.id, levelId, "Selected challenge", true, false),
+          timesTableStudentProfile(student),
+          studentSessionsTable(student)
+        ].join("");
+      }
+
+      function studentResultsSummary(sessions) {
+        var stats = scoreStats(sessions);
+        var avgAccuracy = sessions.length ? Math.round(avg(sessions.map(function (s) { return s.accuracy; }))) : 0;
+        return [
+          '  <div class="stats">',
+          statHTML("Sessions", sessions.length),
+          statHTML("Average accuracy", avgAccuracy + "%"),
+          statHTML("High score", formatScore(stats.high)),
+          statHTML("Median score", formatScore(stats.median)),
+          '  </div>'
+        ].join("");
+      }
+
+      function studentSessionsTable(student) {
+        var sessions = sessionsForStudent(student.id).slice().sort(function (a, b) {
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        }).slice(0, 12);
+        if (!sessions.length) return '<div class="empty">Saved sessions will appear here.</div>';
+        return [
+          '<section class="panel section stack">',
+          '  <h3>Recent student sessions</h3>',
+          '  <table><thead><tr><th>When</th><th>Challenge</th><th>Mode</th><th>Score</th><th>Accuracy</th><th>Mistakes</th></tr></thead><tbody>',
+          sessions.map(function (session) {
+            return '<tr><td>' + formatDateTime(session.createdAt) + '</td><td>' + escapeHTML(session.levelId) + '<div class="tiny muted">' + escapeHTML(session.levelName) + '</div></td><td>' + escapeHTML(session.mode) + '</td><td>' + session.score + '</td><td>' + session.accuracy + '%</td><td>' + (session.mistakes || []).length + '</td></tr>';
+          }).join(""),
+          '  </tbody></table>',
+          '</section>'
+        ].join("");
+      }
+
+      function sessionsForClassChallenge(classId, levelId) {
+        return sessionsForClass(classId).filter(function (session) {
+          return session.levelId === levelId;
+        }).sort(function (a, b) {
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        });
+      }
+
+      function sessionHasTag(session, tag) {
+        if ((session.tags || []).indexOf(tag) >= 0) return true;
+        return (session.mistakes || []).some(function (mistake) {
+          return (mistake.tags || []).indexOf(tag) >= 0;
+        });
+      }
+
+      function sessionsWithTag(sessions, tag) {
+        return sessions.filter(function (session) {
+          return sessionHasTag(session, tag);
+        });
+      }
+
+      function proficiencyForSessions(sessions) {
+        if (!sessions.length) return { label: "No data", className: "none", sessions: 0, accuracy: null };
+        var accuracy = Math.round(avg(sessions.map(function (session) { return session.accuracy; })));
+        if (sessions.length >= 3 && accuracy >= 90) return { label: "Secure", className: "secure", sessions: sessions.length, accuracy: accuracy };
+        if (sessions.length >= 2 && accuracy >= 75) return { label: "Building", className: "building", sessions: sessions.length, accuracy: accuracy };
+        return { label: "Focus", className: "focus", sessions: sessions.length, accuracy: accuracy };
+      }
+
+      function proficiencyPill(profile) {
+        return '<span class="proficiency ' + profile.className + '">' + escapeHTML(profile.label) + '</span>';
+      }
+
+      function tableProfileForStudent(studentId, table) {
+        return proficiencyForSessions(sessionsWithTag(sessionsForStudent(studentId), "times" + table));
+      }
+
+      function timesTableClassProfile(students) {
+        if (!students.length) return "";
+        return [
+          '<section class="panel section stack">',
+          '  <div><h3>Times table profile</h3><p class="muted">Class evidence by table from tagged multiplication sessions.</p></div>',
+          '  <table><thead><tr><th>Table</th><th>Secure</th><th>Building</th><th>Focus</th><th>No data</th><th>Average</th></tr></thead><tbody>',
+          TIMES_TABLES.map(function (table) {
+            var profiles = students.map(function (student) {
+              return tableProfileForStudent(student.id, table);
+            });
+            var withAccuracy = profiles.filter(function (profile) { return profile.accuracy != null; });
+            var average = withAccuracy.length ? Math.round(avg(withAccuracy.map(function (profile) { return profile.accuracy; }))) + "%" : "--";
+            return [
+              '<tr>',
+              '<td><strong>' + table + 's</strong></td>',
+              '<td>' + countProfiles(profiles, "secure") + '</td>',
+              '<td>' + countProfiles(profiles, "building") + '</td>',
+              '<td>' + countProfiles(profiles, "focus") + '</td>',
+              '<td>' + countProfiles(profiles, "none") + '</td>',
+              '<td>' + average + '</td>',
+              '</tr>'
+            ].join("");
+          }).join(""),
+          '  </tbody></table>',
+          '</section>'
+        ].join("");
+      }
+
+      function timesTableStudentProfile(student) {
+        return [
+          '<section class="panel section stack">',
+          '  <div><h3>Times table profile</h3><p class="muted">Evidence by table for ' + escapeHTML(student.alias) + '.</p></div>',
+          '  <table><thead><tr><th>Table</th><th>Proficiency</th><th>Sessions</th><th>Average accuracy</th></tr></thead><tbody>',
+          TIMES_TABLES.map(function (table) {
+            var profile = tableProfileForStudent(student.id, table);
+            return [
+              '<tr>',
+              '<td><strong>' + table + 's</strong></td>',
+              '<td>' + proficiencyPill(profile) + '</td>',
+              '<td>' + profile.sessions + '</td>',
+              '<td>' + (profile.accuracy == null ? "--" : profile.accuracy + "%") + '</td>',
+              '</tr>'
+            ].join("");
+          }).join(""),
+          '  </tbody></table>',
+          '</section>'
+        ].join("");
+      }
+
+      function countProfiles(profiles, className) {
+        return profiles.filter(function (profile) {
+          return profile.className === className;
+        }).length;
       }
 
       function addStudentForm(klass) {
@@ -2900,11 +3240,16 @@
         return '<option value="' + id + '"' + (state.dashboardTag === id ? " selected" : "") + '>' + escapeHTML(label) + '</option>';
       }
 
+      function sessionMatchesOperation(session, operation) {
+        if (operation === "all") return true;
+        return session.operation === operation || (session.tags || []).indexOf(operation) >= 0;
+      }
+
       function filterSessions(sessions) {
         return sessions.filter(function (session) {
           var tags = session.tags || [];
-          var operationOK = state.dashboardOperation === "all" || session.operation === state.dashboardOperation || tags.indexOf(state.dashboardOperation) >= 0;
-          var tagOK = state.dashboardTag === "all" || tags.indexOf(state.dashboardTag) >= 0 || session.mistakes.some(function (m) {
+          var operationOK = sessionMatchesOperation(session, state.dashboardOperation);
+          var tagOK = state.dashboardTag === "all" || tags.indexOf(state.dashboardTag) >= 0 || (session.mistakes || []).some(function (m) {
             return (m.tags || []).indexOf(state.dashboardTag) >= 0;
           });
           return operationOK && tagOK;
@@ -3194,7 +3539,7 @@
         var sessions = sessionsForStudent(studentId);
         if (!sessions.length) return '<span class="muted">No data yet</span>';
         return OPERATIONS.filter(function (op) { return op.id !== "mixed"; }).map(function (op) {
-          var opSessions = sessions.filter(function (s) { return s.operation === op.id; });
+          var opSessions = sessions.filter(function (s) { return sessionMatchesOperation(s, op.id); });
           if (!opSessions.length) return '<span class="pill">' + escapeHTML(op.label) + ': --</span>';
           var accuracy = Math.round(avg(opSessions.map(function (s) { return s.accuracy; })));
           return '<span class="pill">' + escapeHTML(op.label) + ': ' + accuracy + '%</span>';
@@ -3632,6 +3977,17 @@
           state.view = "dashboard";
           render();
         }
+        if (action === "teacher-results") {
+          if (backendActive() && teacher()) {
+            try {
+              await loadRemoteDashboard();
+            } catch (error) {
+              state.message = "Error: " + error.message;
+            }
+          }
+          state.view = "teacher-results";
+          render();
+        }
         if (action === "auth-mode") {
           state.authMode = button.getAttribute("data-mode");
           state.message = "";
@@ -3754,7 +4110,13 @@
         }
         if (action === "select-class") {
           state.dashboardClassId = button.getAttribute("data-class");
+          state.resultsStudentId = null;
+          state.resultsLevelId = null;
           saveStore();
+          render();
+        }
+        if (action === "results-mode") {
+          state.resultsMode = button.getAttribute("data-mode");
           render();
         }
         if (action === "rotate-code") {
@@ -3932,6 +4294,22 @@
           state.dashboardLevelId = select.value;
           render();
         }
+        if (select.getAttribute("data-action") === "results-class") {
+          state.dashboardClassId = select.value;
+          state.resultsStudentId = null;
+          state.resultsLevelId = null;
+          saveStore();
+          render();
+        }
+        if (select.getAttribute("data-action") === "results-student") {
+          state.resultsStudentId = select.value;
+          state.resultsLevelId = null;
+          render();
+        }
+        if (select.getAttribute("data-action") === "results-level") {
+          state.resultsLevelId = select.value;
+          render();
+        }
       });
 
       document.addEventListener("input", function (event) {
@@ -3963,6 +4341,7 @@
         if (state.view === "results") app.innerHTML = resultsView();
         if (state.view === "review") app.innerHTML = reviewView();
         if (state.view === "dashboard") app.innerHTML = dashboardView();
+        if (state.view === "teacher-results") app.innerHTML = teacherResultsView();
         hydrateQRCodes();
       }
 
