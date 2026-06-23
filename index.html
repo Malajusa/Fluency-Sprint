@@ -1435,6 +1435,7 @@
         appearance: savedAppearance,
         multiplicationTables: [6, 7],
         includeReverseDivision: false,
+        includeZeroMultiplicationFacts: false,
         prefillClassCode: "",
         prefillAlias: ""
       };
@@ -2059,11 +2060,19 @@
         return operation === "division" ? "D6" : "M7";
       }
 
+      function isAllMultiplicationFacts(options) {
+        var settings = options || currentMultiplicationOptions();
+        return settings.practiceMode === "multiplication"
+          && !!settings.includeZeroMultiplicationFacts
+          && normalizeTables(settings.tables).length === TIMES_TABLES.length;
+      }
+
       function currentMultiplicationOptions() {
         var practiceMode = state.selectedOperation === "division" ? "division" : "multiplication";
         return {
           tables: normalizeTables(state.multiplicationTables),
           includeReverseDivision: practiceMode === "multiplication" && !!state.includeReverseDivision,
+          includeZeroMultiplicationFacts: practiceMode === "multiplication" && !!state.includeZeroMultiplicationFacts,
           practiceMode: practiceMode
         };
       }
@@ -2079,6 +2088,7 @@
         var mode = settings.practiceMode === "division" ? "division" : "multiplication";
         var tags = [mode, "customTables"].concat(tableTags(settings.tables));
         if (mode === "division") tags.push("reverseDivision");
+        if (isAllMultiplicationFacts(settings)) tags = tags.concat(["allMultiplication", "zeroFacts"]);
         if (mode === "multiplication" && settings.includeReverseDivision) tags = tags.concat(["division", "reverseDivision"]);
         return tags;
       }
@@ -2095,6 +2105,11 @@
         var settings = options || currentMultiplicationOptions();
         if (settings.practiceMode === "division") {
           return "Division facts: " + tableListLabel(settings.tables);
+        }
+        if (isAllMultiplicationFacts(settings)) {
+          var allLabel = "All multiplication facts (0-12)";
+          if (settings.includeReverseDivision) allLabel += " with reverse division";
+          return allLabel;
         }
         var label = "Chosen tables: " + tableListLabel(settings.tables);
         if (settings.includeReverseDivision) label += " with reverse division";
@@ -2114,6 +2129,15 @@
           selected.push(table);
         }
         state.multiplicationTables = normalizeTables(selected);
+        state.includeZeroMultiplicationFacts = false;
+        state.message = "";
+      }
+
+      function selectAllMultiplicationFacts() {
+        state.selectedOperation = "multiplication";
+        state.selectedLevelId = "M7";
+        state.multiplicationTables = TIMES_TABLES.slice();
+        state.includeZeroMultiplicationFacts = true;
         state.message = "";
       }
 
@@ -2221,10 +2245,16 @@
         var tables = normalizeTables(settings.tables);
         var practiceMode = settings.practiceMode === "division" ? "division" : "multiplication";
         var factor = choice(tables);
-        var other = rand(1, 12);
+        var allMultiplicationFacts = isAllMultiplicationFacts(settings);
+        var other = allMultiplicationFacts ? rand(0, 12) : rand(1, 12);
         var tags = customMultiplicationTags(settings);
         if (practiceMode === "division" || (settings.includeReverseDivision && Math.random() > 0.5)) {
           return question((factor * other) + " / " + factor, other, "division", tags);
+        }
+        if (allMultiplicationFacts) {
+          var allA = rand(0, 12);
+          var allB = rand(0, 12);
+          return question(allA + " x " + allB, allA * allB, "multiplication", tags);
         }
         var ordered = shufflePair(factor, other);
         return question(ordered[0] + " x " + ordered[1], factor * other, "multiplication", tags);
@@ -2724,7 +2754,8 @@
 
       function tablePracticePanel() {
         var divisionMode = state.selectedOperation === "division";
-        var note = divisionMode ? "Whole-number division facts from your chosen tables." : "Multiplication facts from your chosen tables.";
+        var allMultiplicationFacts = isAllMultiplicationFacts();
+        var note = divisionMode ? "Whole-number division facts from your chosen tables." : (allMultiplicationFacts ? "All multiplication facts from 0 x 0 to 12 x 12." : "Multiplication facts from your chosen tables.");
         return [
           '    <div class="stack">',
           '      <div class="between">',
@@ -2732,11 +2763,22 @@
           '          <h3>Choose tables</h3>',
           '          <p class="muted">' + escapeHTML(note) + '</p>',
           '        </div>',
-          '        <span class="pill">' + escapeHTML(tableListLabel(state.multiplicationTables)) + '</span>',
+          '        <span class="pill">' + escapeHTML(allMultiplicationFacts ? "All multiplication (0-12)" : tableListLabel(state.multiplicationTables)) + '</span>',
           '      </div>',
           '      <div class="table-grid">' + TIMES_TABLES.map(tableCheckbox).join("") + '</div>',
-          divisionMode ? '      <div class="notice small">Division will ask facts like 42 / 6 when 6s are chosen.</div>' : '      ' + reverseDivisionToggle(),
+          divisionMode ? '      <div class="notice small">Division will ask facts like 42 / 6 when 6s are chosen.</div>' : multiplicationTableTools(),
           '    </div>'
+        ].join("");
+      }
+
+      function multiplicationTableTools() {
+        var allMultiplicationFacts = isAllMultiplicationFacts();
+        return [
+          '      <div class="row">',
+          '        <button class="btn ' + (allMultiplicationFacts ? "primary" : "ghost") + '" data-action="select-all-multiplication">Select all multiplication</button>',
+          '        ' + reverseDivisionToggle(),
+          allMultiplicationFacts ? '        <span class="pill">Includes 0x facts</span>' : '',
+          '      </div>'
         ].join("");
       }
 
@@ -4746,6 +4788,10 @@
           toggleMultiplicationTable(Number(button.getAttribute("data-table")));
           render();
         }
+        if (action === "select-all-multiplication") {
+          selectAllMultiplicationFacts();
+          render();
+        }
         if (action === "toggle-reverse-division") {
           state.includeReverseDivision = !state.includeReverseDivision;
           state.message = "";
@@ -4781,6 +4827,7 @@
             if (state.results.practiceOptions) {
               state.multiplicationTables = normalizeTables(state.results.practiceOptions.tables);
               state.includeReverseDivision = !!state.results.practiceOptions.includeReverseDivision;
+              state.includeZeroMultiplicationFacts = !!state.results.practiceOptions.includeZeroMultiplicationFacts;
             }
             startSession(state.results.mode);
           }
