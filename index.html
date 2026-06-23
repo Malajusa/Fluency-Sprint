@@ -1376,6 +1376,7 @@
         { id: "D3", operation: "division", name: "Division with 5s and 10s", tags: ["divide5", "divide10"] },
         { id: "D4", operation: "division", name: "Divide within known times tables", tags: ["division"] },
         { id: "D5", operation: "division", name: "Mixed division fluency", tags: ["division"] },
+        { id: "D6", operation: "division", name: "Choose division tables", tags: ["division", "customTables"] },
         { id: "X1", operation: "mixed", name: "Addition and subtraction within 10", tags: ["addition", "subtraction"] },
         { id: "X2", operation: "mixed", name: "Friends of 10 mixed", tags: ["friends10"] },
         { id: "X3", operation: "mixed", name: "Facts ending in 5 mixed", tags: ["ending5"] },
@@ -2050,10 +2051,20 @@
         });
       }
 
+      function tablePracticeOperation(operation) {
+        return operation === "multiplication" || operation === "division";
+      }
+
+      function tablePracticeLevelId(operation) {
+        return operation === "division" ? "D6" : "M7";
+      }
+
       function currentMultiplicationOptions() {
+        var practiceMode = state.selectedOperation === "division" ? "division" : "multiplication";
         return {
           tables: normalizeTables(state.multiplicationTables),
-          includeReverseDivision: !!state.includeReverseDivision
+          includeReverseDivision: practiceMode === "multiplication" && !!state.includeReverseDivision,
+          practiceMode: practiceMode
         };
       }
 
@@ -2065,8 +2076,10 @@
 
       function customMultiplicationTags(options) {
         var settings = options || currentMultiplicationOptions();
-        var tags = ["multiplication", "customTables"].concat(tableTags(settings.tables));
-        if (settings.includeReverseDivision) tags = tags.concat(["division", "reverseDivision"]);
+        var mode = settings.practiceMode === "division" ? "division" : "multiplication";
+        var tags = [mode, "customTables"].concat(tableTags(settings.tables));
+        if (mode === "division") tags.push("reverseDivision");
+        if (mode === "multiplication" && settings.includeReverseDivision) tags = tags.concat(["division", "reverseDivision"]);
         return tags;
       }
 
@@ -2080,6 +2093,9 @@
 
       function customMultiplicationLevelName(options) {
         var settings = options || currentMultiplicationOptions();
+        if (settings.practiceMode === "division") {
+          return "Division facts: " + tableListLabel(settings.tables);
+        }
         var label = "Chosen tables: " + tableListLabel(settings.tables);
         if (settings.includeReverseDivision) label += " with reverse division";
         return label;
@@ -2203,10 +2219,11 @@
       function generateCustomMultiplicationQuestion(options) {
         var settings = options || currentMultiplicationOptions();
         var tables = normalizeTables(settings.tables);
+        var practiceMode = settings.practiceMode === "division" ? "division" : "multiplication";
         var factor = choice(tables);
-        var other = rand(0, 12);
+        var other = rand(1, 12);
         var tags = customMultiplicationTags(settings);
-        if (settings.includeReverseDivision && Math.random() > 0.5) {
+        if (practiceMode === "division" || (settings.includeReverseDivision && Math.random() > 0.5)) {
           return question((factor * other) + " / " + factor, other, "division", tags);
         }
         var ordered = shufflePair(factor, other);
@@ -2335,7 +2352,7 @@
           return question(aM6 + " x " + bM6, aM6 * bM6, "multiplication", level.tags);
         }
 
-        if (id === "M7") return generateCustomMultiplicationQuestion(options);
+        if (id === "M7" || id === "D6") return generateCustomMultiplicationQuestion(options);
 
         if (id === "D1") {
           var divisorD1 = choice([2, 5, 10]);
@@ -2638,7 +2655,10 @@
 
       function studentMenuView() {
         var levels = LEVELS.filter(function (level) { return level.operation === state.selectedOperation; });
-        if (!levels.some(function (level) { return level.id === state.selectedLevelId; })) {
+        var tablePractice = tablePracticeOperation(state.selectedOperation);
+        if (tablePractice) {
+          state.selectedLevelId = tablePracticeLevelId(state.selectedOperation);
+        } else if (!levels.some(function (level) { return level.id === state.selectedLevelId; })) {
           state.selectedLevelId = levels[0].id;
         }
         return [
@@ -2665,11 +2685,7 @@
           '      <h3>Operation</h3>',
           '      <div class="tabs">' + operationTabs() + '</div>',
           '    </div>',
-          '    <div>',
-          '      <h3>Level</h3>',
-          '      <div class="level-list">' + levels.map(levelButton).join("") + '</div>',
-          '    </div>',
-          customMultiplicationPanel(),
+          tablePractice ? tablePracticePanel() : levelSelectionHTML(levels),
           '    <div class="row action-row">',
           '      <button class="btn primary" data-action="begin-session" data-mode="practice">Practice</button>',
           '      <button class="btn gold" data-action="begin-session" data-mode="sprint">100-second sprint</button>',
@@ -2697,16 +2713,29 @@
         ].join("");
       }
 
-      function customMultiplicationPanel() {
-        if (state.selectedOperation !== "multiplication" || state.selectedLevelId !== "M7") return "";
+      function levelSelectionHTML(levels) {
+        return [
+          '    <div>',
+          '      <h3>Level</h3>',
+          '      <div class="level-list">' + levels.map(levelButton).join("") + '</div>',
+          '    </div>'
+        ].join("");
+      }
+
+      function tablePracticePanel() {
+        var divisionMode = state.selectedOperation === "division";
+        var note = divisionMode ? "Whole-number division facts from your chosen tables." : "Multiplication facts from your chosen tables.";
         return [
           '    <div class="stack">',
           '      <div class="between">',
-          '        <h3>Tables</h3>',
+          '        <div>',
+          '          <h3>Choose tables</h3>',
+          '          <p class="muted">' + escapeHTML(note) + '</p>',
+          '        </div>',
           '        <span class="pill">' + escapeHTML(tableListLabel(state.multiplicationTables)) + '</span>',
           '      </div>',
           '      <div class="table-grid">' + TIMES_TABLES.map(tableCheckbox).join("") + '</div>',
-          '      ' + reverseDivisionToggle(),
+          divisionMode ? '      <div class="notice small">Division will ask facts like 42 / 6 when 6s are chosen.</div>' : '      ' + reverseDivisionToggle(),
           '    </div>'
         ].join("");
       }
@@ -2915,7 +2944,7 @@
 
       function startSession(mode) {
         var level = levelById(state.selectedLevelId);
-        var practiceOptions = level.id === "M7" ? currentMultiplicationOptions() : null;
+        var practiceOptions = tablePracticeOperation(level.operation) ? currentMultiplicationOptions() : null;
         var sessionTags = practiceOptions ? customMultiplicationTags(practiceOptions) : level.tags;
         var sessionLevelName = practiceOptions ? customMultiplicationLevelName(practiceOptions) : level.name;
         state.active = {
@@ -4705,7 +4734,7 @@
         if (action === "select-operation") {
           state.selectedOperation = button.getAttribute("data-operation");
           var levels = LEVELS.filter(function (level) { return level.operation === state.selectedOperation; });
-          state.selectedLevelId = levels[0].id;
+          state.selectedLevelId = tablePracticeOperation(state.selectedOperation) ? tablePracticeLevelId(state.selectedOperation) : levels[0].id;
           render();
         }
         if (action === "select-level") {
@@ -4747,6 +4776,8 @@
         if (action === "retry-level") {
           if (state.results) {
             state.selectedLevelId = state.results.levelId;
+            var retryLevel = levelById(state.results.levelId);
+            state.selectedOperation = retryLevel.operation;
             if (state.results.practiceOptions) {
               state.multiplicationTables = normalizeTables(state.results.practiceOptions.tables);
               state.includeReverseDivision = !!state.results.practiceOptions.includeReverseDivision;
