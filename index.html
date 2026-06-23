@@ -447,7 +447,7 @@
     }
 
     .key.enter {
-      grid-column: span 2;
+      grid-column: span 3;
       background: var(--teal);
       color: white;
       border-color: var(--teal);
@@ -1435,7 +1435,8 @@
         if (id === "A2") {
           var pairA2 = choice([[1, 9], [2, 8], [3, 7], [4, 6], [5, 5]]);
           var orderedA2 = shufflePair(pairA2[0], pairA2[1]);
-          return question(orderedA2[0] + " + " + orderedA2[1], 10, "addition", level.tags);
+          if (Math.random() > 0.5) return question(orderedA2[0] + " + ? = 10", orderedA2[1], "addition", level.tags);
+          return question("? + " + orderedA2[0] + " = 10", orderedA2[1], "addition", level.tags);
         }
 
         if (id === "A3") {
@@ -1948,7 +1949,7 @@
           '  </section>',
           '  <section class="stats">',
           statHTML("Correct", active.correct),
-          statHTML("Tried", active.attempted),
+          statHTML("Attempts", active.attempted),
           statHTML("Accuracy", accuracy + "%"),
           statHTML("Streak", active.streak),
           '  </section>',
@@ -1981,17 +1982,50 @@
           return '<button class="key" type="button" data-action="keypad" data-key="' + key + '">' + key + '</button>';
         }).join("") +
           '<button class="key" type="button" data-action="backspace" title="Backspace">Del</button>' +
+          '<button class="key" type="button" data-action="clear-answer" title="Clear answer">Clear</button>' +
           '<button class="key enter" type="button" data-action="submit-answer">Enter</button>';
       }
 
-      function focusAnswer() {
+      function focusAnswer(position) {
         var input = document.getElementById("answerInput");
-        if (input) input.focus();
+        if (input) {
+          input.focus();
+          if (position != null && input.setSelectionRange) {
+            var safePosition = Math.max(0, Math.min(position, input.value.length));
+            input.setSelectionRange(safePosition, safePosition);
+          }
+        }
+      }
+
+      function sanitizeAnswerValue(value) {
+        return String(value || "").replace(/[^\d-]/g, "").slice(0, 6);
       }
 
       function updateInputFromDom() {
         var input = document.getElementById("answerInput");
-        if (input && state.active) state.active.input = input.value.replace(/[^\d-]/g, "").slice(0, 6);
+        if (input && state.active) state.active.input = sanitizeAnswerValue(input.value);
+      }
+
+      function answerEditState() {
+        var input = document.getElementById("answerInput");
+        if (!input) return null;
+        var value = sanitizeAnswerValue(input.value);
+        var start = input.selectionStart == null ? value.length : input.selectionStart;
+        var end = input.selectionEnd == null ? value.length : input.selectionEnd;
+        return {
+          value: value,
+          start: Math.max(0, Math.min(start, value.length)),
+          end: Math.max(0, Math.min(end, value.length))
+        };
+      }
+
+      function setAnswerInput(value, caretPosition) {
+        if (!state.active) return;
+        state.active.input = sanitizeAnswerValue(value);
+        render();
+        setTimeout(function () {
+          focusAnswer(caretPosition);
+        }, 30);
       }
 
       function submitAnswer() {
@@ -2008,11 +2042,12 @@
         var submitted = Number(raw);
         var q = active.question;
         if (submitted === q.answer) {
+          var correctedAfterRetry = active.pendingWrong != null;
           active.correct += 1;
           active.attempted += 1;
           active.streak += 1;
           active.bestStreak = Math.max(active.bestStreak, active.streak);
-          if (active.pendingWrong != null) {
+          if (correctedAfterRetry) {
             active.mistakes.push({
               question: q.text,
               studentAnswer: active.pendingWrong,
@@ -2022,14 +2057,17 @@
               recovered: true,
               tags: q.tags
             });
+            active.pendingWrong = null;
           }
-          active.feedback = "Correct.";
+          active.feedback = correctedAfterRetry ? "Correct on retry." : "Correct.";
           active.input = "";
           render();
           setTimeout(nextQuestion, 420);
           return;
         }
         if (active.tries === 0) {
+          active.attempted += 1;
+          active.streak = 0;
           active.tries = 1;
           active.pendingWrong = raw;
           active.feedback = "Try once more.";
@@ -2049,6 +2087,7 @@
           recovered: false,
           tags: q.tags
         });
+        active.pendingWrong = null;
         active.feedback = "Answer: " + q.answer;
         active.input = "";
         render();
@@ -2071,6 +2110,18 @@
         stopTimer();
         var active = state.active;
         var level = levelById(active.levelId);
+        if (active.pendingWrong != null) {
+          active.mistakes.push({
+            question: active.question.text,
+            studentAnswer: active.pendingWrong,
+            correctAnswer: active.question.answer,
+            operation: active.question.operation,
+            levelId: active.levelId,
+            recovered: false,
+            tags: active.question.tags
+          });
+          active.pendingWrong = null;
+        }
         var timeSpent = active.mode === "sprint" ? 100 - Math.max(active.timeLeft || 0, 0) : Math.round((Date.now() - active.startedAt) / 1000);
         var accuracy = active.attempted ? Math.round((active.correct / active.attempted) * 100) : 0;
         var session = {
@@ -2142,7 +2193,7 @@
           '  </section>',
           '  <section class="stats">',
           statHTML("Correct", r.correct),
-          statHTML("Attempted", r.attempted),
+          statHTML("Attempts", r.attempted),
           statHTML("Accuracy", r.accuracy + "%"),
           statHTML("Best streak", r.bestStreak),
           '  </section>',
@@ -2963,17 +3014,34 @@
         }
         if (action === "keypad") {
           if (!state.active) return;
-          updateInputFromDom();
-          state.active.input = (state.active.input + button.getAttribute("data-key")).slice(0, 6);
-          render();
-          setTimeout(focusAnswer, 30);
+          var keyEdit = answerEditState();
+          var keyValue = button.getAttribute("data-key");
+          if (keyEdit) {
+            setAnswerInput(keyEdit.value.slice(0, keyEdit.start) + keyValue + keyEdit.value.slice(keyEdit.end), keyEdit.start + 1);
+          } else {
+            updateInputFromDom();
+            setAnswerInput(state.active.input + keyValue, state.active.input.length + 1);
+          }
         }
         if (action === "backspace") {
           if (!state.active) return;
-          updateInputFromDom();
-          state.active.input = state.active.input.slice(0, -1);
-          render();
-          setTimeout(focusAnswer, 30);
+          var backspaceEdit = answerEditState();
+          if (backspaceEdit) {
+            if (backspaceEdit.start !== backspaceEdit.end) {
+              setAnswerInput(backspaceEdit.value.slice(0, backspaceEdit.start) + backspaceEdit.value.slice(backspaceEdit.end), backspaceEdit.start);
+            } else if (backspaceEdit.start > 0) {
+              setAnswerInput(backspaceEdit.value.slice(0, backspaceEdit.start - 1) + backspaceEdit.value.slice(backspaceEdit.end), backspaceEdit.start - 1);
+            } else {
+              setAnswerInput(backspaceEdit.value, 0);
+            }
+          } else {
+            updateInputFromDom();
+            setAnswerInput(state.active.input.slice(0, -1), Math.max(0, state.active.input.length - 1));
+          }
+        }
+        if (action === "clear-answer") {
+          if (!state.active) return;
+          setAnswerInput("", 0);
         }
         if (action === "submit-answer") submitAnswer();
         if (action === "finish-session") finishSession();
@@ -3132,6 +3200,18 @@
         handleAction(button);
       });
 
+      document.addEventListener("pointerdown", function (event) {
+        var button = event.target.closest('[data-action="keypad"], [data-action="backspace"], [data-action="clear-answer"]');
+        if (button && state.active) event.preventDefault();
+      });
+
+      document.addEventListener("keydown", function (event) {
+        if (event.target && event.target.id === "answerInput" && state.active && event.key === "Escape") {
+          event.preventDefault();
+          setAnswerInput("", 0);
+        }
+      });
+
       document.addEventListener("change", function (event) {
         var select = event.target.closest("select[data-action]");
         if (!select) return;
@@ -3147,8 +3227,19 @@
 
       document.addEventListener("input", function (event) {
         if (event.target && event.target.id === "answerInput" && state.active) {
-          state.active.input = event.target.value.replace(/[^\d-]/g, "").slice(0, 6);
-          event.target.value = state.active.input;
+          var originalAnswer = event.target.value;
+          var cleanedAnswer = sanitizeAnswerValue(originalAnswer);
+          var cursorPosition = event.target.selectionStart;
+          state.active.input = cleanedAnswer;
+          if (cleanedAnswer !== originalAnswer) {
+            event.target.value = cleanedAnswer;
+            if (event.target.setSelectionRange) {
+              var removedCharacters = originalAnswer.length - cleanedAnswer.length;
+              var newPosition = cursorPosition == null ? cleanedAnswer.length : cursorPosition - removedCharacters;
+              newPosition = Math.max(0, Math.min(newPosition, cleanedAnswer.length));
+              event.target.setSelectionRange(newPosition, newPosition);
+            }
+          }
         }
       });
 
