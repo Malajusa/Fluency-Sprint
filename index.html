@@ -20,6 +20,9 @@
       --blue: #3c75d8;
       --shadow: 0 18px 42px rgba(23, 32, 51, 0.12);
       --radius: 8px;
+      --body-bg:
+        radial-gradient(circle at top left, rgba(244, 182, 61, 0.22), transparent 32rem),
+        linear-gradient(135deg, #fffaf0 0%, #f7fbff 52%, #fff7f5 100%);
     }
 
     * {
@@ -29,12 +32,81 @@
     body {
       margin: 0;
       min-height: 100vh;
-      background:
-        radial-gradient(circle at top left, rgba(244, 182, 61, 0.22), transparent 32rem),
-        linear-gradient(135deg, #fffaf0 0%, #f7fbff 52%, #fff7f5 100%);
+      background: var(--body-bg);
       color: var(--ink);
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       letter-spacing: 0;
+    }
+
+    body[data-theme="ocean"] {
+      --ink: #0e2a3b;
+      --muted: #496776;
+      --line: #b9d8e6;
+      --teal: #007f95;
+      --teal-dark: #005d70;
+      --coral: #e76f51;
+      --coral-dark: #b84c32;
+      --gold: #f2c94c;
+      --body-bg:
+        radial-gradient(circle at top left, rgba(0, 127, 149, 0.2), transparent 30rem),
+        linear-gradient(135deg, #eefcff 0%, #f8fbff 50%, #fff7ed 100%);
+    }
+
+    body[data-theme="forest"] {
+      --ink: #173122;
+      --muted: #52695c;
+      --line: #c7dccd;
+      --teal: #2f855a;
+      --teal-dark: #276749;
+      --coral: #c05621;
+      --coral-dark: #9c4221;
+      --gold: #ecc94b;
+      --body-bg:
+        radial-gradient(circle at top left, rgba(72, 187, 120, 0.2), transparent 30rem),
+        linear-gradient(135deg, #f0fff4 0%, #f7fafc 52%, #fffaf0 100%);
+    }
+
+    body[data-theme="sunset"] {
+      --ink: #332018;
+      --muted: #755c51;
+      --line: #ead1c5;
+      --teal: #1f8a8a;
+      --teal-dark: #146a6a;
+      --coral: #d94f4f;
+      --coral-dark: #a93a3a;
+      --gold: #f6ad55;
+      --body-bg:
+        radial-gradient(circle at top left, rgba(246, 173, 85, 0.24), transparent 30rem),
+        linear-gradient(135deg, #fff7ed 0%, #fff5f5 50%, #eefcff 100%);
+    }
+
+    body[data-theme="bright"] {
+      --ink: #182136;
+      --muted: #56627a;
+      --line: #cfd8ff;
+      --teal: #0f9f8f;
+      --teal-dark: #087b70;
+      --coral: #ef476f;
+      --coral-dark: #b83257;
+      --gold: #ffd166;
+      --body-bg:
+        radial-gradient(circle at top left, rgba(255, 209, 102, 0.28), transparent 30rem),
+        linear-gradient(135deg, #fffdf7 0%, #f0fbff 45%, #fff0f6 100%);
+    }
+
+    body[data-theme="contrast"] {
+      --ink: #05070d;
+      --muted: #182033;
+      --line: #05070d;
+      --teal: #005fcc;
+      --teal-dark: #003f88;
+      --coral: #b00020;
+      --coral-dark: #7a0015;
+      --gold: #f5b700;
+      --green: #006b3d;
+      --blue: #003fbd;
+      --shadow: none;
+      --body-bg: #ffffff;
     }
 
     button,
@@ -331,6 +403,67 @@
       color: var(--teal-dark);
     }
 
+    .appearance-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.7rem;
+    }
+
+    .appearance-choice {
+      min-height: 5.25rem;
+      border: 2px solid var(--line);
+      border-radius: var(--radius);
+      background: white;
+      color: var(--ink);
+      padding: 0.75rem;
+      display: grid;
+      grid-template-columns: 2.4rem minmax(0, 1fr);
+      align-items: center;
+      gap: 0.7rem;
+      text-align: left;
+      font-weight: 900;
+    }
+
+    .appearance-choice.active {
+      border-color: var(--teal);
+      box-shadow: 0 0 0 4px rgba(15, 159, 143, 0.12);
+    }
+
+    body[data-theme="contrast"] .tab.active,
+    body[data-theme="contrast"] .appearance-choice.active {
+      background: var(--ink);
+      color: white;
+      box-shadow: none;
+    }
+
+    .swatch {
+      width: 2.35rem;
+      height: 2.35rem;
+      border-radius: 999px;
+      border: 2px solid var(--line);
+      background: linear-gradient(135deg, #0f9f8f 0 50%, #f4b63d 50% 100%);
+    }
+
+    .swatch.ocean {
+      background: linear-gradient(135deg, #007f95 0 50%, #f2c94c 50% 100%);
+    }
+
+    .swatch.forest {
+      background: linear-gradient(135deg, #2f855a 0 50%, #c05621 50% 100%);
+    }
+
+    .swatch.sunset {
+      background: linear-gradient(135deg, #d94f4f 0 50%, #f6ad55 50% 100%);
+    }
+
+    .swatch.bright {
+      background: linear-gradient(135deg, #ef476f 0 50%, #ffd166 50% 100%);
+    }
+
+    .swatch.contrast {
+      background: linear-gradient(135deg, #05070d 0 50%, #ffffff 50% 100%);
+    }
+
     label {
       display: grid;
       gap: 0.35rem;
@@ -457,6 +590,20 @@
       background: var(--teal);
       color: white;
       border-color: var(--teal);
+    }
+
+    body[data-keypad-size="large"] .answer-input {
+      min-height: 5.8rem;
+      max-width: 22rem;
+    }
+
+    body[data-keypad-size="large"] .keypad {
+      gap: 0.85rem;
+    }
+
+    body[data-keypad-size="large"] .key {
+      min-height: 5.8rem;
+      font-size: 1.85rem;
     }
 
     .stats {
@@ -644,6 +791,7 @@
       .grid.two,
       .grid.three,
       .grid.four,
+      .appearance-grid,
       .level-list,
       .practice-layout,
       .dashboard-grid {
@@ -737,6 +885,7 @@
       "use strict";
 
       var STORE_KEY = "fluencySprintLocalV1";
+      var APPEARANCE_KEY = "fluencySprintAppearanceV1";
       var SUPABASE_URL = "https://vumbzfgpatojufdtfvni.supabase.co";
       var SUPABASE_PUBLISHABLE_KEY = "sb_publishable_j588PG55dSjJ-DEQJGIgFQ_WRiNnY7V";
       var supabaseClient = window.supabase
@@ -789,7 +938,21 @@
         { id: "X6", operation: "mixed", name: "All four operations, standard", tags: ["mixed"] }
       ];
 
+      var APPEARANCE_THEMES = [
+        { id: "classic", label: "Classic" },
+        { id: "ocean", label: "Ocean" },
+        { id: "forest", label: "Forest" },
+        { id: "sunset", label: "Sunset" },
+        { id: "bright", label: "Bright" },
+        { id: "contrast", label: "High contrast" }
+      ];
+      var KEYPAD_SIZES = [
+        { id: "normal", label: "Normal" },
+        { id: "large", label: "Large" }
+      ];
+
       var liveStore = loadStore();
+      var savedAppearance = loadAppearance();
       var previewStore = null;
       var store = liveStore;
       var state = {
@@ -816,6 +979,7 @@
         remoteSessions: [],
         studentHistoryError: "",
         recentPins: {},
+        appearance: savedAppearance,
         prefillClassCode: "",
         prefillAlias: ""
       };
@@ -840,6 +1004,49 @@
         } catch (error) {
           return defaultStore();
         }
+      }
+
+      function defaultAppearance() {
+        return {
+          theme: "classic",
+          keypadSize: "normal"
+        };
+      }
+
+      function optionExists(options, id) {
+        return options.some(function (option) {
+          return option.id === id;
+        });
+      }
+
+      function normalizeAppearance(value) {
+        var fallback = defaultAppearance();
+        var theme = value && optionExists(APPEARANCE_THEMES, value.theme) ? value.theme : fallback.theme;
+        var keypadSize = value && optionExists(KEYPAD_SIZES, value.keypadSize) ? value.keypadSize : fallback.keypadSize;
+        return {
+          theme: theme,
+          keypadSize: keypadSize
+        };
+      }
+
+      function loadAppearance() {
+        try {
+          return normalizeAppearance(JSON.parse(localStorage.getItem(APPEARANCE_KEY) || "{}"));
+        } catch (error) {
+          return defaultAppearance();
+        }
+      }
+
+      function saveAppearance() {
+        state.appearance = normalizeAppearance(state.appearance);
+        localStorage.setItem(APPEARANCE_KEY, JSON.stringify(state.appearance));
+        applyAppearance();
+      }
+
+      function applyAppearance() {
+        var appearance = normalizeAppearance(state.appearance);
+        document.body.setAttribute("data-theme", appearance.theme);
+        document.body.setAttribute("data-keypad-size", appearance.keypadSize);
       }
 
       function saveStore() {
@@ -1667,12 +1874,14 @@
 
       function header() {
         var t = teacher();
+        var appearanceButton = state.view === "session" ? "" : '<button class="btn ghost" data-action="appearance" title="Appearance">Appearance</button>';
         return [
           '<div class="topbar">',
           '  <button class="brand btn ghost" data-action="home" title="Home">',
           '    <span class="brand-mark">FS</span><span>Fluency Sprint</span>',
           '  </button>',
           '  <div class="toolbar">',
+          appearanceButton,
           t ? '<span class="pill">Teacher: ' + escapeHTML(t.displayName || t.email) + '</span><button class="btn ghost" data-action="teacher-dashboard" title="Teacher dashboard">Dashboard</button><button class="btn ghost" data-action="teacher-logout" title="Sign out">Sign out</button>' : '',
           state.student ? '<span class="pill">Student: ' + escapeHTML(state.student.alias) + '</span><button class="btn ghost" data-action="student-logout" title="Student sign out">Leave</button>' : '',
           '  </div>',
@@ -1782,6 +1991,44 @@
           '  <p class="muted">' + escapeHTML(detail) + '</p>',
           '</button>'
         ].join("");
+      }
+
+      function appearanceView() {
+        return [
+          '<div class="page">',
+          header(),
+          '<main class="shell stack">',
+          '  <section class="between">',
+          '    <div>',
+          '      <h2>Appearance</h2>',
+          '    </div>',
+          '    <button class="btn ghost" data-action="home">Home</button>',
+          '  </section>',
+          messageHTML(),
+          '  <section class="panel section stack">',
+          '    <h3>Theme</h3>',
+          '    <div class="appearance-grid">' + APPEARANCE_THEMES.map(themeButton).join("") + '</div>',
+          '  </section>',
+          '  <section class="panel section stack">',
+          '    <h3>Keypad size</h3>',
+          '    <div class="tabs">' + KEYPAD_SIZES.map(keypadSizeButton).join("") + '</div>',
+          '  </section>',
+          '</main>',
+          '</div>'
+        ].join("");
+      }
+
+      function themeButton(theme) {
+        return [
+          '<button class="appearance-choice ' + (state.appearance.theme === theme.id ? "active" : "") + '" data-action="set-theme" data-theme="' + escapeHTML(theme.id) + '">',
+          '  <span class="swatch ' + (theme.id === "classic" ? "" : escapeHTML(theme.id)) + '"></span>',
+          '  <span>' + escapeHTML(theme.label) + '</span>',
+          '</button>'
+        ].join("");
+      }
+
+      function keypadSizeButton(option) {
+        return '<button class="tab ' + (state.appearance.keypadSize === option.id ? "active" : "") + '" data-action="set-keypad-size" data-keypad-size="' + escapeHTML(option.id) + '">' + escapeHTML(option.label) + '</button>';
       }
 
       function authView() {
@@ -3188,6 +3435,17 @@
           return;
         }
         if (action === "home") setView("home");
+        if (action === "appearance") setView("appearance");
+        if (action === "set-theme") {
+          state.appearance.theme = button.getAttribute("data-theme");
+          saveAppearance();
+          render();
+        }
+        if (action === "set-keypad-size") {
+          state.appearance.keypadSize = button.getAttribute("data-keypad-size");
+          saveAppearance();
+          render();
+        }
         if (action === "student-start") setView("student-join");
         if (action === "teacher-start") {
           state.view = teacher() ? "dashboard" : "auth";
@@ -3513,6 +3771,7 @@
       function render() {
         if (state.view === "home") app.innerHTML = homeView();
         if (state.view === "preview") app.innerHTML = previewView();
+        if (state.view === "appearance") app.innerHTML = appearanceView();
         if (state.view === "auth") app.innerHTML = authView();
         if (state.view === "student-join") app.innerHTML = studentJoinView();
         if (state.view === "student-menu") app.innerHTML = studentMenuView();
@@ -3523,6 +3782,7 @@
         hydrateQRCodes();
       }
 
+      applyAppearance();
       applyInitialRoute();
       render();
       initializeBackend().catch(function (error) {
