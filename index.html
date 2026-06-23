@@ -3082,10 +3082,8 @@
             });
             active.pendingWrong = null;
           }
-          active.feedback = correctedAfterRetry ? "Correct on retry." : "Correct.";
           active.input = "";
-          render();
-          setTimeout(nextQuestion, 420);
+          nextQuestion();
           return;
         }
         if (active.tries === 0) {
