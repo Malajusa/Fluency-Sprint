@@ -2935,13 +2935,13 @@
           '    <form class="panel question stack" data-form="answer">',
           '      <div class="pill" style="margin: 0 auto">' + escapeHTML(operationLabel(active.question.operation)) + '</div>',
           '      <div class="question-text">' + escapeHTML(active.question.text) + '</div>',
-          '      <input id="answerInput" class="answer-input" name="answer" inputmode="numeric" enterkeyhint="done" pattern="[0-9-]*" autocomplete="off" spellcheck="false" value="' + escapeHTML(active.input) + '" aria-label="Answer">',
+          '      <input id="answerInput" class="answer-input" name="answer" inputmode="none" enterkeyhint="done" pattern="[0-9-]*" autocomplete="off" spellcheck="false" readonly aria-readonly="true" value="' + escapeHTML(active.input) + '" aria-label="Answer">',
           active.feedback ? '<div class="notice ' + (active.feedback.indexOf("Correct") === 0 ? "success" : "danger") + '">' + escapeHTML(active.feedback) + '</div>' : '',
           '    </form>',
           '    <aside class="panel section stack keypad-panel">',
           '      <h3>Keypad</h3>',
           '      <div class="keypad">' + keypadHTML() + '</div>',
-          '      <div class="notice tiny">Keyboard input works too. Incorrect answers get one retry.</div>',
+          '      <div class="notice tiny">Use the keypad. Physical keyboards work too.</div>',
           '    </aside>',
           '  </section>',
           '</main>',
@@ -3014,6 +3014,67 @@
 
       function isAnswerControlAction(action) {
         return action === "keypad" || action === "backspace" || action === "clear-answer" || action === "submit-answer";
+      }
+
+      function handlePhysicalAnswerKey(event) {
+        if (!state.active) return false;
+        var target = event.target;
+        var inAnswer = target && target.id === "answerInput";
+        var typingElsewhere = target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName || "") && !inAnswer;
+        if (typingElsewhere) return false;
+
+        if (/^\d$/.test(event.key)) {
+          event.preventDefault();
+          var edit = answerEditState();
+          if (edit) {
+            setAnswerInput(edit.value.slice(0, edit.start) + event.key + edit.value.slice(edit.end), edit.start + 1);
+          } else {
+            setAnswerInput(state.active.input + event.key, state.active.input.length + 1);
+          }
+          return true;
+        }
+
+        if (event.key === "-" && !String(state.active.input || "").includes("-")) {
+          event.preventDefault();
+          var minusEdit = answerEditState();
+          if (minusEdit) {
+            setAnswerInput(minusEdit.value.slice(0, minusEdit.start) + "-" + minusEdit.value.slice(minusEdit.end), minusEdit.start + 1);
+          } else {
+            setAnswerInput("-" + state.active.input, 1);
+          }
+          return true;
+        }
+
+        if (event.key === "Backspace" || event.key === "Delete") {
+          event.preventDefault();
+          var backspaceEdit = answerEditState();
+          if (backspaceEdit) {
+            if (backspaceEdit.start !== backspaceEdit.end) {
+              setAnswerInput(backspaceEdit.value.slice(0, backspaceEdit.start) + backspaceEdit.value.slice(backspaceEdit.end), backspaceEdit.start);
+            } else if (backspaceEdit.start > 0) {
+              setAnswerInput(backspaceEdit.value.slice(0, backspaceEdit.start - 1) + backspaceEdit.value.slice(backspaceEdit.end), backspaceEdit.start - 1);
+            } else {
+              setAnswerInput(backspaceEdit.value, 0);
+            }
+          } else {
+            setAnswerInput(state.active.input.slice(0, -1), Math.max(0, state.active.input.length - 1));
+          }
+          return true;
+        }
+
+        if (event.key === "Enter") {
+          event.preventDefault();
+          submitAnswer();
+          return true;
+        }
+
+        if (event.key === "Escape") {
+          event.preventDefault();
+          setAnswerInput("", 0);
+          return true;
+        }
+
+        return false;
       }
 
       function submitAnswer() {
@@ -4883,17 +4944,7 @@
       });
 
       document.addEventListener("keydown", function (event) {
-        if (event.target && event.target.id === "answerInput" && state.active) {
-          if (event.key === "Enter") {
-            event.preventDefault();
-            submitAnswer();
-            return;
-          }
-          if (event.key === "Escape") {
-            event.preventDefault();
-            setAnswerInput("", 0);
-          }
-        }
+        handlePhysicalAnswerKey(event);
       });
 
       document.addEventListener("change", function (event) {
