@@ -637,6 +637,8 @@
     .question {
       text-align: center;
       padding: clamp(1.2rem, 4vw, 2.5rem);
+      position: relative;
+      overflow: visible;
     }
 
     .question-text {
@@ -656,6 +658,18 @@
       margin: 0 auto;
       touch-action: manipulation;
       caret-color: transparent;
+      pointer-events: none;
+    }
+
+    .feedback-toast {
+      position: absolute;
+      left: 50%;
+      bottom: 0.75rem;
+      transform: translateX(-50%);
+      width: min(92%, 24rem);
+      z-index: 4;
+      margin: 0;
+      box-shadow: 0 12px 26px rgba(23, 32, 51, 0.14);
       pointer-events: none;
     }
 
@@ -1185,6 +1199,12 @@
       .answer-input {
         min-height: 4.4rem;
         max-width: min(100%, 18rem);
+      }
+
+      .feedback-toast {
+        bottom: auto;
+        top: 0.75rem;
+        width: min(94%, 22rem);
       }
 
       .keypad-panel {
@@ -2953,7 +2973,7 @@
           '      <div class="pill" style="margin: 0 auto">' + escapeHTML(operationLabel(active.question.operation)) + '</div>',
           '      <div class="question-text">' + escapeHTML(active.question.text) + '</div>',
           '      <input id="answerInput" class="answer-input" name="answer" inputmode="none" enterkeyhint="done" pattern="[0-9-]*" autocomplete="off" spellcheck="false" readonly aria-readonly="true" value="' + escapeHTML(active.input) + '" aria-label="Answer">',
-          active.feedback ? '<div class="notice ' + (active.feedback.indexOf("Correct") === 0 ? "success" : "danger") + '">' + escapeHTML(active.feedback) + '</div>' : '',
+          active.feedback ? '<div class="feedback-toast notice ' + (active.feedback.indexOf("Correct") === 0 ? "success" : "danger") + '">' + escapeHTML(active.feedback) + '</div>' : '',
           '    </form>',
           '    <aside class="panel section stack keypad-panel">',
           '      <h3>Keypad</h3>',
