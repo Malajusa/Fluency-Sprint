@@ -331,7 +331,7 @@ $$;
 
 drop function if exists public.create_student(uuid, text, text);
 drop function if exists public.create_student(uuid, text, text, text);
-create function public.create_student(p_class_id uuid, p_first_name text, p_last_name text, p_pin text)
+create function public.create_student(p_class_id uuid, p_alias text, p_pin text)
 returns table (
   id uuid,
   class_id uuid,
@@ -348,14 +348,24 @@ set search_path = public
 as $$
 declare
   owner_id uuid;
-  generated_alias text;
+  clean_alias text;
   new_student public.students;
 begin
   if auth.uid() is null then
     raise exception 'Not signed in';
   end if;
 
-  if length(trim(p_pin)) < 4 then
+  clean_alias := regexp_replace(trim(coalesce(p_alias, '')), '[[:space:]]+', ' ', 'g');
+
+  if clean_alias = '' then
+    raise exception 'Student alias is required';
+  end if;
+
+  if length(clean_alias) > 40 then
+    raise exception 'Student alias must be 40 characters or fewer';
+  end if;
+
+  if length(trim(coalesce(p_pin, ''))) < 4 then
     raise exception 'PIN must be at least 4 characters';
   end if;
 
@@ -367,16 +377,24 @@ begin
     raise exception 'Class not found';
   end if;
 
-  generated_alias := public.generate_student_alias(p_class_id, p_first_name, p_last_name);
+  if exists (
+    select 1
+    from public.students as s
+    where s.class_id = p_class_id
+      and lower(s.alias) = lower(clean_alias)
+      and s.deleted_at is null
+  ) then
+    raise exception 'That alias already exists in this class';
+  end if;
 
   insert into public.students (class_id, teacher_id, first_name, last_name, alias, pin_hash)
   values (
     p_class_id,
     auth.uid(),
-    trim(p_first_name),
-    trim(p_last_name),
-    generated_alias,
-    extensions.crypt(trim(p_pin), extensions.gen_salt('bf'))
+    '',
+    '',
+    clean_alias,
+    extensions.crypt(trim(coalesce(p_pin, '')), extensions.gen_salt('bf'))
   )
   returning * into new_student;
 
@@ -753,7 +771,7 @@ grant execute on function public.ensure_teacher_profile(text) to authenticated;
 grant execute on function public.create_class(text) to authenticated;
 grant execute on function public.rotate_class_code(uuid) to authenticated;
 grant execute on function public.generate_student_alias(uuid, text, text) to authenticated;
-grant execute on function public.create_student(uuid, text, text, text) to authenticated;
+grant execute on function public.create_student(uuid, text, text) to authenticated;
 grant execute on function public.reset_student_pin(uuid, text) to authenticated;
 grant execute on function public.delete_student(uuid) to authenticated;
 grant execute on function public.delete_class(uuid) to authenticated;

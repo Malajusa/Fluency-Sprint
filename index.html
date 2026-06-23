@@ -807,6 +807,7 @@
         remoteStudents: [],
         remoteSessions: [],
         studentHistoryError: "",
+        recentPins: {},
         prefillClassCode: "",
         prefillAlias: ""
       };
@@ -1057,6 +1058,7 @@
         state.remoteStudents = [];
         state.remoteSessions = [];
         state.studentHistoryError = "";
+        state.recentPins = {};
       }
 
       function buildPreviewStore() {
@@ -1295,6 +1297,28 @@
 
       function uid(prefix) {
         return prefix + "_" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+      }
+
+      function generateStudentPin() {
+        if (window.crypto && window.crypto.getRandomValues) {
+          var values = new Uint32Array(1);
+          window.crypto.getRandomValues(values);
+          return String(100000 + (values[0] % 900000));
+        }
+        return String(100000 + Math.floor(Math.random() * 900000));
+      }
+
+      function rememberGeneratedPin(studentId, pin) {
+        if (!studentId || !pin) return;
+        state.recentPins[studentId] = pin;
+      }
+
+      function generatedPinForStudent(student) {
+        return student && state.recentPins[student.id] ? state.recentPins[student.id] : "";
+      }
+
+      function generatedPinMessage(action, alias, pin) {
+        return action + " for " + alias + ". Generated PIN: " + pin + ". It is shown only until this page is reloaded.";
       }
 
       function escapeHTML(value) {
@@ -1906,6 +1930,10 @@
         return (initial + " " + last).trim() || "Student";
       }
 
+      function cleanStudentAlias(value) {
+        return String(value || "").trim().replace(/\s+/g, " ");
+      }
+
       function uniqueLocalAlias(classId, firstName, lastName) {
         var base = makeStudentAlias(firstName, lastName);
         var alias = base;
@@ -1922,6 +1950,14 @@
       function studentFullName(student) {
         var name = [student.firstName, student.lastName].filter(Boolean).join(" ").trim();
         return name || student.alias || "Student";
+      }
+
+      function hasStudentName(student) {
+        return !![student.firstName, student.lastName].filter(Boolean).join(" ").trim();
+      }
+
+      function studentOptionLabel(student) {
+        return hasStudentName(student) ? studentFullName(student) + " (" + student.alias + ")" : student.alias;
       }
 
       function startSession(mode) {
@@ -2383,12 +2419,11 @@
           '<form class="panel section stack" data-form="add-student">',
           '  <h3>Add student</h3>',
           '  <input type="hidden" name="classId" value="' + escapeHTML(klass.id) + '">',
-          '  <div class="grid three">',
-          '    <label>First name<input name="firstName" type="text" placeholder="Mia" required></label>',
-          '    <label>Last name<input name="lastName" type="text" placeholder="Smith" required></label>',
-          '    <label>PIN<input name="pin" inputmode="numeric" type="text" minlength="4" placeholder="1234" required></label>',
+          '  <div class="grid two">',
+          '    <label>Student alias<input name="alias" type="text" placeholder="A Morgan" maxlength="40" autocomplete="off" required></label>',
+          '    <div class="notice small">A six-digit PIN will be generated when the student is added.</div>',
           '  </div>',
-          '  <div class="tiny muted">Student alias will be generated as first initial + surname, for example M Smith. Do not enter extra personal information.</div>',
+          '  <div class="tiny muted">Use the alias you want the student to enter. Do not add extra personal information.</div>',
           '  <button class="btn primary" type="submit">Add student</button>',
           '</form>'
         ].join("");
@@ -2550,9 +2585,10 @@
             });
             var stats = scoreStats(ordered);
             var latest = ordered[ordered.length - 1] || null;
+            var nameDetail = hasStudentName(student) ? '<div class="tiny muted">' + escapeHTML(studentFullName(student)) + '</div>' : '';
             return [
               '<tr>',
-              '<td><strong>' + escapeHTML(student.alias) + '</strong><div class="tiny muted">' + escapeHTML(studentFullName(student)) + '</div></td>',
+              '<td><strong>' + escapeHTML(student.alias) + '</strong>' + nameDetail + '</td>',
               '<td>' + formatScore(stats.initial) + '</td>',
               '<td>' + formatScore(stats.high) + '</td>',
               '<td>' + formatScore(stats.median) + '</td>',
@@ -2598,7 +2634,7 @@
           '    <div class="row">',
           '      <select data-action="dashboard-student" aria-label="Student graph selector">',
           students.map(function (item) {
-            return '<option value="' + escapeHTML(item.id) + '"' + (item.id === student.id ? " selected" : "") + '>' + escapeHTML(studentFullName(item) + " (" + item.alias + ")") + '</option>';
+            return '<option value="' + escapeHTML(item.id) + '"' + (item.id === student.id ? " selected" : "") + '>' + escapeHTML(studentOptionLabel(item)) + '</option>';
           }).join(""),
           '      </select>',
           '      <select data-action="dashboard-level" aria-label="Challenge graph selector">' + levelOptions(levelId) + '</select>',
@@ -2620,9 +2656,10 @@
             var last = sessions.length ? sessions.slice().sort(function (a, b) { return new Date(b.createdAt) - new Date(a.createdAt); })[0] : null;
             var accuracy = sessions.length ? Math.round(avg(sessions.map(function (s) { return s.accuracy; }))) : 0;
             var best = sessions.length ? Math.max.apply(null, sessions.map(function (s) { return s.score; })) : 0;
+            var studentDetail = hasStudentName(student) ? '<div class="tiny muted">Alias: ' + escapeHTML(student.alias) + '</div>' : '';
             return [
               '<tr>',
-              '<td><strong>' + escapeHTML(studentFullName(student)) + '</strong><div class="tiny muted">Alias: ' + escapeHTML(student.alias) + '</div></td>',
+              '<td><strong>' + escapeHTML(studentFullName(student)) + '</strong>' + studentDetail + '</td>',
               '<td>' + studentLoginDetails(klass, student) + '</td>',
               '<td>' + (last ? formatDateTime(last.createdAt) : "No sessions") + '<div class="tiny muted">' + sessions.length + ' sessions</div></td>',
               '<td>' + accuracy + '% avg<div class="tiny muted">Best score ' + best + '</div></td>',
@@ -2637,16 +2674,17 @@
       }
 
       function studentLoginDetails(klass, student) {
+        var generatedPin = generatedPinForStudent(student);
         return [
           '<div class="stack" style="gap:0.45rem">',
           '  <div><strong>Code:</strong> ' + escapeHTML(klass.code) + '</div>',
           '  <div><strong>Alias:</strong> ' + escapeHTML(student.alias) + '</div>',
           '  <form class="row" style="gap:0.35rem" data-form="reset-student-pin">',
           '    <input type="hidden" name="studentId" value="' + escapeHTML(student.id) + '">',
-          '    <input name="pin" inputmode="numeric" type="text" minlength="4" placeholder="New PIN" aria-label="New PIN for ' + escapeHTML(student.alias) + '">',
-          '    <button class="btn ghost" type="submit">Set PIN</button>',
+          '    <button class="btn ghost" type="submit">Generate new PIN</button>',
           '  </form>',
-          '  <div class="tiny muted">PINs are hidden after saving. Reset if a student forgets.</div>',
+          generatedPin ? '  <div class="tiny"><strong>Generated PIN:</strong> ' + escapeHTML(generatedPin) + '</div>' : '',
+          '  <div class="tiny muted">PINs are not stored in plain text. Generated PINs disappear when this page reloads.</div>',
           '</div>'
         ].join("");
       }
@@ -2668,13 +2706,14 @@
 
       function loginCardHTML(klass, student) {
         var joinUrl = studentJoinUrl(klass, student);
+        var generatedPin = generatedPinForStudent(student);
         return [
           '<article class="login-card">',
           '  <div>',
           '    <h3>' + escapeHTML(studentFullName(student)) + '</h3>',
           '    <p class="small"><strong>Class code:</strong> ' + escapeHTML(klass.code) + '</p>',
           '    <p class="small"><strong>Alias:</strong> ' + escapeHTML(student.alias) + '</p>',
-          '    <p class="small"><strong>PIN:</strong> <span class="pin-line"></span></p>',
+          '    <p class="small"><strong>PIN:</strong> ' + (generatedPin ? '<span>' + escapeHTML(generatedPin) + '</span>' : '<span class="pin-line"></span>') + '</p>',
           '    <p class="tiny muted">Private login card. Scan the QR code, then enter your PIN.</p>',
           '  </div>',
           '  <div class="qr-slot" data-qr="' + escapeHTML(joinUrl) + '"><span class="tiny muted">QR</span></div>',
@@ -2870,18 +2909,20 @@
         if (backendActive() && kind === "add-student") {
           try {
             var remoteClassId = String(data.get("classId") || "");
-            var remoteFirstName = String(data.get("firstName") || "").trim();
-            var remoteLastName = String(data.get("lastName") || "").trim();
-            var remotePin = String(data.get("pin") || "").trim();
+            var remoteAlias = cleanStudentAlias(data.get("alias"));
+            var remotePin = generateStudentPin();
             var addResult = await supabaseClient.rpc("create_student", {
               p_class_id: remoteClassId,
-              p_first_name: remoteFirstName,
-              p_last_name: remoteLastName,
+              p_alias: remoteAlias,
               p_pin: remotePin
             });
             if (addResult.error) throw addResult.error;
+            var remoteStudent = Array.isArray(addResult.data) ? addResult.data[0] : addResult.data;
+            if (remoteStudent && remoteStudent.id) {
+              rememberGeneratedPin(remoteStudent.id, remotePin);
+            }
             await loadRemoteDashboard();
-            state.message = "Student added. Give them the class code, their alias, and the PIN you set.";
+            state.message = generatedPinMessage("Student added", remoteStudent ? remoteStudent.alias : remoteAlias, remotePin);
           } catch (error) {
             state.message = "Error: " + error.message;
           }
@@ -2891,14 +2932,18 @@
         if (backendActive() && kind === "reset-student-pin") {
           try {
             var resetStudentId = String(data.get("studentId") || "");
-            var resetPin = String(data.get("pin") || "").trim();
+            var resetPin = generateStudentPin();
             var resetResult = await supabaseClient.rpc("reset_student_pin", {
               p_student_id: resetStudentId,
               p_new_pin: resetPin
             });
             if (resetResult.error) throw resetResult.error;
+            var resetStudent = Array.isArray(resetResult.data) ? resetResult.data[0] : resetResult.data;
+            if (resetStudent && resetStudent.id) {
+              rememberGeneratedPin(resetStudent.id, resetPin);
+            }
             await loadRemoteDashboard();
-            state.message = "Student PIN updated.";
+            state.message = generatedPinMessage("PIN regenerated", resetStudent ? resetStudent.alias : "student", resetPin);
           } catch (error) {
             state.message = "Error: " + error.message;
           }
@@ -2968,12 +3013,14 @@
 
         if (kind === "add-student") {
           var classId = String(data.get("classId") || "");
-          var firstName = String(data.get("firstName") || "").trim();
-          var lastName = String(data.get("lastName") || "").trim();
-          var alias = uniqueLocalAlias(classId, firstName, lastName);
-          var pin = String(data.get("pin") || "").trim();
-          if (pin.length < 4) {
-            state.message = "Error: Use a PIN with at least 4 digits.";
+          var alias = cleanStudentAlias(data.get("alias"));
+          if (!alias) {
+            state.message = "Error: Student alias is required.";
+            render();
+            return;
+          }
+          if (alias.length > 40) {
+            state.message = "Error: Student alias must be 40 characters or fewer.";
             render();
             return;
           }
@@ -2987,40 +3034,38 @@
           }
           var studentId = uid("student");
           var klassForStudent = store.classes.find(function (item) { return item.id === classId; });
+          var pin = generateStudentPin();
           var student = {
             id: studentId,
             classId: classId,
             teacherId: klassForStudent.teacherId,
-            firstName: firstName,
-            lastName: lastName,
+            firstName: "",
+            lastName: "",
             alias: alias,
             pinHash: await hashText("student:" + studentId + ":" + pin),
             createdAt: new Date().toISOString()
           };
           store.students.push(student);
+          rememberGeneratedPin(studentId, pin);
           saveStore();
-          state.message = "Student added. Give them the class code, their alias, and the PIN you set.";
+          state.message = generatedPinMessage("Student added", alias, pin);
           render();
           return;
         }
 
         if (kind === "reset-student-pin") {
           var resetLocalStudentId = String(data.get("studentId") || "");
-          var resetLocalPin = String(data.get("pin") || "").trim();
-          if (resetLocalPin.length < 4) {
-            state.message = "Error: Use a PIN with at least 4 digits.";
-            render();
-            return;
-          }
           var resetLocalStudent = store.students.find(function (student) { return student.id === resetLocalStudentId; });
           if (!resetLocalStudent) {
             state.message = "Error: Student not found.";
             render();
             return;
           }
+          var resetLocalPin = generateStudentPin();
           resetLocalStudent.pinHash = await hashText("student:" + resetLocalStudent.id + ":" + resetLocalPin);
+          rememberGeneratedPin(resetLocalStudent.id, resetLocalPin);
           saveStore();
-          state.message = "Student PIN updated.";
+          state.message = generatedPinMessage("PIN regenerated", resetLocalStudent.alias, resetLocalPin);
           render();
           return;
         }
@@ -3159,6 +3204,7 @@
             return;
           }
           store.currentTeacherId = null;
+          state.recentPins = {};
           saveStore();
           state.view = "home";
           render();
