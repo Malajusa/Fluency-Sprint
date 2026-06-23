@@ -655,6 +655,8 @@
       max-width: 18rem;
       margin: 0 auto;
       touch-action: manipulation;
+      caret-color: transparent;
+      pointer-events: none;
     }
 
     .keypad {
@@ -2361,7 +2363,6 @@
             finishSession();
           } else {
             render();
-            setTimeout(focusAnswer, 0);
           }
         }, 1000);
       }
@@ -2904,7 +2905,6 @@
         state.view = "session";
         render();
         if (mode === "sprint") startTimer();
-        setTimeout(focusAnswer, 30);
       }
 
       function sessionView() {
@@ -3003,13 +3003,9 @@
         var input = document.getElementById("answerInput");
         if (input) {
           input.value = cleaned;
-          focusAnswer(caretPosition == null ? cleaned.length : caretPosition);
           return;
         }
         render();
-        setTimeout(function () {
-          focusAnswer(caretPosition == null ? cleaned.length : caretPosition);
-        }, 30);
       }
 
       function isAnswerControlAction(action) {
@@ -3025,40 +3021,19 @@
 
         if (/^\d$/.test(event.key)) {
           event.preventDefault();
-          var edit = answerEditState();
-          if (edit) {
-            setAnswerInput(edit.value.slice(0, edit.start) + event.key + edit.value.slice(edit.end), edit.start + 1);
-          } else {
-            setAnswerInput(state.active.input + event.key, state.active.input.length + 1);
-          }
+          setAnswerInput(String(state.active.input || "") + event.key);
           return true;
         }
 
         if (event.key === "-" && !String(state.active.input || "").includes("-")) {
           event.preventDefault();
-          var minusEdit = answerEditState();
-          if (minusEdit) {
-            setAnswerInput(minusEdit.value.slice(0, minusEdit.start) + "-" + minusEdit.value.slice(minusEdit.end), minusEdit.start + 1);
-          } else {
-            setAnswerInput("-" + state.active.input, 1);
-          }
+          setAnswerInput("-" + String(state.active.input || ""));
           return true;
         }
 
         if (event.key === "Backspace" || event.key === "Delete") {
           event.preventDefault();
-          var backspaceEdit = answerEditState();
-          if (backspaceEdit) {
-            if (backspaceEdit.start !== backspaceEdit.end) {
-              setAnswerInput(backspaceEdit.value.slice(0, backspaceEdit.start) + backspaceEdit.value.slice(backspaceEdit.end), backspaceEdit.start);
-            } else if (backspaceEdit.start > 0) {
-              setAnswerInput(backspaceEdit.value.slice(0, backspaceEdit.start - 1) + backspaceEdit.value.slice(backspaceEdit.end), backspaceEdit.start - 1);
-            } else {
-              setAnswerInput(backspaceEdit.value, 0);
-            }
-          } else {
-            setAnswerInput(state.active.input.slice(0, -1), Math.max(0, state.active.input.length - 1));
-          }
+          setAnswerInput(String(state.active.input || "").slice(0, -1));
           return true;
         }
 
@@ -3085,7 +3060,6 @@
         if (!raw) {
           active.feedback = "Type an answer first.";
           render();
-          setTimeout(focusAnswer, 30);
           return;
         }
         var submitted = Number(raw);
@@ -3122,7 +3096,6 @@
           active.feedback = "Try once more.";
           active.input = "";
           render();
-          setTimeout(focusAnswer, 30);
           return;
         }
         active.attempted += 1;
@@ -3151,7 +3124,6 @@
         state.active.feedback = "";
         state.active.input = "";
         render();
-        setTimeout(focusAnswer, 30);
       }
 
       async function finishSession() {
@@ -4723,30 +4695,12 @@
         }
         if (action === "keypad") {
           if (!state.active) return;
-          var keyEdit = answerEditState();
           var keyValue = button.getAttribute("data-key");
-          if (keyEdit) {
-            setAnswerInput(keyEdit.value.slice(0, keyEdit.start) + keyValue + keyEdit.value.slice(keyEdit.end), keyEdit.start + 1);
-          } else {
-            updateInputFromDom();
-            setAnswerInput(state.active.input + keyValue, state.active.input.length + 1);
-          }
+          setAnswerInput(String(state.active.input || "") + keyValue);
         }
         if (action === "backspace") {
           if (!state.active) return;
-          var backspaceEdit = answerEditState();
-          if (backspaceEdit) {
-            if (backspaceEdit.start !== backspaceEdit.end) {
-              setAnswerInput(backspaceEdit.value.slice(0, backspaceEdit.start) + backspaceEdit.value.slice(backspaceEdit.end), backspaceEdit.start);
-            } else if (backspaceEdit.start > 0) {
-              setAnswerInput(backspaceEdit.value.slice(0, backspaceEdit.start - 1) + backspaceEdit.value.slice(backspaceEdit.end), backspaceEdit.start - 1);
-            } else {
-              setAnswerInput(backspaceEdit.value, 0);
-            }
-          } else {
-            updateInputFromDom();
-            setAnswerInput(state.active.input.slice(0, -1), Math.max(0, state.active.input.length - 1));
-          }
+          setAnswerInput(String(state.active.input || "").slice(0, -1));
         }
         if (action === "clear-answer") {
           if (!state.active) return;
