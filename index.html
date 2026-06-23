@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Fluency Sprint</title>
   <style>
     :root {
@@ -699,6 +699,7 @@
 
     .session-shell {
       padding-bottom: 1.25rem;
+      padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
     }
 
     .session-practice {
@@ -1140,6 +1141,10 @@
 
       .session-shell {
         padding-top: 0.25rem;
+        padding-bottom: 4.75rem;
+        padding-bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
+        scroll-padding-bottom: 4.75rem;
+        scroll-padding-bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
       }
 
       .session-shell h2 {
@@ -1184,6 +1189,8 @@
 
       .keypad-panel {
         padding: 0.7rem;
+        padding-bottom: 2rem;
+        padding-bottom: calc(2rem + env(safe-area-inset-bottom, 0px));
       }
 
       .keypad-panel h3,
@@ -1232,6 +1239,16 @@
 
       .key {
         min-height: 3.55rem;
+      }
+
+      .session-shell {
+        padding-bottom: 5.5rem;
+        padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+      }
+
+      .keypad-panel {
+        padding-bottom: 2.4rem;
+        padding-bottom: calc(2.4rem + env(safe-area-inset-bottom, 0px));
       }
     }
 
