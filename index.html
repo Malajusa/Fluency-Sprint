@@ -550,7 +550,8 @@
     }
 
     input,
-    select {
+    select,
+    textarea {
       width: 100%;
       min-height: 2.75rem;
       border: 2px solid var(--line);
@@ -561,8 +562,15 @@
       outline: none;
     }
 
+    textarea {
+      min-height: 9rem;
+      resize: vertical;
+      line-height: 1.45;
+    }
+
     input:focus,
-    select:focus {
+    select:focus,
+    textarea:focus {
       border-color: var(--teal);
       box-shadow: 0 0 0 4px rgba(15, 159, 143, 0.12);
     }
@@ -1062,6 +1070,8 @@
         remoteSessions: [],
         studentHistoryError: "",
         recentPins: {},
+        studentImportClassId: null,
+        studentImportRows: [],
         appearance: savedAppearance,
         multiplicationTables: [6, 7],
         includeReverseDivision: false,
@@ -2390,6 +2400,135 @@
         return String(value || "").trim().replace(/\s+/g, " ");
       }
 
+      function splitImportLine(line) {
+        if (line.indexOf("\t") >= 0) return line.split("\t");
+        var cells = [];
+        var current = "";
+        var quoted = false;
+        for (var i = 0; i < line.length; i += 1) {
+          var char = line.charAt(i);
+          var next = line.charAt(i + 1);
+          if (char === '"' && quoted && next === '"') {
+            current += '"';
+            i += 1;
+          } else if (char === '"') {
+            quoted = !quoted;
+          } else if (char === "," && !quoted) {
+            cells.push(current);
+            current = "";
+          } else {
+            current += char;
+          }
+        }
+        cells.push(current);
+        return cells;
+      }
+
+      function normalizeImportCell(value) {
+        return String(value || "").replace(/\uFEFF/g, "").trim();
+      }
+
+      function importHeaderMap(cells) {
+        var lowered = cells.map(function (cell) {
+          return normalizeImportCell(cell).toLowerCase();
+        });
+        var firstIndex = lowered.findIndex(function (cell) {
+          return /(^|\s)(first|given|preferred)(\s|_|-|$)/.test(cell);
+        });
+        var lastIndex = lowered.findIndex(function (cell) {
+          return /(^|\s)(last|surname|family)(\s|_|-|$)/.test(cell);
+        });
+        var nameIndex = lowered.findIndex(function (cell) {
+          return firstIndex < 0 && lastIndex < 0 && /(^|\s)(student|name|full name)(\s|_|-|$)/.test(cell);
+        });
+        if (firstIndex < 0 && lastIndex < 0 && nameIndex < 0) return null;
+        return {
+          firstIndex: firstIndex,
+          lastIndex: lastIndex,
+          nameIndex: nameIndex
+        };
+      }
+
+      function firstInitial(value) {
+        var match = String(value || "").trim().match(/[A-Za-z0-9]/);
+        return match ? match[0].toUpperCase() : "";
+      }
+
+      function aliasFromNameParts(firstName, lastName, fullName) {
+        var first = normalizeImportCell(firstName);
+        var last = normalizeImportCell(lastName);
+        if (first || last) return (firstInitial(first) + firstInitial(last)).trim();
+        var words = normalizeImportCell(fullName).split(/[\s,]+/).filter(Boolean);
+        if (!words.length) return "";
+        if (words.length === 1) return firstInitial(words[0]);
+        return firstInitial(words[0]) + firstInitial(words[words.length - 1]);
+      }
+
+      function aliasFromImportCells(cells, header) {
+        var values = cells.map(normalizeImportCell);
+        if (header) {
+          return aliasFromNameParts(
+            header.firstIndex >= 0 ? values[header.firstIndex] : "",
+            header.lastIndex >= 0 ? values[header.lastIndex] : "",
+            header.nameIndex >= 0 ? values[header.nameIndex] : ""
+          );
+        }
+        var nonEmpty = values.filter(Boolean);
+        if (!nonEmpty.length) return "";
+        if (nonEmpty.length === 1) return aliasFromNameParts("", "", nonEmpty[0]);
+        return aliasFromNameParts(nonEmpty[0], nonEmpty[1], "");
+      }
+
+      function uniqueAliasForImport(classId, baseAlias, reserved) {
+        var base = cleanStudentAlias(baseAlias).toUpperCase().slice(0, 36) || "S";
+        var used = reserved || {};
+        var existing = {};
+        studentsForClass(classId).forEach(function (student) {
+          existing[String(student.alias || "").toLowerCase()] = true;
+        });
+        var alias = base;
+        var count = 2;
+        while (existing[alias.toLowerCase()] || used[alias.toLowerCase()]) {
+          alias = base + count;
+          count += 1;
+        }
+        used[alias.toLowerCase()] = true;
+        return alias;
+      }
+
+      function parseStudentImportText(text, classId) {
+        var lines = String(text || "").split(/\r?\n/);
+        var parsedRows = lines.map(function (line, index) {
+          return {
+            rowNumber: index + 1,
+            cells: splitImportLine(line).map(normalizeImportCell)
+          };
+        }).filter(function (row) {
+          return row.cells.some(Boolean);
+        });
+        if (!parsedRows.length) return [];
+        var header = importHeaderMap(parsedRows[0].cells);
+        var dataRows = header ? parsedRows.slice(1) : parsedRows;
+        var reserved = {};
+        return dataRows.map(function (row) {
+          var baseAlias = aliasFromImportCells(row.cells, header);
+          if (!baseAlias) {
+            return {
+              rowNumber: row.rowNumber,
+              alias: "",
+              status: "Skipped",
+              error: "No initials found"
+            };
+          }
+          return {
+            rowNumber: row.rowNumber,
+            alias: uniqueAliasForImport(classId, baseAlias, reserved),
+            status: "Ready",
+            error: ""
+          };
+        });
+      }
+
       function uniqueLocalAlias(classId, firstName, lastName) {
         var base = makeStudentAlias(firstName, lastName);
         var alias = base;
@@ -2880,6 +3019,7 @@
           '  </div>',
           '</section>',
           addStudentForm(klass),
+          studentImportForm(klass),
           studentTable(klass, students),
           loginCardPrintSheet(klass, students),
           recentSessionsTable(sessions)
@@ -3198,6 +3338,145 @@
           '  <button class="btn primary" type="submit">Add student</button>',
           '</form>'
         ].join("");
+      }
+
+      function studentImportForm(klass) {
+        return [
+          '<section class="panel section stack">',
+          '  <div><h3>Import students</h3><p class="muted">Paste spreadsheet rows or upload a CSV/TSV export.</p></div>',
+          '  <form class="stack" data-form="preview-student-import">',
+          '    <input type="hidden" name="classId" value="' + escapeHTML(klass.id) + '">',
+          '    <div class="grid two">',
+          '      <label>Spreadsheet file<input type="file" accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values" data-import-file></label>',
+          '      <div class="notice small">Names are used only in this browser to create initial aliases. Only aliases and PIN hashes are saved.</div>',
+          '    </div>',
+          '    <label>Rows<textarea name="studentRows" data-import-textarea placeholder="First name,Last name&#10;Tia,Pretty&#10;Ava,Morgan"></textarea></label>',
+          '    <div class="row">',
+          '      <button class="btn primary" type="submit">Preview import</button>',
+          '      <button class="btn ghost" type="button" data-action="clear-student-import">Clear preview</button>',
+          '    </div>',
+          '  </form>',
+          studentImportPreviewHTML(klass),
+          '</section>'
+        ].join("");
+      }
+
+      function studentImportPreviewHTML(klass) {
+        if (state.studentImportClassId !== klass.id || !state.studentImportRows.length) return "";
+        var readyRows = state.studentImportRows.filter(function (row) {
+          return row.status === "Ready" && row.alias;
+        });
+        return [
+          '<div class="stack">',
+          '  <div class="between">',
+          '    <div><h4>Import preview</h4><p class="muted">' + readyRows.length + ' students ready.</p></div>',
+          '    <button class="btn gold" data-action="confirm-student-import" data-class="' + escapeHTML(klass.id) + '" ' + (readyRows.length ? "" : "disabled") + '>Create students</button>',
+          '  </div>',
+          '  <table><thead><tr><th>Row</th><th>Alias to create</th><th>Status</th></tr></thead><tbody>',
+          state.studentImportRows.map(function (row) {
+            return [
+              '<tr>',
+              '<td>' + row.rowNumber + '</td>',
+              '<td><strong>' + escapeHTML(row.alias || "--") + '</strong></td>',
+              '<td>' + escapeHTML(row.error || row.status) + '</td>',
+              '</tr>'
+            ].join("");
+          }).join(""),
+          '  </tbody></table>',
+          '</div>'
+        ].join("");
+      }
+
+      function readyStudentImportRows(classId) {
+        if (state.studentImportClassId !== classId) return [];
+        return state.studentImportRows.filter(function (row) {
+          return row.status === "Ready" && row.alias;
+        });
+      }
+
+      function loadStudentImportFile(file) {
+        if (!file) return;
+        if (!window.FileReader) {
+          alert("File import is not available in this browser. Paste the rows instead.");
+          return;
+        }
+        var reader = new FileReader();
+        reader.onload = function () {
+          var textarea = document.querySelector("[data-import-textarea]");
+          if (textarea) textarea.value = String(reader.result || "");
+        };
+        reader.onerror = function () {
+          alert("Could not read that file. Export as CSV or paste the rows instead.");
+        };
+        reader.readAsText(file);
+      }
+
+      async function confirmStudentImport(classId) {
+        var rows = readyStudentImportRows(classId);
+        if (!rows.length) {
+          state.message = "Error: Preview students before importing.";
+          render();
+          return;
+        }
+        var failures = [];
+        var created = 0;
+        var reserved = {};
+        if (backendActive()) {
+          for (var i = 0; i < rows.length; i += 1) {
+            var remoteAlias = uniqueAliasForImport(classId, rows[i].alias, reserved);
+            var remotePin = generateStudentPin();
+            var addResult = await supabaseClient.rpc("create_student", {
+              p_class_id: classId,
+              p_alias: remoteAlias,
+              p_pin: remotePin
+            });
+            if (addResult.error) {
+              failures.push({
+                rowNumber: rows[i].rowNumber,
+                alias: remoteAlias,
+                status: "Error",
+                error: addResult.error.message
+              });
+              continue;
+            }
+            var remoteStudent = Array.isArray(addResult.data) ? addResult.data[0] : addResult.data;
+            if (remoteStudent && remoteStudent.id) {
+              rememberGeneratedPin(remoteStudent.id, remotePin);
+            }
+            created += 1;
+          }
+          await loadRemoteDashboard();
+        } else {
+          var klassForImport = store.classes.find(function (item) { return item.id === classId; });
+          if (!klassForImport) {
+            state.message = "Error: Class not found.";
+            render();
+            return;
+          }
+          for (var j = 0; j < rows.length; j += 1) {
+            var localAlias = uniqueAliasForImport(classId, rows[j].alias, reserved);
+            var studentId = uid("student");
+            var pin = generateStudentPin();
+            store.students.push({
+              id: studentId,
+              classId: classId,
+              teacherId: klassForImport.teacherId,
+              firstName: "",
+              lastName: "",
+              alias: localAlias,
+              pinHash: await hashText("student:" + studentId + ":" + pin),
+              createdAt: new Date().toISOString()
+            });
+            rememberGeneratedPin(studentId, pin);
+            created += 1;
+          }
+          saveStore();
+        }
+        state.studentImportClassId = classId;
+        state.studentImportRows = failures;
+        state.message = "Imported " + created + " students. Generated PINs are shown in the student list until this page reloads.";
+        if (failures.length) state.message += " " + failures.length + " rows need attention.";
+        render();
       }
 
       function growthPanel(klass, sessions) {
@@ -3686,6 +3965,20 @@
           render();
           return;
         }
+        if (kind === "preview-student-import") {
+          var importClassId = String(data.get("classId") || "");
+          var importText = String(data.get("studentRows") || "");
+          state.studentImportClassId = importClassId;
+          state.studentImportRows = parseStudentImportText(importText, importClassId);
+          if (!state.studentImportRows.length) {
+            state.message = "Error: Paste rows or upload a CSV/TSV file before previewing.";
+          } else {
+            var readyCount = readyStudentImportRows(importClassId).length;
+            state.message = "Preview ready: " + readyCount + " students can be imported.";
+          }
+          render();
+          return;
+        }
         if (backendActive() && kind === "add-student") {
           try {
             var remoteClassId = String(data.get("classId") || "");
@@ -4119,6 +4412,15 @@
           state.resultsMode = button.getAttribute("data-mode");
           render();
         }
+        if (action === "clear-student-import") {
+          state.studentImportClassId = null;
+          state.studentImportRows = [];
+          state.message = "";
+          render();
+        }
+        if (action === "confirm-student-import") {
+          await confirmStudentImport(button.getAttribute("data-class"));
+        }
         if (action === "rotate-code") {
           var classIdRotate = button.getAttribute("data-class");
           var klassRotate = store.classes.find(function (item) { return item.id === classIdRotate; });
@@ -4275,6 +4577,11 @@
       });
 
       document.addEventListener("change", function (event) {
+        var fileInput = event.target.closest("input[data-import-file]");
+        if (fileInput) {
+          loadStudentImportFile(fileInput.files && fileInput.files[0]);
+          return;
+        }
         var select = event.target.closest("select[data-action]");
         if (!select) return;
         if (select.getAttribute("data-action") === "dashboard-operation") {
