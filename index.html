@@ -410,6 +410,12 @@
       color: #5f4608;
     }
 
+    .proficiency.nearly {
+      border-color: #b9d6ff;
+      background: #eef6ff;
+      color: #214e83;
+    }
+
     .proficiency.focus {
       border-color: #ffc7bd;
       background: #fff1ef;
@@ -1465,6 +1471,45 @@
         { id: "Y5", label: "Year 5", order: 5 },
         { id: "Y6", label: "Year 6", order: 6 }
       ];
+      var YEAR_LEVEL_SKILL_GUIDE = {
+        PP: {
+          focus: ["A1", "S1"],
+          note: "Early number facts within 10."
+        },
+        Y1: {
+          focus: ["A1", "A2", "A3", "S1", "S2", "S3", "X1", "X2"],
+          note: "Facts within 10, friends of 10, and connected subtraction."
+        },
+        Y2: {
+          focus: ["A4", "A5", "A6", "S4", "S5", "S6", "X3"],
+          note: "Facts within 20, bridging through 10, and facts ending in 5."
+        },
+        Y3: {
+          focus: ["A7", "A8", "S7", "S8", "M1", "M2", "M3", "M4", "D1", "D2", "D3", "X4"],
+          note: "Addition and subtraction facts to 20, place-value partitioning, 2s/3s/4s/5s/10s, and linked division facts."
+        },
+        Y4: {
+          focus: ["A9", "S9", "M5", "M7", "D4", "D6", "U3", "U4", "X5"],
+          note: "Efficient four-digit addition/subtraction, multiplication facts up to 10 x 10, related division facts, litres/millilitres, grams/kilograms."
+        },
+        Y5: {
+          focus: ["A10", "A11", "S10", "S11", "M6", "D5", "U1", "U2", "U5", "X6", "X7"],
+          note: "Larger whole-number operations, factors and multiples, remainders, metric-unit choice, decimal measurement links, and flexible mixed-operation fluency."
+        },
+        Y6: {
+          focus: ["U5", "X6", "X7", "M6", "D5"],
+          note: "Consolidation, mixed metric conversions, and readiness for secondary-school fluency demands."
+        }
+      };
+      var LEVEL_ACCESS_YEAR = {
+        A1: 0, S1: 0,
+        A2: 1, A3: 1, S2: 1, S3: 1, X1: 1, X2: 1,
+        A4: 2, A5: 2, A6: 2, S4: 2, S5: 2, S6: 2, X3: 2,
+        A7: 3, A8: 3, S7: 3, S8: 3, M1: 3, M2: 3, M3: 3, M4: 3, D1: 3, D2: 3, D3: 3, X4: 3,
+        A9: 4, S9: 4, M5: 4, M7: 4, D4: 4, D6: 4, U3: 4, U4: 4, X5: 4,
+        A10: 5, A11: 5, S10: 5, S11: 5, M6: 5, D5: 5, U1: 5, U2: 5, X6: 5, X7: 5,
+        U5: 6
+      };
 
       var liveStore = loadStore();
       var savedAppearance = loadAppearance();
@@ -1477,8 +1522,6 @@
         dashboardClassId: store.lastClassId || null,
         dashboardOperation: "all",
         dashboardTag: "all",
-        dashboardStudentId: null,
-        dashboardLevelId: null,
         resultsMode: "class",
         resultsStudentId: null,
         resultsLevelId: null,
@@ -2156,6 +2199,42 @@
         return YEAR_LEVELS.map(function (level) {
           return '<option value="' + level.id + '"' + (level.id === current ? " selected" : "") + '>' + escapeHTML(level.label) + '</option>';
         }).join("");
+      }
+
+      function yearLevelOrder(value) {
+        var id = normalizeYearLevel(value);
+        var level = YEAR_LEVELS.find(function (item) { return item.id === id; });
+        return level ? level.order : 4;
+      }
+
+      function yearLevelGuide(value) {
+        var id = normalizeYearLevel(value);
+        return YEAR_LEVEL_SKILL_GUIDE[id] || YEAR_LEVEL_SKILL_GUIDE.Y4;
+      }
+
+      function levelAccessYear(levelId) {
+        return LEVEL_ACCESS_YEAR[levelId] == null ? 4 : LEVEL_ACCESS_YEAR[levelId];
+      }
+
+      function focusLevelIdsForYear(value) {
+        var guide = yearLevelGuide(value);
+        return (guide.focus || []).filter(function (levelId) {
+          return LEVELS.some(function (level) { return level.id === levelId; });
+        });
+      }
+
+      function availableLevelIdsForYear(value) {
+        var maxYear = yearLevelOrder(value);
+        return LEVELS.filter(function (level) {
+          return levelAccessYear(level.id) <= maxYear;
+        }).map(function (level) {
+          return level.id;
+        });
+      }
+
+      function curriculumGuideText(value) {
+        var guide = yearLevelGuide(value);
+        return yearLevelLabel(value) + ": " + guide.note;
       }
 
       function tablePracticeOperation(operation) {
@@ -2930,7 +3009,7 @@
           '    <button class="tile" data-action="teacher-start">',
           '      <span class="iconbox">T</span>',
           '      <h2>Teacher dashboard</h2>',
-          '      <p class="muted">Create classes, add students, and view progress over time.</p>',
+          '      <p class="muted">Create classes, add students, print login cards, and spot next teaching actions.</p>',
           '      <strong style="color: var(--coral)">Open dashboard</strong>',
           '    </button>',
           '    <button class="tile" data-action="preview-start">',
@@ -2973,7 +3052,7 @@
           previewTile("results", "Results", "Score, accuracy, streak, and missed facts.", "R"),
           previewTile("review", "Mistakes review", "Missed questions one at a time.", "?"),
           previewTile("login", "Teacher login", "Teacher account entry point.", "T"),
-          previewTile("dashboard", "Teacher dashboard", "Participation, growth charts, and class data.", "D"),
+          previewTile("dashboard", "Teacher dashboard", "Class setup, login cards, participation, and teaching cues.", "D"),
           previewTile("landing", "Landing screen", "The first screen students and teachers see.", "FS"),
           '  </section>',
           '  <section class="notice small"><strong>Demo class:</strong> Year 4 Fluency Group, code MTH-204-FS. Demo aliases include A Morgan, N Patel, M Smith, and E Nguyen.</section>',
@@ -3890,7 +3969,7 @@
           header(),
           '<main class="shell stack">',
           '  <section class="between">',
-          '    <div><h2>Teacher dashboard</h2><p class="muted">Track participation and growth over time.</p></div>',
+          '    <div><h2>Teacher dashboard</h2><p class="muted">Manage classes, student access, participation, and next teaching actions.</p></div>',
           '    <div class="row">',
           '      <button class="btn ghost" data-action="teacher-results">Results</button>',
           '      <button class="btn ghost" data-action="home">Home</button>',
@@ -3951,7 +4030,7 @@
           var last = lastSessionForStudent(student.id);
           return !last || daysAgo(last.createdAt) > 7;
         }).length;
-        var avgAccuracy = sessions.length ? Math.round(avg(sessions.map(function (s) { return s.accuracy; }))) : 0;
+        var readiness = readinessCounts(students);
         return [
           '<section class="panel section stack">',
           '  <div class="between">',
@@ -3971,17 +4050,54 @@
           statHTML("Practised today", practicedToday),
           statHTML("This week", practicedWeek),
           statHTML("Needs follow-up", needsFollowUp),
-          statHTML("Sessions", sessions.length),
-          statHTML("Average accuracy", avgAccuracy + "%"),
-          statHTML("Best score", sessions.length ? Math.max.apply(null, sessions.map(function (s) { return s.score; })) : 0),
-          statHTML("Best streak", sessions.length ? Math.max.apply(null, sessions.map(function (s) { return s.bestStreak; })) : 0),
+          statHTML("Ready to start", readiness.ready),
+          statHTML("Nearly secure", readiness.nearly),
+          statHTML("Needs focus", readiness.focus + readiness.building),
           '  </div>',
           '</section>',
+          dashboardReadinessPanel(students),
           addStudentForm(klass),
           studentImportForm(klass),
           studentTable(klass, students),
           loginCardPrintSheet(klass, students),
           recentSessionsTable(sessions)
+        ].join("");
+      }
+
+      function dashboardReadinessPanel(students) {
+        if (!students.length) return "";
+        var rows = students.map(function (student) {
+          return {
+            student: student,
+            readiness: readinessForStudent(student),
+            last: lastSessionForStudent(student.id)
+          };
+        }).sort(function (a, b) {
+          var aAge = a.last ? daysAgo(a.last.createdAt) : 9999;
+          var bAge = b.last ? daysAgo(b.last.createdAt) : 9999;
+          if (a.readiness.status === "focus" && b.readiness.status !== "focus") return -1;
+          if (b.readiness.status === "focus" && a.readiness.status !== "focus") return 1;
+          return bAge - aAge;
+        }).slice(0, 6);
+        return [
+          '<section class="panel section stack">',
+          '  <div class="between">',
+          '    <div><h3>Teaching cues</h3><p class="muted">Quick action view only. Open Results for graphs and detailed evidence.</p></div>',
+          '    <button class="btn ghost" data-action="teacher-results">Open Results</button>',
+          '  </div>',
+          '  <table><thead><tr><th>Student</th><th>Readiness</th><th>Suggested focus</th><th>Last practice</th></tr></thead><tbody>',
+          rows.map(function (row) {
+            return [
+              '<tr>',
+              '<td><strong>' + escapeHTML(studentFullName(row.student)) + '</strong><div class="tiny muted">' + escapeHTML(yearLevelLabel(row.student.yearLevel)) + '</div></td>',
+              '<td>' + readinessPill(row.readiness) + '<div class="tiny muted">' + escapeHTML(row.readiness.guideText) + '</div></td>',
+              '<td>' + readinessFocusHTML(row.readiness) + '</td>',
+              '<td>' + (row.last ? formatDateTime(row.last.createdAt) : "No sessions") + '</td>',
+              '</tr>'
+            ].join("");
+          }).join(""),
+          '  </tbody></table>',
+          '</section>'
         ].join("");
       }
 
@@ -4042,6 +4158,7 @@
         var sessions = sessionsForClass(klass.id);
         return [
           classResultsSummary(klass, students, sessions),
+          readinessResultsTable(students),
           growthPanel(klass, sessions),
           classProfileTable(students),
           timesTableClassProfile(students)
@@ -4050,6 +4167,7 @@
 
       function classResultsSummary(klass, students, sessions) {
         var avgAccuracy = sessions.length ? Math.round(avg(sessions.map(function (s) { return s.accuracy; }))) : 0;
+        var readiness = readinessCounts(students);
         return [
           '<section class="panel section stack">',
           '  <div><h3>' + escapeHTML(klass.name) + '</h3><p class="muted">Class profile from saved results.</p></div>',
@@ -4058,7 +4176,33 @@
           statHTML("Sessions", sessions.length),
           statHTML("Average accuracy", avgAccuracy + "%"),
           statHTML("Best score", sessions.length ? Math.max.apply(null, sessions.map(function (s) { return s.score; })) : 0),
+          statHTML("Nearly secure", readiness.nearly),
+          statHTML("Needs focus", readiness.focus + readiness.building),
           '  </div>',
+          '</section>'
+        ].join("");
+      }
+
+      function readinessResultsTable(students) {
+        if (!students.length) return "";
+        return [
+          '<section class="panel section stack">',
+          '  <div><h3>Readiness and proficiency</h3><p class="muted">Evidence view for assigned year-level pathways.</p></div>',
+          '  <table><thead><tr><th>Student</th><th>Year guide</th><th>Readiness</th><th>Current focus</th><th>Progress evidence</th></tr></thead><tbody>',
+          students.map(function (student) {
+            var readiness = readinessForStudent(student);
+            var profile = readiness.focusProfile;
+            return [
+              '<tr>',
+              '<td><strong>' + escapeHTML(studentFullName(student)) + '</strong><div class="tiny muted">' + escapeHTML(student.alias) + '</div></td>',
+              '<td>' + escapeHTML(yearLevelLabel(student.yearLevel)) + '<div class="tiny muted">' + escapeHTML(yearLevelGuide(student.yearLevel).note) + '</div></td>',
+              '<td>' + readinessPill(readiness) + '<div class="tiny muted">' + readiness.secure + ' secure, ' + readiness.nearly + ' nearly, ' + readiness.notStarted + ' not started</div></td>',
+              '<td>' + readinessFocusHTML(readiness) + '</td>',
+              '<td>' + (profile ? escapeHTML(progressSignal(profile)) + '<div class="tiny muted">' + profile.attempts + ' attempts, recent ' + (profile.recentAccuracy == null ? '--' : profile.recentAccuracy + '%') + '</div>' : '<span class="muted">No focus needed</span>') + '</td>',
+              '</tr>'
+            ].join("");
+          }).join(""),
+          '  </tbody></table>',
           '</section>'
         ].join("");
       }
@@ -4113,20 +4257,21 @@
         if (!students.length) return "";
         return [
           '<section class="panel section stack">',
-          '  <div><h3>Challenge profile</h3><p class="muted">Initial, high, and median score for each student on this challenge.</p></div>',
-          '  <table><thead><tr><th>Student</th><th>Initial</th><th>High</th><th>Median</th><th>Latest</th><th>Sessions</th></tr></thead><tbody>',
+          '  <div><h3>Challenge profile</h3><p class="muted">Proficiency evidence for each student on this challenge.</p></div>',
+          '  <table><thead><tr><th>Student</th><th>Status</th><th>Evidence</th><th>Initial</th><th>High</th><th>Latest</th></tr></thead><tbody>',
           students.map(function (student) {
             var sessions = sessionsForChallenge(student.id, levelId);
             var stats = scoreStats(sessions);
             var latest = sessions[sessions.length - 1] || null;
+            var profile = proficiencyForSessions(sessions);
             return [
               '<tr>',
-              '<td><strong>' + escapeHTML(student.alias) + '</strong></td>',
+              '<td><strong>' + escapeHTML(studentFullName(student)) + '</strong><div class="tiny muted">' + escapeHTML(student.alias) + '</div></td>',
+              '<td>' + proficiencyPill(profile) + '</td>',
+              '<td>' + profile.attempts + ' attempts<div class="tiny muted">Recent ' + (profile.recentAccuracy == null ? '--' : profile.recentAccuracy + '%') + ', sprint ' + (profile.bestSprintAccuracy == null ? '--' : profile.bestSprintAccuracy + '%') + '</div></td>',
               '<td>' + formatScore(stats.initial) + '</td>',
               '<td>' + formatScore(stats.high) + '</td>',
-              '<td>' + formatScore(stats.median) + '</td>',
               '<td>' + (latest ? latest.score + '<div class="tiny muted">' + formatDateTime(latest.createdAt) + '</div>' : '--') + '</td>',
-              '<td>' + sessions.length + '</td>',
               '</tr>'
             ].join("");
           }).join(""),
@@ -4156,6 +4301,7 @@
           '  </div>',
           studentResultsSummary(sessions),
           '</section>',
+          studentYearPathwayPanel(student),
           studentChallengeProgressPanel(student.id, levelId, "Selected challenge", true, false),
           timesTableStudentProfile(student),
           studentSessionsTable(student)
@@ -4172,6 +4318,37 @@
           statHTML("High score", formatScore(stats.high)),
           statHTML("Median score", formatScore(stats.median)),
           '  </div>'
+        ].join("");
+      }
+
+      function studentYearPathwayPanel(student) {
+        var readiness = readinessForStudent(student);
+        var focusIds = focusLevelIdsForYear(student.yearLevel);
+        return [
+          '<section class="panel section stack">',
+          '  <div><h3>Year-level pathway</h3><p class="muted">' + escapeHTML(readiness.guideText) + '</p></div>',
+          '  <div class="stats">',
+          statHTML("Readiness", readiness.label),
+          statHTML("Secure skills", readiness.secure + "/" + readiness.expected),
+          statHTML("Nearly secure", readiness.nearly),
+          statHTML("Not started", readiness.notStarted),
+          '  </div>',
+          focusIds.length ? [
+            '  <table><thead><tr><th>Focus skill</th><th>Status</th><th>Evidence</th><th>Progress</th></tr></thead><tbody>',
+            focusIds.map(function (levelId) {
+              var profile = proficiencyForStudentLevel(student.id, levelId);
+              return [
+                '<tr>',
+                '<td><strong>' + escapeHTML(levelLabel(levelId)) + '</strong></td>',
+                '<td>' + proficiencyPill(profile) + '</td>',
+                '<td>' + profile.sessions + ' sessions<div class="tiny muted">' + profile.attempts + ' attempts, recent ' + (profile.recentAccuracy == null ? '--' : profile.recentAccuracy + '%') + '</div></td>',
+                '<td>' + escapeHTML(progressSignal(profile)) + '<div class="tiny muted">' + escapeHTML(proficiencyEvidenceText(profile)) + '</div></td>',
+                '</tr>'
+              ].join("");
+            }).join(""),
+            '  </tbody></table>'
+          ].join("") : '<div class="empty">No pathway focus has been set for this year level yet.</div>',
+          '</section>'
         ].join("");
       }
 
@@ -4224,19 +4401,180 @@
       }
 
       function proficiencyForSessions(sessions) {
-        if (!sessions.length) return { label: "No data", className: "none", sessions: 0, accuracy: null };
-        var accuracy = Math.round(avg(sessions.map(function (session) { return session.accuracy; })));
-        if (sessions.length >= 3 && accuracy >= 90) return { label: "Secure", className: "secure", sessions: sessions.length, accuracy: accuracy };
-        if (sessions.length >= 2 && accuracy >= 75) return { label: "Building", className: "building", sessions: sessions.length, accuracy: accuracy };
-        return { label: "Focus", className: "focus", sessions: sessions.length, accuracy: accuracy };
+        var ordered = sessions.slice().sort(function (a, b) {
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        });
+        if (!ordered.length) {
+          return {
+            status: "notStarted",
+            label: "No data",
+            className: "none",
+            sessions: 0,
+            attempts: 0,
+            accuracy: null,
+            recentAccuracy: null,
+            bestSprintAccuracy: null,
+            improving: false,
+            recentMistakes: 0
+          };
+        }
+        var recent = ordered.slice(-3);
+        var attempts = sum(ordered.map(function (session) { return Number(session.attempted) || 0; }));
+        var accuracy = Math.round(avg(ordered.map(function (session) { return session.accuracy; })));
+        var recentAccuracy = Math.round(avg(recent.map(function (session) { return session.accuracy; })));
+        var sprintSessions = ordered.filter(function (session) {
+          return session.mode === "sprint" || Number(session.timeSpent) > 0;
+        });
+        var bestSprintAccuracy = sprintSessions.length
+          ? Math.max.apply(null, sprintSessions.map(function (session) { return Number(session.accuracy) || 0; }))
+          : null;
+        var firstWindow = ordered.slice(0, Math.min(2, ordered.length));
+        var firstAccuracy = Math.round(avg(firstWindow.map(function (session) { return session.accuracy; })));
+        var improving = ordered.length >= 2 && recentAccuracy >= firstAccuracy + 5;
+        var recentMistakes = sum(recent.map(function (session) { return (session.mistakes || []).length; }));
+        var profile = {
+          status: "focus",
+          label: "Focus",
+          className: "focus",
+          sessions: ordered.length,
+          attempts: attempts,
+          accuracy: accuracy,
+          recentAccuracy: recentAccuracy,
+          bestSprintAccuracy: bestSprintAccuracy,
+          improving: improving,
+          recentMistakes: recentMistakes
+        };
+        if (
+          ordered.length >= 3 &&
+          attempts >= 30 &&
+          recentAccuracy >= 85 &&
+          bestSprintAccuracy != null &&
+          bestSprintAccuracy >= 80 &&
+          recentMistakes <= 2
+        ) {
+          profile.status = "secure";
+          profile.label = "Secure";
+          profile.className = "secure";
+        } else if (attempts >= 20 && recentAccuracy >= 75 && (improving || accuracy >= 75)) {
+          profile.status = "nearlySecure";
+          profile.label = "Nearly secure";
+          profile.className = "nearly";
+        } else if (attempts >= 10 || ordered.length >= 2) {
+          profile.status = "building";
+          profile.label = "Building";
+          profile.className = "building";
+        }
+        return profile;
       }
 
       function proficiencyPill(profile) {
         return '<span class="proficiency ' + profile.className + '">' + escapeHTML(profile.label) + '</span>';
       }
 
+      function proficiencyEvidenceText(profile) {
+        if (!profile || profile.status === "notStarted") return "Needs a first session.";
+        if (profile.status === "secure") return "Secure recent accuracy with timed evidence.";
+        var notes = [];
+        if (profile.attempts < 30) notes.push((30 - profile.attempts) + " more attempts");
+        if (profile.recentAccuracy != null && profile.recentAccuracy < 85) notes.push("recent accuracy below 85%");
+        if (profile.bestSprintAccuracy == null) notes.push("needs timed sprint evidence");
+        if (profile.recentMistakes > 2) notes.push("review repeated recent mistakes");
+        if (!notes.length && profile.status === "nearlySecure") return "Close to secure; repeat once more.";
+        return notes.join(", ");
+      }
+
+      function progressSignal(profile) {
+        if (!profile || profile.status === "notStarted") return "Ready to start";
+        if (profile.status === "secure") return "Secure";
+        if (profile.improving) return "Improving";
+        if (profile.status === "nearlySecure") return "Nearly there";
+        if (profile.status === "building") return "Keep building";
+        return "Needs focus";
+      }
+
       function tableProfileForStudent(studentId, table, operation) {
         return proficiencyForSessions(sessionsForStudentTable(studentId, table, operation));
+      }
+
+      function proficiencyForStudentLevel(studentId, levelId) {
+        return proficiencyForSessions(sessionsForChallenge(studentId, levelId));
+      }
+
+      function readinessForStudent(student) {
+        var focusIds = focusLevelIdsForYear(student.yearLevel);
+        var availableIds = availableLevelIdsForYear(student.yearLevel);
+        var expectedIds = unique(focusIds.concat(availableIds)).filter(function (levelId) {
+          return LEVELS.some(function (level) { return level.id === levelId; });
+        });
+        var profiles = expectedIds.map(function (levelId) {
+          return {
+            levelId: levelId,
+            profile: proficiencyForStudentLevel(student.id, levelId)
+          };
+        });
+        var secure = profiles.filter(function (item) { return item.profile.status === "secure"; }).length;
+        var nearly = profiles.filter(function (item) { return item.profile.status === "nearlySecure"; }).length;
+        var notStarted = profiles.filter(function (item) { return item.profile.status === "notStarted"; }).length;
+        var current = profiles.find(function (item) {
+          return focusIds.indexOf(item.levelId) >= 0 && item.profile.status !== "secure";
+        }) || profiles.find(function (item) {
+          return item.profile.status !== "secure";
+        }) || profiles[profiles.length - 1] || null;
+        var status = "focus";
+        var label = "Needs focus";
+        var className = "focus";
+        if (!sessionsForStudent(student.id).length) {
+          status = "ready";
+          label = "Ready to start";
+          className = "none";
+        } else if (profiles.length && secure === profiles.length) {
+          status = "extensionReady";
+          label = "Extension ready";
+          className = "secure";
+        } else if (current && current.profile.status === "nearlySecure") {
+          status = "nearlySecure";
+          label = "Nearly secure";
+          className = "nearly";
+        } else if (current && current.profile.status === "building") {
+          status = "building";
+          label = "Building";
+          className = "building";
+        }
+        return {
+          status: status,
+          label: label,
+          className: className,
+          focusLevelId: current ? current.levelId : null,
+          focusProfile: current ? current.profile : null,
+          secure: secure,
+          nearly: nearly,
+          notStarted: notStarted,
+          expected: profiles.length,
+          guideText: curriculumGuideText(student.yearLevel)
+        };
+      }
+
+      function readinessPill(readiness) {
+        return '<span class="proficiency ' + readiness.className + '">' + escapeHTML(readiness.label) + '</span>';
+      }
+
+      function readinessFocusHTML(readiness) {
+        if (!readiness.focusLevelId) return '<span class="muted">No focus needed</span>';
+        return [
+          '<strong>' + escapeHTML(levelLabel(readiness.focusLevelId)) + '</strong>',
+          readiness.focusProfile ? '<div class="tiny muted">' + escapeHTML(proficiencyEvidenceText(readiness.focusProfile)) + '</div>' : ''
+        ].join("");
+      }
+
+      function readinessCounts(students) {
+        var profiles = students.map(readinessForStudent);
+        return {
+          ready: profiles.filter(function (item) { return item.status === "ready"; }).length,
+          building: profiles.filter(function (item) { return item.status === "building"; }).length,
+          nearly: profiles.filter(function (item) { return item.status === "nearlySecure"; }).length,
+          secure: profiles.filter(function (item) { return item.status === "extensionReady"; }).length,
+          focus: profiles.filter(function (item) { return item.status === "focus"; }).length
+        };
       }
 
       function timesTableClassProfile(students) {
@@ -4665,60 +5003,16 @@
         ].join("");
       }
 
-      function selectedDashboardStudent(students) {
-        if (!students.length) return null;
-        var selected = students.find(function (student) {
-          return student.id === state.dashboardStudentId;
-        });
-        if (selected) return selected;
-        state.dashboardStudentId = students[0].id;
-        return students[0];
-      }
-
-      function selectedDashboardLevelId(student) {
-        if (state.dashboardLevelId && LEVELS.some(function (level) { return level.id === state.dashboardLevelId; })) {
-          return state.dashboardLevelId;
-        }
-        var latest = sessionsForStudent(student.id).slice().sort(function (a, b) {
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        })[0];
-        state.dashboardLevelId = latest ? latest.levelId : "A1";
-        return state.dashboardLevelId;
-      }
-
-      function teacherStudentChallengePanel(students) {
-        if (!students.length) return "";
-        var student = selectedDashboardStudent(students);
-        var levelId = selectedDashboardLevelId(student);
-        return [
-          '<section class="panel section stack">',
-          '  <div class="between">',
-          '    <div><h3>Individual challenge graphs</h3><p class="muted">Choose a student and challenge to view their score line graph.</p></div>',
-          '    <div class="row">',
-          '      <select data-action="dashboard-student" aria-label="Student graph selector">',
-          students.map(function (item) {
-            return '<option value="' + escapeHTML(item.id) + '"' + (item.id === student.id ? " selected" : "") + '>' + escapeHTML(studentOptionLabel(item)) + '</option>';
-          }).join(""),
-          '      </select>',
-          '      <select data-action="dashboard-level" aria-label="Challenge graph selector">' + levelOptions(levelId) + '</select>',
-          '    </div>',
-          '  </div>',
-          studentChallengeProgressPanel(student.id, levelId, "Selected student graph", false, false),
-          '</section>'
-        ].join("");
-      }
-
       function studentTable(klass, students) {
         if (!students.length) return '<div class="empty">Add students to start tracking participation.</div>';
         return [
           '<section class="panel section stack">',
           '  <h3>Students</h3>',
-          '  <table><thead><tr><th>Student</th><th>Login details</th><th>Year level</th><th>Participation</th><th>Results</th><th>Operation strengths</th><th></th></tr></thead><tbody>',
+          '  <table><thead><tr><th>Student</th><th>Login details</th><th>Year level</th><th>Participation</th><th>Readiness</th><th>Suggested focus</th><th></th></tr></thead><tbody>',
           students.map(function (student) {
             var sessions = sessionsForStudent(student.id);
             var last = sessions.length ? sessions.slice().sort(function (a, b) { return new Date(b.createdAt) - new Date(a.createdAt); })[0] : null;
-            var accuracy = sessions.length ? Math.round(avg(sessions.map(function (s) { return s.accuracy; }))) : 0;
-            var best = sessions.length ? Math.max.apply(null, sessions.map(function (s) { return s.score; })) : 0;
+            var readiness = readinessForStudent(student);
             var studentDetail = hasStudentName(student) ? '<div class="tiny muted">Alias: ' + escapeHTML(student.alias) + '</div>' : '';
             return [
               '<tr>',
@@ -4726,9 +5020,9 @@
               '<td>' + studentLoginDetails(klass, student) + '</td>',
               '<td>' + studentYearLevelControl(student) + '</td>',
               '<td>' + (last ? formatDateTime(last.createdAt) : "No sessions") + '<div class="tiny muted">' + sessions.length + ' sessions</div></td>',
-              '<td>' + accuracy + '% avg<div class="tiny muted">Best score ' + best + '</div></td>',
-              '<td>' + operationSummary(student.id) + '</td>',
-              '<td><button class="btn ghost icon" data-action="delete-student" data-student="' + student.id + '" title="Delete student">x</button></td>',
+              '<td>' + readinessPill(readiness) + '<div class="tiny muted">' + readiness.secure + '/' + readiness.expected + ' secure</div></td>',
+              '<td>' + readinessFocusHTML(readiness) + '</td>',
+              '<td><div class="row"><button class="btn ghost" data-action="view-student-results" data-student="' + student.id + '">Results</button><button class="btn ghost icon" data-action="delete-student" data-student="' + student.id + '" title="Delete student">x</button></div></td>',
               '</tr>'
             ].join("");
           }).join(""),
@@ -4871,6 +5165,10 @@
       function avg(values) {
         if (!values.length) return 0;
         return values.reduce(function (sum, value) { return sum + Number(value || 0); }, 0) / values.length;
+      }
+
+      function sum(values) {
+        return values.reduce(function (total, value) { return total + Number(value || 0); }, 0);
       }
 
       function median(values) {
@@ -5333,6 +5631,18 @@
           state.view = "teacher-results";
           render();
         }
+        if (action === "view-student-results") {
+          var resultsStudentId = button.getAttribute("data-student");
+          var resultsStudent = store.students.find(function (student) { return student.id === resultsStudentId; });
+          if (resultsStudent) {
+            state.dashboardClassId = resultsStudent.classId;
+            state.resultsStudentId = resultsStudent.id;
+            state.resultsLevelId = null;
+            state.resultsMode = "student";
+            state.view = "teacher-results";
+            render();
+          }
+        }
         if (action === "auth-mode") {
           state.authMode = button.getAttribute("data-mode");
           state.message = "";
@@ -5633,15 +5943,6 @@
         }
         if (select.getAttribute("data-action") === "dashboard-tag") {
           state.dashboardTag = select.value;
-          render();
-        }
-        if (select.getAttribute("data-action") === "dashboard-student") {
-          state.dashboardStudentId = select.value;
-          state.dashboardLevelId = null;
-          render();
-        }
-        if (select.getAttribute("data-action") === "dashboard-level") {
-          state.dashboardLevelId = select.value;
           render();
         }
         if (select.getAttribute("data-action") === "results-class") {

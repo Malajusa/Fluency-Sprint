@@ -286,6 +286,20 @@ Use Australian Curriculum F-6 content as supporting alignment where useful.
 
 Do not reproduce curriculum content unnecessarily in the student app. Store only concise metadata needed for filtering, teacher understanding, and pathway decisions.
 
+## Initial 2026 WA alignment notes
+
+The first year-level guide in the app is aligned to the Western Australian Curriculum Mathematics Scope and sequence for implementation in 2026 at a high level:
+
+- Pre-primary: small collections, partitions, adding, removing, grouping and sharing.
+- Year 1: numbers to 100/120, add and subtract to 20 using strategies, groups of 10, skip counting by 2s, 5s and 10s.
+- Year 2: numbers to at least 1000, recall addition and subtraction facts to 10, add and subtract one- and two-digit numbers, represent multiplication and division.
+- Year 3: addition and subtraction facts to 20, place-value partitioning to four digits, multiplication facts of 2, 3, 4, 5 and 10, related division representations.
+- Year 4: efficient addition and subtraction to four digits, multiplication facts up to 10 x 10 and related division facts, whole-number division without remainders, litres/millilitres and grams/kilograms.
+- Year 5: larger whole-number operations, factors and multiples, division with remainders, metric-unit choice, decimal measurement links and flexible mixed-operation fluency.
+- Year 6: consolidation and extension across mixed operations, metric conversions and secondary-readiness fluency.
+
+This is a guide for Fluency Sprint pathways, not a replacement for teacher judgement or the full curriculum text.
+
 ## Initial implementation slices
 
 ### Slice 1: student year level
