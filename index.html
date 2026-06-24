@@ -1400,6 +1400,10 @@
         { id: "A5", operation: "addition", name: "Answers ending in 5", tags: ["ending5"] },
         { id: "A6", operation: "addition", name: "Bridge to 10", tags: ["friends10", "bridge"] },
         { id: "A7", operation: "addition", name: "Mixed addition fluency", tags: ["addition"] },
+        { id: "A8", operation: "addition", name: "Friends of 100", tags: ["friends100", "placeValue", "missing"] },
+        { id: "A9", operation: "addition", name: "Friends of 1000", tags: ["friends1000", "placeValue", "missing"] },
+        { id: "A10", operation: "addition", name: "Friends of 150", tags: ["friends150", "placeValue", "missing"] },
+        { id: "A11", operation: "addition", name: "Friends of 1500", tags: ["friends1500", "placeValue", "missing"] },
         { id: "S1", operation: "subtraction", name: "Subtract within 10", tags: ["subtraction"] },
         { id: "S2", operation: "subtraction", name: "Subtract from 10", tags: ["friends10"] },
         { id: "S3", operation: "subtraction", name: "Missing subtraction facts for 10", tags: ["friends10", "missing"] },
@@ -1407,6 +1411,10 @@
         { id: "S5", operation: "subtraction", name: "Answers ending in 5", tags: ["ending5"] },
         { id: "S6", operation: "subtraction", name: "Bridge through 10", tags: ["friends10", "bridge"] },
         { id: "S7", operation: "subtraction", name: "Mixed subtraction fluency", tags: ["subtraction"] },
+        { id: "S8", operation: "subtraction", name: "Subtract from 100", tags: ["friends100", "placeValue", "missing"] },
+        { id: "S9", operation: "subtraction", name: "Subtract from 1000", tags: ["friends1000", "placeValue", "missing"] },
+        { id: "S10", operation: "subtraction", name: "Subtract from 150", tags: ["friends150", "placeValue", "missing"] },
+        { id: "S11", operation: "subtraction", name: "Subtract from 1500", tags: ["friends1500", "placeValue", "missing"] },
         { id: "M1", operation: "multiplication", name: "2s, 5s, and 10s", tags: ["times2", "times5", "times10"] },
         { id: "M2", operation: "multiplication", name: "5-times-table facts", tags: ["times5", "ending5"] },
         { id: "M3", operation: "multiplication", name: "Products ending in 5 or 0", tags: ["ending5", "times5"] },
@@ -1425,7 +1433,8 @@
         { id: "X3", operation: "mixed", name: "Facts ending in 5 mixed", tags: ["ending5"] },
         { id: "X4", operation: "mixed", name: "Multiplication and division by 2, 5, and 10", tags: ["times2", "times5", "times10"] },
         { id: "X5", operation: "mixed", name: "All four operations, beginner", tags: ["mixed"] },
-        { id: "X6", operation: "mixed", name: "All four operations, standard", tags: ["mixed"] }
+        { id: "X6", operation: "mixed", name: "All four operations, standard", tags: ["mixed"] },
+        { id: "X7", operation: "mixed", name: "Large friends of numbers", tags: ["friends100", "friends1000", "friends150", "friends1500", "placeValue"] }
       ];
 
       var APPEARANCE_THEMES = [
@@ -2232,31 +2241,44 @@
           };
         }
 
-        if (level.tags.indexOf("friends10") >= 0 && level.operation === "addition") {
+        var friendGuideTarget = friendTargetFromTags(level.tags);
+        if (friendGuideTarget && level.tags.indexOf("bridge") < 0 && level.operation === "addition") {
+          var addVisible = friendGuideTarget === 10 ? 4 : (friendGuideTarget === 150 ? 85 : (friendGuideTarget === 1500 ? 900 : friendGuideTarget / 4));
+          var addPartner = friendGuideTarget - addVisible;
           return {
-            meaning: "Friends of 10 are number pairs that make 10.",
-            strategy: "Look at the number you can see, then name the partner that finishes the 10.",
-            examples: ["4 + ? = 10, so ? = 6", "? + 7 = 10, so ? = 3", "6 + 4 = 10"],
+            meaning: "Friends of " + friendGuideTarget + " are number pairs that make " + friendGuideTarget + ".",
+            strategy: "Look at the number you can see, then name the partner that finishes the target number.",
+            examples: [
+              addVisible + " + ? = " + friendGuideTarget + ", so ? = " + addPartner,
+              "? + " + addPartner + " = " + friendGuideTarget + ", so ? = " + addVisible,
+              addVisible + " + " + addPartner + " = " + friendGuideTarget
+            ],
             guided: [
-              "Hold 10 in your head.",
+              "Hold " + friendGuideTarget + " in your head.",
               "Say the number you can see.",
-              "Count the gap only if you need to, then try to remember the pair."
+              "Use place value to find the gap, then try to remember the pair."
             ],
             independent: "When the pairs feel familiar, practise answering the missing number quickly."
           };
         }
 
-        if (level.tags.indexOf("friends10") >= 0 && level.operation === "subtraction") {
+        if (friendGuideTarget && level.tags.indexOf("bridge") < 0 && level.operation === "subtraction") {
+          var subKnown = friendGuideTarget === 10 ? 4 : (friendGuideTarget === 150 ? 65 : (friendGuideTarget === 1500 ? 600 : friendGuideTarget / 4));
+          var subLeft = friendGuideTarget - subKnown;
           return {
-            meaning: "These facts use 10 as the whole and ask which part is left or missing.",
-            strategy: "Think part-part-whole: if 10 is the whole, the two parts must fit together to make 10.",
-            examples: ["10 - 4 = 6", "10 - ? = 7, so ? = 3", "? - 6 = 4, so ? = 10"],
+            meaning: "These facts use " + friendGuideTarget + " as the whole and ask which part is left or missing.",
+            strategy: "Think part-part-whole: if " + friendGuideTarget + " is the whole, the two parts must fit together to make " + friendGuideTarget + ".",
+            examples: [
+              friendGuideTarget + " - " + subKnown + " = " + subLeft,
+              friendGuideTarget + " - ? = " + subLeft + ", so ? = " + subKnown,
+              friendGuideTarget + " - " + subLeft + " = " + subKnown
+            ],
             guided: [
               "Find the whole number first.",
               "Name the part you can see.",
-              "Use the matching friend of 10 to find the missing part."
+              "Use the matching friend of " + friendGuideTarget + " to find the missing part."
             ],
-            independent: "Start practice when you can switch between addition and subtraction friends of 10."
+            independent: "Start practice when you can switch between addition and subtraction friends of " + friendGuideTarget + "."
           };
         }
 
@@ -2485,6 +2507,43 @@
         };
       }
 
+      function friendTargetFromTags(tags) {
+        var found = (tags || []).find(function (tag) {
+          return /^friends\d+$/.test(tag);
+        });
+        return found ? Number(found.replace("friends", "")) : null;
+      }
+
+      function friendStepForTarget(target) {
+        if (target === 10) return 1;
+        if (target === 100) return 10;
+        if (target === 150) return 5;
+        if (target === 1000) return 50;
+        if (target === 1500) return 100;
+        return 10;
+      }
+
+      function randomFriendPart(target, step) {
+        var max = Math.max(1, Math.floor((target - step) / step));
+        return rand(1, max) * step;
+      }
+
+      function generateFriendAdditionQuestion(level, target) {
+        var step = friendStepForTarget(target);
+        var known = randomFriendPart(target, step);
+        var missing = target - known;
+        if (Math.random() > 0.5) return question(known + " + ? = " + target, missing, "addition", level.tags);
+        return question("? + " + known + " = " + target, missing, "addition", level.tags);
+      }
+
+      function generateFriendSubtractionQuestion(level, target) {
+        var step = friendStepForTarget(target);
+        var known = randomFriendPart(target, step);
+        var missing = target - known;
+        if (Math.random() > 0.5) return question(target + " - ? = " + missing, known, "subtraction", level.tags);
+        return question(target + " - " + known, missing, "subtraction", level.tags);
+      }
+
       function generateCustomMultiplicationQuestion(options) {
         var settings = options || currentMultiplicationOptions();
         var tables = normalizeTables(settings.tables);
@@ -2508,6 +2567,15 @@
       function generateQuestion(levelId, options) {
         var level = levelById(levelId);
         var id = level.id;
+        var friendTarget = friendTargetFromTags(level.tags);
+
+        if (friendTarget && level.tags.indexOf("bridge") < 0 && level.operation === "addition") {
+          return generateFriendAdditionQuestion(level, friendTarget);
+        }
+
+        if (friendTarget && level.tags.indexOf("bridge") < 0 && level.operation === "subtraction") {
+          return generateFriendSubtractionQuestion(level, friendTarget);
+        }
 
         if (id === "A1") {
           var sumA1 = rand(2, 10);
@@ -2547,7 +2615,7 @@
           return question(aA6 + " + " + bA6, aA6 + bA6, "addition", level.tags);
         }
 
-        if (id === "A7") return generateQuestion(choice(["A1", "A2", "A4", "A5", "A6"]));
+        if (id === "A7") return generateQuestion(choice(["A1", "A2", "A4", "A5", "A6", "A8", "A9", "A10", "A11"]));
 
         if (id === "S1") {
           var topS1 = rand(1, 10);
@@ -2585,7 +2653,7 @@
           return question(topS6 + " - " + subThroughTen, answerS6, "subtraction", level.tags);
         }
 
-        if (id === "S7") return generateQuestion(choice(["S1", "S2", "S4", "S5", "S6"]));
+        if (id === "S7") return generateQuestion(choice(["S1", "S2", "S4", "S5", "S6", "S8", "S9", "S10", "S11"]));
 
         if (id === "M1") {
           var factorM1 = choice([2, 5, 10]);
@@ -2660,6 +2728,7 @@
         if (id === "X4") return generateQuestion(choice(["M1", "D1", "D3"]));
         if (id === "X5") return generateQuestion(choice(["A1", "A2", "S1", "S2", "M1", "D1"]));
         if (id === "X6") return generateQuestion(choice(["A4", "A6", "S4", "S6", "M4", "M5", "D4"]));
+        if (id === "X7") return generateQuestion(choice(["A8", "A9", "A10", "A11", "S8", "S9", "S10", "S11"]));
 
         return generateQuestion("A1");
       }
@@ -3102,6 +3171,11 @@
       function tagLabel(tag) {
         var labels = {
           friends10: "Friends of 10",
+          friends100: "Friends of 100",
+          friends1000: "Friends of 1000",
+          friends150: "Friends of 150",
+          friends1500: "Friends of 1500",
+          placeValue: "Place value",
           ending5: "Ends in 5",
           missing: "Missing number",
           bridge: "Bridge to 10",
@@ -4280,6 +4354,11 @@
           '      <select data-action="dashboard-tag" aria-label="Skill filter">',
           tagOption("all", "All skills"),
           tagOption("friends10", "Friends of 10"),
+          tagOption("friends100", "Friends of 100"),
+          tagOption("friends1000", "Friends of 1000"),
+          tagOption("friends150", "Friends of 150"),
+          tagOption("friends1500", "Friends of 1500"),
+          tagOption("placeValue", "Place value friends"),
           tagOption("ending5", "Facts ending in 5"),
           tagOption("times5", "5-times-table facts"),
           tagOption("customTables", "Chosen times tables"),
