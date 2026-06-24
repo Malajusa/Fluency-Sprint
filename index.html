@@ -588,6 +588,47 @@
       padding: 0.8rem;
     }
 
+    .guide-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.9rem;
+    }
+
+    .guide-card {
+      border: 2px solid var(--line);
+      border-radius: var(--radius);
+      background: white;
+      padding: 1rem;
+      min-height: 9rem;
+    }
+
+    .guide-card h3 {
+      margin-bottom: 0.45rem;
+    }
+
+    .guide-list {
+      display: grid;
+      gap: 0.45rem;
+      margin: 0;
+      padding-left: 1.15rem;
+    }
+
+    .example-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.7rem;
+    }
+
+    .example-box {
+      border: 2px solid var(--line);
+      border-radius: 8px;
+      background: #f8fafc;
+      padding: 0.85rem;
+      font-size: 1.2rem;
+      font-weight: 950;
+      text-align: center;
+    }
+
     .success {
       border-color: #b6e4bd;
       background: #ecfff0;
@@ -940,6 +981,8 @@
       .grid.three,
       .grid.four,
       .appearance-grid,
+      .guide-grid,
+      .example-strip,
       .level-list,
       .practice-layout,
       .dashboard-grid {
@@ -1346,6 +1389,7 @@
         { id: "subtraction", label: "Subtraction", symbol: "-" },
         { id: "multiplication", label: "Multiplication", symbol: "x" },
         { id: "division", label: "Division", symbol: "/" },
+        { id: "measurement", label: "Measurement", symbol: "mL/kg" },
         { id: "mixed", label: "Mixed Operations", symbol: "+-x/" }
       ];
 
@@ -1357,6 +1401,10 @@
         { id: "A5", operation: "addition", name: "Answers ending in 5", tags: ["ending5"] },
         { id: "A6", operation: "addition", name: "Bridge to 10", tags: ["friends10", "bridge"] },
         { id: "A7", operation: "addition", name: "Mixed addition fluency", tags: ["addition"] },
+        { id: "A8", operation: "addition", name: "Friends of 100", tags: ["friends100", "placeValue", "missing"] },
+        { id: "A9", operation: "addition", name: "Friends of 1000", tags: ["friends1000", "placeValue", "missing"] },
+        { id: "A10", operation: "addition", name: "Friends of 150", tags: ["friends150", "placeValue", "missing"] },
+        { id: "A11", operation: "addition", name: "Friends of 1500", tags: ["friends1500", "placeValue", "missing"] },
         { id: "S1", operation: "subtraction", name: "Subtract within 10", tags: ["subtraction"] },
         { id: "S2", operation: "subtraction", name: "Subtract from 10", tags: ["friends10"] },
         { id: "S3", operation: "subtraction", name: "Missing subtraction facts for 10", tags: ["friends10", "missing"] },
@@ -1364,6 +1412,10 @@
         { id: "S5", operation: "subtraction", name: "Answers ending in 5", tags: ["ending5"] },
         { id: "S6", operation: "subtraction", name: "Bridge through 10", tags: ["friends10", "bridge"] },
         { id: "S7", operation: "subtraction", name: "Mixed subtraction fluency", tags: ["subtraction"] },
+        { id: "S8", operation: "subtraction", name: "Subtract from 100", tags: ["friends100", "placeValue", "missing"] },
+        { id: "S9", operation: "subtraction", name: "Subtract from 1000", tags: ["friends1000", "placeValue", "missing"] },
+        { id: "S10", operation: "subtraction", name: "Subtract from 150", tags: ["friends150", "placeValue", "missing"] },
+        { id: "S11", operation: "subtraction", name: "Subtract from 1500", tags: ["friends1500", "placeValue", "missing"] },
         { id: "M1", operation: "multiplication", name: "2s, 5s, and 10s", tags: ["times2", "times5", "times10"] },
         { id: "M2", operation: "multiplication", name: "5-times-table facts", tags: ["times5", "ending5"] },
         { id: "M3", operation: "multiplication", name: "Products ending in 5 or 0", tags: ["ending5", "times5"] },
@@ -1377,12 +1429,18 @@
         { id: "D4", operation: "division", name: "Divide within known times tables", tags: ["division"] },
         { id: "D5", operation: "division", name: "Mixed division fluency", tags: ["division"] },
         { id: "D6", operation: "division", name: "Choose division tables", tags: ["division", "customTables"] },
+        { id: "U1", operation: "measurement", name: "mm, cm, and m", tags: ["metric", "length", "milli", "centi", "baseUnits", "placeValue"] },
+        { id: "U2", operation: "measurement", name: "m and km", tags: ["metric", "length", "kilo", "baseUnits", "placeValue"] },
+        { id: "U3", operation: "measurement", name: "mL and L", tags: ["metric", "capacity", "milli", "baseUnits", "placeValue"] },
+        { id: "U4", operation: "measurement", name: "g and kg", tags: ["metric", "mass", "kilo", "baseUnits", "placeValue"] },
+        { id: "U5", operation: "measurement", name: "Mixed metric conversions", tags: ["metric", "length", "capacity", "mass", "placeValue"] },
         { id: "X1", operation: "mixed", name: "Addition and subtraction within 10", tags: ["addition", "subtraction"] },
         { id: "X2", operation: "mixed", name: "Friends of 10 mixed", tags: ["friends10"] },
         { id: "X3", operation: "mixed", name: "Facts ending in 5 mixed", tags: ["ending5"] },
         { id: "X4", operation: "mixed", name: "Multiplication and division by 2, 5, and 10", tags: ["times2", "times5", "times10"] },
         { id: "X5", operation: "mixed", name: "All four operations, beginner", tags: ["mixed"] },
-        { id: "X6", operation: "mixed", name: "All four operations, standard", tags: ["mixed"] }
+        { id: "X6", operation: "mixed", name: "All four operations, standard", tags: ["mixed"] },
+        { id: "X7", operation: "mixed", name: "Large friends of numbers", tags: ["friends100", "friends1000", "friends150", "friends1500", "placeValue"] }
       ];
 
       var APPEARANCE_THEMES = [
@@ -1398,6 +1456,15 @@
         { id: "large", label: "Large" }
       ];
       var TIMES_TABLES = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+      var YEAR_LEVELS = [
+        { id: "PP", label: "Pre-primary", order: 0 },
+        { id: "Y1", label: "Year 1", order: 1 },
+        { id: "Y2", label: "Year 2", order: 2 },
+        { id: "Y3", label: "Year 3", order: 3 },
+        { id: "Y4", label: "Year 4", order: 4 },
+        { id: "Y5", label: "Year 5", order: 5 },
+        { id: "Y6", label: "Year 6", order: 6 }
+      ];
 
       var liveStore = loadStore();
       var savedAppearance = loadAppearance();
@@ -1535,6 +1602,7 @@
           firstName: row.first_name || "",
           lastName: row.last_name || "",
           alias: row.alias,
+          yearLevel: normalizeYearLevel(row.year_level || row.yearLevel),
           createdAt: row.created_at,
           deletedAt: row.deleted_at
         };
@@ -1629,7 +1697,7 @@
 
         var studentsResult = await supabaseClient
           .from("students")
-          .select("id,class_id,teacher_id,first_name,last_name,alias,created_at,deleted_at")
+          .select("id,class_id,teacher_id,first_name,last_name,alias,year_level,created_at,deleted_at")
           .in("class_id", classIds)
           .is("deleted_at", null)
           .order("created_at", { ascending: true });
@@ -1748,10 +1816,10 @@
           createdAt: previewDate(42)
         };
         var students = [
-          previewStudentRecord("preview-student-ava", "Ava", "Morgan", previewClass, 38),
-          previewStudentRecord("preview-student-noah", "Noah", "Patel", previewClass, 36),
-          previewStudentRecord("preview-student-mia", "Mia", "Smith", previewClass, 32),
-          previewStudentRecord("preview-student-eli", "Eli", "Nguyen", previewClass, 30)
+          previewStudentRecord("preview-student-ava", "Ava", "Morgan", previewClass, 38, "Y4"),
+          previewStudentRecord("preview-student-noah", "Noah", "Patel", previewClass, 36, "Y5"),
+          previewStudentRecord("preview-student-mia", "Mia", "Smith", previewClass, 32, "Y4"),
+          previewStudentRecord("preview-student-eli", "Eli", "Nguyen", previewClass, 30, "Y3")
         ];
         var sessions = [
           previewSession(students[0], 18, "sprint", "A2", 22, 15, 5, "6 + ? = 10", "5", 4),
@@ -1776,6 +1844,10 @@
             levelName: "Division facts: 6s",
             tags: ["division", "customTables", "times6", "reverseDivision"]
           }),
+          previewSession(students[3], 4, "practice", "U3", 18, 15, 6, "1500 mL = ? L", "1", 1.5, {
+            operation: "measurement",
+            tags: ["metric", "capacity", "milli", "baseUnits", "placeValue"]
+          }),
           previewSession(students[3], 28, "practice", "A1", 12, 9, 3, "4 + 5", "8", 9),
           previewSession(students[3], 15, "sprint", "X2", 18, 13, 4, "10 - ? = 4", "5", 6)
         ];
@@ -1789,7 +1861,7 @@
         };
       }
 
-      function previewStudentRecord(id, firstName, lastName, klass, daysBack) {
+      function previewStudentRecord(id, firstName, lastName, klass, daysBack, yearLevel) {
         return {
           id: id,
           classId: klass.id,
@@ -1797,6 +1869,7 @@
           firstName: firstName,
           lastName: lastName,
           alias: makeStudentAlias(firstName, lastName),
+          yearLevel: normalizeYearLevel(yearLevel),
           pinHash: "preview-only",
           createdAt: previewDate(daysBack)
         };
@@ -1939,7 +2012,8 @@
           state.student = previewStudent();
           state.selectedOperation = "addition";
           state.selectedLevelId = "A2";
-          startSession("practice");
+          state.view = "practice-guide";
+          render();
           return;
         }
         if (target === "sprint") {
@@ -2066,6 +2140,24 @@
         });
       }
 
+      function normalizeYearLevel(value) {
+        var raw = String(value || "").trim();
+        return YEAR_LEVELS.some(function (level) { return level.id === raw; }) ? raw : "Y4";
+      }
+
+      function yearLevelLabel(value) {
+        var id = normalizeYearLevel(value);
+        var level = YEAR_LEVELS.find(function (item) { return item.id === id; });
+        return level ? level.label : "Year 4";
+      }
+
+      function yearLevelOptions(selected) {
+        var current = normalizeYearLevel(selected);
+        return YEAR_LEVELS.map(function (level) {
+          return '<option value="' + level.id + '"' + (level.id === current ? " selected" : "") + '>' + escapeHTML(level.label) + '</option>';
+        }).join("");
+      }
+
       function tablePracticeOperation(operation) {
         return operation === "multiplication" || operation === "division";
       }
@@ -2128,6 +2220,224 @@
         var label = "Chosen tables: " + tableListLabel(settings.tables);
         if (settings.includeReverseDivision) label += " with reverse division";
         return label;
+      }
+
+      function practiceGuideForLevel(level) {
+        var generic = {
+          meaning: "This skill helps you answer " + operationLabel(level.operation).toLowerCase() + " facts more automatically.",
+          strategy: "Look for a fact you already know, say the important parts quietly, then answer without counting from the start.",
+          examples: ["2 + 3 = 5", "6 - 4 = 2", "5 x 4 = 20"],
+          guided: [
+            "Read the whole question before answering.",
+            "Choose a known fact or pattern.",
+            "Check that your answer matches the operation."
+          ],
+          independent: "When the examples feel easy, start fluency practice and aim for smooth, accurate answers."
+        };
+
+        if (level.id === "M7" || level.id === "D6") {
+          var settings = currentMultiplicationOptions();
+          var tables = normalizeTables(settings.tables);
+          var first = tables[0];
+          var second = tables.length > 1 ? tables[1] : (first === 12 ? 11 : first + 1);
+          if (settings.practiceMode === "division") {
+            return {
+              meaning: "You are practising division facts connected to the " + tableListLabel(tables) + " tables.",
+              strategy: "Turn each division question into a multiplication fact: ask which number times the divisor makes the total.",
+              examples: [
+                (first * 7) + " / " + first + " = 7",
+                (second * 8) + " / " + second + " = 8",
+                (first * 10) + " / " + first + " = 10"
+              ],
+              guided: [
+                "Find the divisor in the question.",
+                "Say the matching times-table fact.",
+                "Check by multiplying your answer back."
+              ],
+              independent: "Start practice when you can turn the division fact into its matching multiplication fact."
+            };
+          }
+          return {
+            meaning: "You are building fast recall for the " + tableListLabel(tables) + " facts.",
+            strategy: "Use facts you already know. For harder facts, use doubles, 5s, 10s, or a nearby fact, then adjust.",
+            examples: settings.includeReverseDivision
+              ? [
+                  first + " x 7 = " + (first * 7),
+                  "8 x " + second + " = " + (8 * second),
+                  (first * 6) + " / " + first + " = 6"
+                ]
+              : [
+                  first + " x 7 = " + (first * 7),
+                  "8 x " + second + " = " + (8 * second),
+                  first + " x 10 = " + (first * 10)
+                ],
+            guided: [
+              "Say the table you are practising before you answer.",
+              "For a tough fact, move from a nearby known fact.",
+              settings.includeReverseDivision ? "For division, ask which factor makes the total." : "Check by swapping the factors around."
+            ],
+            independent: "Start practice when you can explain how you got two of the examples without counting one by one."
+          };
+        }
+
+        if (level.operation === "measurement") {
+          return {
+            meaning: "Metric conversion means renaming the same amount using a different unit, such as metres, centimetres, millimetres, litres, millilitres, grams, or kilograms.",
+            strategy: "Use place value. Moving to a smaller unit makes the number larger; moving to a larger unit makes the number smaller.",
+            examples: [
+              "1 m = 100 cm",
+              "1000 mL = 1 L",
+              "2.5 kg = 2500 g"
+            ],
+            guided: [
+              "Name the unit you are starting with.",
+              "Ask whether the new unit is smaller or larger.",
+              "Multiply or divide by 10, 100, or 1000, then check whether the answer size makes sense."
+            ],
+            independent: "Start practice when you can explain why the number gets larger or smaller during the conversion."
+          };
+        }
+
+        var friendGuideTarget = friendTargetFromTags(level.tags);
+        if (friendGuideTarget && level.tags.indexOf("bridge") < 0 && level.operation === "addition") {
+          var addVisible = friendGuideTarget === 10 ? 4 : (friendGuideTarget === 150 ? 85 : (friendGuideTarget === 1500 ? 900 : friendGuideTarget / 4));
+          var addPartner = friendGuideTarget - addVisible;
+          return {
+            meaning: "Friends of " + friendGuideTarget + " are number pairs that make " + friendGuideTarget + ".",
+            strategy: "Look at the number you can see, then name the partner that finishes the target number.",
+            examples: [
+              addVisible + " + ? = " + friendGuideTarget + ", so ? = " + addPartner,
+              "? + " + addPartner + " = " + friendGuideTarget + ", so ? = " + addVisible,
+              addVisible + " + " + addPartner + " = " + friendGuideTarget
+            ],
+            guided: [
+              "Hold " + friendGuideTarget + " in your head.",
+              "Say the number you can see.",
+              "Use place value to find the gap, then try to remember the pair."
+            ],
+            independent: "When the pairs feel familiar, practise answering the missing number quickly."
+          };
+        }
+
+        if (friendGuideTarget && level.tags.indexOf("bridge") < 0 && level.operation === "subtraction") {
+          var subKnown = friendGuideTarget === 10 ? 4 : (friendGuideTarget === 150 ? 65 : (friendGuideTarget === 1500 ? 600 : friendGuideTarget / 4));
+          var subLeft = friendGuideTarget - subKnown;
+          return {
+            meaning: "These facts use " + friendGuideTarget + " as the whole and ask which part is left or missing.",
+            strategy: "Think part-part-whole: if " + friendGuideTarget + " is the whole, the two parts must fit together to make " + friendGuideTarget + ".",
+            examples: [
+              friendGuideTarget + " - " + subKnown + " = " + subLeft,
+              friendGuideTarget + " - ? = " + subLeft + ", so ? = " + subKnown,
+              friendGuideTarget + " - " + subLeft + " = " + subKnown
+            ],
+            guided: [
+              "Find the whole number first.",
+              "Name the part you can see.",
+              "Use the matching friend of " + friendGuideTarget + " to find the missing part."
+            ],
+            independent: "Start practice when you can switch between addition and subtraction friends of " + friendGuideTarget + "."
+          };
+        }
+
+        if (level.tags.indexOf("bridge") >= 0 && level.operation === "addition") {
+          return {
+            meaning: "Bridging to 10 means splitting a number so you can make 10 first.",
+            strategy: "Fill the first number up to 10, then add what is left.",
+            examples: ["8 + 6 = 8 + 2 + 4", "9 + 5 = 9 + 1 + 4", "7 + 8 = 7 + 3 + 5"],
+            guided: [
+              "Ask how many are needed to reach 10.",
+              "Split the second number into that part and the leftover.",
+              "Make 10, then add the leftover."
+            ],
+            independent: "Practise when you can split the second number without writing it down."
+          };
+        }
+
+        if (level.tags.indexOf("bridge") >= 0 && level.operation === "subtraction") {
+          return {
+            meaning: "Bridging through 10 means subtracting in parts so you land on 10 first.",
+            strategy: "Subtract enough to reach 10, then subtract the rest.",
+            examples: ["14 - 6 = 14 - 4 - 2", "12 - 5 = 12 - 2 - 3", "17 - 9 = 17 - 7 - 2"],
+            guided: [
+              "Ask how far the starting number is from 10.",
+              "Split the amount you are subtracting.",
+              "Land on 10, then finish the subtraction."
+            ],
+            independent: "Start practice when the split feels natural."
+          };
+        }
+
+        if (level.operation === "multiplication") {
+          return {
+            meaning: "Multiplication facts describe equal groups.",
+            strategy: "Use a known table fact, a double, or a 10-times fact to help with nearby facts.",
+            examples: ["6 x 5 = 30", "6 x 6 = 36", "6 x 7 = 36 + 6"],
+            guided: [
+              "Identify the table or factor.",
+              "Use a nearby fact you know instantly.",
+              "Add or subtract one group if needed."
+            ],
+            independent: "Begin fluency practice when you can explain the pattern behind the fact."
+          };
+        }
+
+        if (level.operation === "division") {
+          return {
+            meaning: "Division facts ask how many equal groups fit into a total.",
+            strategy: "Use the matching multiplication fact to find the answer.",
+            examples: ["35 / 5 = 7", "48 / 6 = 8", "72 / 9 = 8"],
+            guided: [
+              "Find the divisor.",
+              "Ask what times the divisor makes the total.",
+              "Check by multiplying your answer back."
+            ],
+            independent: "Start practice when you can turn each division fact into a multiplication fact."
+          };
+        }
+
+        if (level.operation === "subtraction") {
+          return {
+            meaning: "Subtraction asks what is left or how far apart two numbers are.",
+            strategy: "Use counting back for small amounts and known addition facts for missing parts.",
+            examples: ["9 - 4 = 5", "15 - 7 = 8", "20 - 6 = 14"],
+            guided: [
+              "Read the starting number.",
+              "Decide whether to count back or use a known fact.",
+              "Check that the answer is smaller than the starting number."
+            ],
+            independent: "Practise when you can choose a strategy before answering."
+          };
+        }
+
+        if (level.operation === "mixed") {
+          return {
+            meaning: "Mixed practice asks you to switch between operations.",
+            strategy: "Look at the operation sign first, then choose the matching strategy.",
+            examples: ["8 + 2 = 10", "10 - 3 = 7", "5 x 6 = 30"],
+            guided: [
+              "Name the operation.",
+              "Pick the matching fact family or strategy.",
+              "Check whether the answer should be larger or smaller."
+            ],
+            independent: "Start practice when you can slow down enough to notice the operation sign every time."
+          };
+        }
+
+        if (level.operation === "addition") {
+          return {
+            meaning: "Addition combines parts to make a total.",
+            strategy: "Look for pairs that make 10, doubles, or near doubles.",
+            examples: ["6 + 4 = 10", "7 + 7 = 14", "8 + 9 = 17"],
+            guided: [
+              "Find the friend of 10 or double if there is one.",
+              "Use the known fact first.",
+              "Add any leftover amount."
+            ],
+            independent: "Practise when you can spot the helpful pattern before calculating."
+          };
+        }
+
+        return generic;
       }
 
       function toggleMultiplicationTable(table) {
@@ -2254,6 +2564,90 @@
         };
       }
 
+      function friendTargetFromTags(tags) {
+        var found = (tags || []).find(function (tag) {
+          return /^friends\d+$/.test(tag);
+        });
+        return found ? Number(found.replace("friends", "")) : null;
+      }
+
+      function friendStepForTarget(target) {
+        if (target === 10) return 1;
+        if (target === 100) return 10;
+        if (target === 150) return 5;
+        if (target === 1000) return 50;
+        if (target === 1500) return 100;
+        return 10;
+      }
+
+      function randomFriendPart(target, step) {
+        var max = Math.max(1, Math.floor((target - step) / step));
+        return rand(1, max) * step;
+      }
+
+      function generateFriendAdditionQuestion(level, target) {
+        var step = friendStepForTarget(target);
+        var known = randomFriendPart(target, step);
+        var missing = target - known;
+        if (Math.random() > 0.5) return question(known + " + ? = " + target, missing, "addition", level.tags);
+        return question("? + " + known + " = " + target, missing, "addition", level.tags);
+      }
+
+      function generateFriendSubtractionQuestion(level, target) {
+        var step = friendStepForTarget(target);
+        var known = randomFriendPart(target, step);
+        var missing = target - known;
+        if (Math.random() > 0.5) return question(target + " - ? = " + missing, known, "subtraction", level.tags);
+        return question(target + " - " + known, missing, "subtraction", level.tags);
+      }
+
+      function roundedMetricAnswer(value) {
+        return Math.round(value * 1000) / 1000;
+      }
+
+      function formatMetricNumber(value) {
+        var rounded = roundedMetricAnswer(value);
+        return String(rounded).replace(/(\.\d*?[1-9])0+$/, "$1").replace(/\.0+$/, "");
+      }
+
+      function metricQuestionFromPair(level, pair) {
+        var value = choice(pair.values);
+        var answer = roundedMetricAnswer((value * pair.fromFactor) / pair.toFactor);
+        var tags = level.tags.concat(pair.tags || []);
+        return question(formatMetricNumber(value) + " " + pair.from + " = ? " + pair.to, answer, "measurement", tags);
+      }
+
+      function generateMetricQuestion(level) {
+        var lengthSmall = [
+          { from: "m", fromFactor: 1, to: "cm", toFactor: 0.01, values: [1, 2, 3, 4, 5, 10], tags: ["length", "centi"] },
+          { from: "cm", fromFactor: 0.01, to: "m", toFactor: 1, values: [100, 150, 200, 250, 300, 500], tags: ["length", "centi"] },
+          { from: "m", fromFactor: 1, to: "mm", toFactor: 0.001, values: [1, 2, 3, 4, 5], tags: ["length", "milli"] },
+          { from: "mm", fromFactor: 0.001, to: "m", toFactor: 1, values: [1000, 1500, 2000, 2500, 5000], tags: ["length", "milli"] },
+          { from: "cm", fromFactor: 0.01, to: "mm", toFactor: 0.001, values: [1, 5, 10, 25, 50, 100], tags: ["length", "milli", "centi"] },
+          { from: "mm", fromFactor: 0.001, to: "cm", toFactor: 0.01, values: [10, 50, 100, 250, 500], tags: ["length", "milli", "centi"] }
+        ];
+        var kilometres = [
+          { from: "km", fromFactor: 1000, to: "m", toFactor: 1, values: [1, 2, 3, 4, 5, 10], tags: ["length", "kilo"] },
+          { from: "m", fromFactor: 1, to: "km", toFactor: 1000, values: [1000, 1500, 2000, 2500, 5000, 10000], tags: ["length", "kilo"] }
+        ];
+        var capacity = [
+          { from: "L", fromFactor: 1, to: "mL", toFactor: 0.001, values: [1, 2, 3, 4, 5, 1.5, 2.5], tags: ["capacity", "milli"] },
+          { from: "mL", fromFactor: 0.001, to: "L", toFactor: 1, values: [500, 1000, 1500, 2000, 2500, 5000], tags: ["capacity", "milli"] }
+        ];
+        var mass = [
+          { from: "kg", fromFactor: 1, to: "g", toFactor: 0.001, values: [1, 2, 3, 4, 5, 1.5, 2.5], tags: ["mass", "kilo"] },
+          { from: "g", fromFactor: 0.001, to: "kg", toFactor: 1, values: [500, 1000, 1500, 2000, 2500, 5000], tags: ["mass", "kilo"] }
+        ];
+        var pools = {
+          U1: lengthSmall,
+          U2: kilometres,
+          U3: capacity,
+          U4: mass,
+          U5: lengthSmall.concat(kilometres, capacity, mass)
+        };
+        return metricQuestionFromPair(level, choice(pools[level.id] || pools.U5));
+      }
+
       function generateCustomMultiplicationQuestion(options) {
         var settings = options || currentMultiplicationOptions();
         var tables = normalizeTables(settings.tables);
@@ -2277,6 +2671,15 @@
       function generateQuestion(levelId, options) {
         var level = levelById(levelId);
         var id = level.id;
+        var friendTarget = friendTargetFromTags(level.tags);
+
+        if (friendTarget && level.tags.indexOf("bridge") < 0 && level.operation === "addition") {
+          return generateFriendAdditionQuestion(level, friendTarget);
+        }
+
+        if (friendTarget && level.tags.indexOf("bridge") < 0 && level.operation === "subtraction") {
+          return generateFriendSubtractionQuestion(level, friendTarget);
+        }
 
         if (id === "A1") {
           var sumA1 = rand(2, 10);
@@ -2316,7 +2719,7 @@
           return question(aA6 + " + " + bA6, aA6 + bA6, "addition", level.tags);
         }
 
-        if (id === "A7") return generateQuestion(choice(["A1", "A2", "A4", "A5", "A6"]));
+        if (id === "A7") return generateQuestion(choice(["A1", "A2", "A4", "A5", "A6", "A8", "A9", "A10", "A11"]));
 
         if (id === "S1") {
           var topS1 = rand(1, 10);
@@ -2354,7 +2757,7 @@
           return question(topS6 + " - " + subThroughTen, answerS6, "subtraction", level.tags);
         }
 
-        if (id === "S7") return generateQuestion(choice(["S1", "S2", "S4", "S5", "S6"]));
+        if (id === "S7") return generateQuestion(choice(["S1", "S2", "S4", "S5", "S6", "S8", "S9", "S10", "S11"]));
 
         if (id === "M1") {
           var factorM1 = choice([2, 5, 10]);
@@ -2423,12 +2826,15 @@
 
         if (id === "D5") return generateQuestion(choice(["D1", "D2", "D3", "D4"]));
 
+        if (id === "U1" || id === "U2" || id === "U3" || id === "U4" || id === "U5") return generateMetricQuestion(level);
+
         if (id === "X1") return generateQuestion(choice(["A1", "S1"]));
         if (id === "X2") return generateQuestion(choice(["A2", "A3", "S2", "S3"]));
         if (id === "X3") return generateQuestion(choice(["A5", "S5", "M2", "M3", "D2"]));
         if (id === "X4") return generateQuestion(choice(["M1", "D1", "D3"]));
         if (id === "X5") return generateQuestion(choice(["A1", "A2", "S1", "S2", "M1", "D1"]));
         if (id === "X6") return generateQuestion(choice(["A4", "A6", "S4", "S6", "M4", "M5", "D4"]));
+        if (id === "X7") return generateQuestion(choice(["A8", "A9", "A10", "A11", "S8", "S9", "S10", "S11"]));
 
         return generateQuestion("A1");
       }
@@ -2562,7 +2968,7 @@
           '  <section class="grid three">',
           previewTile("join", "Student join", "Class code, alias, and PIN entry.", "S"),
           previewTile("levels", "Level selection", "Operation ladders and specific skill levels.", "L"),
-          previewTile("practice", "Practice mode", "Untimed questions with retry feedback.", "P"),
+          previewTile("practice", "Practice mode", "Skill strategy, examples, then fluency practice.", "P"),
           previewTile("sprint", "100-second sprint", "Timed fluency challenge.", "100"),
           previewTile("results", "Results", "Score, accuracy, streak, and missed facts.", "R"),
           previewTile("review", "Mistakes review", "Missed questions one at a time.", "?"),
@@ -2697,6 +3103,66 @@
         ].join("");
       }
 
+      function guideListHTML(items) {
+        return '<ul class="guide-list">' + items.map(function (item) {
+          return '<li>' + escapeHTML(item) + '</li>';
+        }).join("") + '</ul>';
+      }
+
+      function guideCardHTML(title, body, isHTML) {
+        return [
+          '<article class="guide-card stack">',
+          '  <h3>' + escapeHTML(title) + '</h3>',
+          isHTML ? body : '  <p class="muted">' + escapeHTML(body) + '</p>',
+          '</article>'
+        ].join("");
+      }
+
+      function guideExamplesHTML(examples) {
+        return '<div class="example-strip">' + examples.map(function (example) {
+          return '<div class="example-box">' + escapeHTML(example) + '</div>';
+        }).join("") + '</div>';
+      }
+
+      function practiceGuideView() {
+        if (!state.student) return homeView();
+        var level = levelById(state.selectedLevelId);
+        var guide = practiceGuideForLevel(level);
+        var tablePractice = tablePracticeOperation(level.operation);
+        var levelName = tablePractice ? customMultiplicationLevelName() : level.name;
+        return [
+          '<div class="page">',
+          header(),
+          '<main class="shell stack">',
+          '  <section class="between">',
+          '    <div>',
+          '      <span class="pill">Practice</span>',
+          '      <h2>' + escapeHTML(levelName) + '</h2>',
+          '      <p class="muted">' + escapeHTML(level.id + ": " + operationLabel(level.operation)) + '</p>',
+          '    </div>',
+          '    <button class="btn ghost" data-action="student-menu">Back</button>',
+          '  </section>',
+          tablePractice ? '<section class="panel section stack student-menu-panel">' + tablePracticePanel() + '</section>' : '',
+          '  <section class="guide-grid">',
+          guideCardHTML("What this skill means", guide.meaning),
+          guideCardHTML("Strategy", guide.strategy),
+          guideCardHTML("Worked examples", guideExamplesHTML(guide.examples), true),
+          guideCardHTML("Guided practice", guideListHTML(guide.guided), true),
+          '  </section>',
+          '  <section class="panel section stack">',
+          '    <h3>Independent practice</h3>',
+          '    <p class="muted">' + escapeHTML(guide.independent) + '</p>',
+          '    <div class="row">',
+          '      <button class="btn primary" data-action="begin-guided-practice">Start fluency practice</button>',
+          '      <button class="btn gold" data-action="begin-session" data-mode="sprint">100-second sprint</button>',
+          '    </div>',
+          '  </section>',
+          studentChallengeProgressPanel(state.student.id, state.selectedLevelId, "Your challenge graph"),
+          '</main>',
+          '</div>'
+        ].join("");
+      }
+
       function studentMenuView() {
         var levels = LEVELS.filter(function (level) { return level.operation === state.selectedOperation; });
         var tablePractice = tablePracticeOperation(state.selectedOperation);
@@ -2718,20 +3184,13 @@
           '  </section>',
           messageHTML(),
           '  <section class="panel section stack student-menu-panel">',
-          '    <div class="between">',
-          '      <h3>Mode</h3>',
-          '      <div class="tabs">',
-          '        <button class="tab active" data-action="start-mode" data-mode="practice">Practice</button>',
-          '        <button class="tab active" data-action="start-mode" data-mode="sprint">100-second sprint</button>',
-          '      </div>',
-          '    </div>',
           '    <div>',
           '      <h3>Operation</h3>',
           '      <div class="tabs">' + operationTabs() + '</div>',
           '    </div>',
           tablePractice ? tablePracticePanel() : levelSelectionHTML(levels),
           '    <div class="row action-row">',
-          '      <button class="btn primary" data-action="begin-session" data-mode="practice">Practice</button>',
+          '      <button class="btn primary" data-action="open-practice-guide">Practice</button>',
           '      <button class="btn gold" data-action="begin-session" data-mode="sprint">100-second sprint</button>',
           '    </div>',
           '  </section>',
@@ -2818,6 +3277,19 @@
       function tagLabel(tag) {
         var labels = {
           friends10: "Friends of 10",
+          friends100: "Friends of 100",
+          friends1000: "Friends of 1000",
+          friends150: "Friends of 150",
+          friends1500: "Friends of 1500",
+          placeValue: "Place value",
+          metric: "Metric conversion",
+          length: "Length",
+          capacity: "Capacity",
+          mass: "Mass",
+          milli: "Milli units",
+          centi: "Centi units",
+          kilo: "Kilo units",
+          baseUnits: "Base units",
           ending5: "Ends in 5",
           missing: "Missing number",
           bridge: "Bridge to 10",
@@ -3059,7 +3531,7 @@
           '    <form class="panel question stack" data-form="answer">',
           '      <div class="pill" style="margin: 0 auto">' + escapeHTML(operationLabel(active.question.operation)) + '</div>',
           '      <div class="question-text">' + escapeHTML(active.question.text) + '</div>',
-          '      <input id="answerInput" class="answer-input" name="answer" inputmode="none" enterkeyhint="done" pattern="[0-9-]*" autocomplete="off" spellcheck="false" readonly aria-readonly="true" value="' + escapeHTML(active.input) + '" aria-label="Answer">',
+          '      <input id="answerInput" class="answer-input" name="answer" inputmode="none" enterkeyhint="done" pattern="[0-9.-]*" autocomplete="off" spellcheck="false" readonly aria-readonly="true" value="' + escapeHTML(active.input) + '" aria-label="Answer">',
           active.feedback ? '<div class="feedback-toast notice ' + (active.feedback.indexOf("Correct") === 0 ? "success" : "danger") + '">' + escapeHTML(active.feedback) + '</div>' : '',
           '    </form>',
           '    <aside class="panel section stack keypad-panel">',
@@ -3078,7 +3550,7 @@
       }
 
       function keypadHTML() {
-        var keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];
+        var keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "0"];
         return keys.map(function (key) {
           return '<button class="key" type="button" data-action="keypad" data-key="' + key + '">' + key + '</button>';
         }).join("") +
@@ -3099,7 +3571,13 @@
       }
 
       function sanitizeAnswerValue(value) {
-        return String(value || "").replace(/[^\d-]/g, "").slice(0, 6);
+        var raw = String(value || "").replace(/[^\d.-]/g, "");
+        var negative = raw.charAt(0) === "-";
+        raw = raw.replace(/-/g, "");
+        var parts = raw.split(".");
+        var whole = parts.shift() || "";
+        var decimal = parts.length ? "." + parts.join("").slice(0, 3) : "";
+        return ((negative ? "-" : "") + whole + decimal).slice(0, 8);
       }
 
       function updateInputFromDom() {
@@ -3155,6 +3633,12 @@
           return true;
         }
 
+        if (event.key === "." && !String(state.active.input || "").includes(".")) {
+          event.preventDefault();
+          setAnswerInput(String(state.active.input || "") + ".");
+          return true;
+        }
+
         if (event.key === "Backspace" || event.key === "Delete") {
           event.preventDefault();
           setAnswerInput(String(state.active.input || "").slice(0, -1));
@@ -3188,7 +3672,7 @@
         }
         var submitted = Number(raw);
         var q = active.question;
-        if (submitted === q.answer) {
+        if (Math.abs(submitted - Number(q.answer)) < 0.0001) {
           var correctedAfterRetry = active.pendingWrong != null;
           active.correct += 1;
           active.attempted += 1;
@@ -3831,8 +4315,9 @@
           '  <input type="hidden" name="classId" value="' + escapeHTML(klass.id) + '">',
           '  <div class="grid two">',
           '    <label>Student alias<input name="alias" type="text" placeholder="A Morgan" maxlength="40" autocomplete="off" required></label>',
-          '    <div class="notice small">A six-digit PIN will be generated when the student is added.</div>',
+          '    <label>Year level<select name="yearLevel">' + yearLevelOptions("Y4") + '</select></label>',
           '  </div>',
+          '  <div class="notice small">A six-digit PIN will be generated when the student is added.</div>',
           '  <div class="tiny muted">Use the alias you want the student to enter. Do not add extra personal information.</div>',
           '  <button class="btn primary" type="submit">Add student</button>',
           '</form>'
@@ -3847,8 +4332,9 @@
           '    <input type="hidden" name="classId" value="' + escapeHTML(klass.id) + '">',
           '    <div class="grid two">',
           '      <label>Spreadsheet file<input type="file" accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values" data-import-file></label>',
-          '      <div class="notice small">Names are used only in this browser to create initial aliases. Only aliases and PIN hashes are saved.</div>',
+          '      <label>Default year level<select name="yearLevel">' + yearLevelOptions("Y4") + '</select></label>',
           '    </div>',
+          '    <div class="notice small">Names are used only in this browser to create initial aliases. Only aliases, year levels, and PIN hashes are saved.</div>',
           '    <label>Rows<textarea name="studentRows" data-import-textarea placeholder="First name,Last name&#10;Tia,Pretty&#10;Ava,Morgan"></textarea></label>',
           '    <div class="row">',
           '      <button class="btn primary" type="submit">Preview import</button>',
@@ -3871,12 +4357,13 @@
           '    <div><h4>Import preview</h4><p class="muted">' + readyRows.length + ' students ready.</p></div>',
           '    <button class="btn gold" data-action="confirm-student-import" data-class="' + escapeHTML(klass.id) + '" ' + (readyRows.length ? "" : "disabled") + '>Create students</button>',
           '  </div>',
-          '  <table><thead><tr><th>Row</th><th>Alias to create</th><th>Status</th></tr></thead><tbody>',
+          '  <table><thead><tr><th>Row</th><th>Alias to create</th><th>Year level</th><th>Status</th></tr></thead><tbody>',
           state.studentImportRows.map(function (row) {
             return [
               '<tr>',
               '<td>' + row.rowNumber + '</td>',
               '<td><strong>' + escapeHTML(row.alias || "--") + '</strong></td>',
+              '<td>' + escapeHTML(yearLevelLabel(row.yearLevel)) + '</td>',
               '<td>' + escapeHTML(row.error || row.status) + '</td>',
               '</tr>'
             ].join("");
@@ -3927,12 +4414,14 @@
             var addResult = await supabaseClient.rpc("create_student", {
               p_class_id: classId,
               p_alias: remoteAlias,
-              p_pin: remotePin
+              p_pin: remotePin,
+              p_year_level: normalizeYearLevel(rows[i].yearLevel)
             });
             if (addResult.error) {
               failures.push({
                 rowNumber: rows[i].rowNumber,
                 alias: remoteAlias,
+                yearLevel: normalizeYearLevel(rows[i].yearLevel),
                 status: "Error",
                 error: addResult.error.message
               });
@@ -3963,6 +4452,7 @@
               firstName: "",
               lastName: "",
               alias: localAlias,
+              yearLevel: normalizeYearLevel(rows[j].yearLevel),
               pinHash: await hashText("student:" + studentId + ":" + pin),
               createdAt: new Date().toISOString()
             });
@@ -3991,11 +4481,24 @@
           operationOption("subtraction"),
           operationOption("multiplication"),
           operationOption("division"),
+          operationOption("measurement"),
           operationOption("mixed"),
           '      </select>',
           '      <select data-action="dashboard-tag" aria-label="Skill filter">',
           tagOption("all", "All skills"),
           tagOption("friends10", "Friends of 10"),
+          tagOption("friends100", "Friends of 100"),
+          tagOption("friends1000", "Friends of 1000"),
+          tagOption("friends150", "Friends of 150"),
+          tagOption("friends1500", "Friends of 1500"),
+          tagOption("placeValue", "Place value friends"),
+          tagOption("metric", "Metric conversion"),
+          tagOption("length", "Length conversion"),
+          tagOption("capacity", "Capacity conversion"),
+          tagOption("mass", "Mass conversion"),
+          tagOption("milli", "Milli conversions"),
+          tagOption("centi", "Centi conversions"),
+          tagOption("kilo", "Kilo conversions"),
           tagOption("ending5", "Facts ending in 5"),
           tagOption("times5", "5-times-table facts"),
           tagOption("customTables", "Chosen times tables"),
@@ -4210,7 +4713,7 @@
         return [
           '<section class="panel section stack">',
           '  <h3>Students</h3>',
-          '  <table><thead><tr><th>Student</th><th>Login details</th><th>Participation</th><th>Results</th><th>Operation strengths</th><th></th></tr></thead><tbody>',
+          '  <table><thead><tr><th>Student</th><th>Login details</th><th>Year level</th><th>Participation</th><th>Results</th><th>Operation strengths</th><th></th></tr></thead><tbody>',
           students.map(function (student) {
             var sessions = sessionsForStudent(student.id);
             var last = sessions.length ? sessions.slice().sort(function (a, b) { return new Date(b.createdAt) - new Date(a.createdAt); })[0] : null;
@@ -4221,6 +4724,7 @@
               '<tr>',
               '<td><strong>' + escapeHTML(studentFullName(student)) + '</strong>' + studentDetail + '</td>',
               '<td>' + studentLoginDetails(klass, student) + '</td>',
+              '<td>' + studentYearLevelControl(student) + '</td>',
               '<td>' + (last ? formatDateTime(last.createdAt) : "No sessions") + '<div class="tiny muted">' + sessions.length + ' sessions</div></td>',
               '<td>' + accuracy + '% avg<div class="tiny muted">Best score ' + best + '</div></td>',
               '<td>' + operationSummary(student.id) + '</td>',
@@ -4230,6 +4734,16 @@
           }).join(""),
           '  </tbody></table>',
           '</section>'
+        ].join("");
+      }
+
+      function studentYearLevelControl(student) {
+        return [
+          '<form class="stack" style="gap:0.45rem" data-form="update-student-year-level">',
+          '  <input type="hidden" name="studentId" value="' + escapeHTML(student.id) + '">',
+          '  <select name="yearLevel" aria-label="Year level for ' + escapeHTML(student.alias) + '">' + yearLevelOptions(student.yearLevel) + '</select>',
+          '  <button class="btn ghost" type="submit">Save year</button>',
+          '</form>'
         ].join("");
       }
 
@@ -4469,8 +4983,11 @@
         if (kind === "preview-student-import") {
           var importClassId = String(data.get("classId") || "");
           var importText = String(data.get("studentRows") || "");
+          var defaultImportYearLevel = normalizeYearLevel(data.get("yearLevel"));
           state.studentImportClassId = importClassId;
-          state.studentImportRows = parseStudentImportText(importText, importClassId);
+          state.studentImportRows = parseStudentImportText(importText, importClassId).map(function (row) {
+            return Object.assign({}, row, { yearLevel: defaultImportYearLevel });
+          });
           if (!state.studentImportRows.length) {
             state.message = "Error: Paste rows or upload a CSV/TSV file before previewing.";
           } else {
@@ -4488,7 +5005,8 @@
             var addResult = await supabaseClient.rpc("create_student", {
               p_class_id: remoteClassId,
               p_alias: remoteAlias,
-              p_pin: remotePin
+              p_pin: remotePin,
+              p_year_level: normalizeYearLevel(data.get("yearLevel"))
             });
             if (addResult.error) throw addResult.error;
             var remoteStudent = Array.isArray(addResult.data) ? addResult.data[0] : addResult.data;
@@ -4497,6 +5015,23 @@
             }
             await loadRemoteDashboard();
             state.message = generatedPinMessage("Student added", remoteStudent ? remoteStudent.alias : remoteAlias, remotePin);
+          } catch (error) {
+            state.message = "Error: " + error.message;
+          }
+          render();
+          return;
+        }
+        if (backendActive() && kind === "update-student-year-level") {
+          try {
+            var yearStudentId = String(data.get("studentId") || "");
+            var selectedYearLevel = normalizeYearLevel(data.get("yearLevel"));
+            var yearResult = await supabaseClient.rpc("update_student_year_level", {
+              p_student_id: yearStudentId,
+              p_year_level: selectedYearLevel
+            });
+            if (yearResult.error) throw yearResult.error;
+            await loadRemoteDashboard();
+            state.message = "Student year level updated.";
           } catch (error) {
             state.message = "Error: " + error.message;
           }
@@ -4616,6 +5151,7 @@
             firstName: "",
             lastName: "",
             alias: alias,
+            yearLevel: normalizeYearLevel(data.get("yearLevel")),
             pinHash: await hashText("student:" + studentId + ":" + pin),
             createdAt: new Date().toISOString()
           };
@@ -4640,6 +5176,21 @@
           rememberGeneratedPin(resetLocalStudent.id, resetLocalPin);
           saveStore();
           state.message = generatedPinMessage("PIN regenerated", resetLocalStudent.alias, resetLocalPin);
+          render();
+          return;
+        }
+
+        if (kind === "update-student-year-level") {
+          var localYearStudentId = String(data.get("studentId") || "");
+          var localYearStudent = store.students.find(function (student) { return student.id === localYearStudentId; });
+          if (!localYearStudent) {
+            state.message = "Error: Student not found.";
+            render();
+            return;
+          }
+          localYearStudent.yearLevel = normalizeYearLevel(data.get("yearLevel"));
+          saveStore();
+          state.message = "Student year level updated.";
           render();
           return;
         }
@@ -4839,9 +5390,21 @@
           state.message = "";
           render();
         }
-        if (action === "start-mode") {
-          startSession(button.getAttribute("data-mode"));
+        if (action === "open-practice-guide") {
+          state.message = "";
+          state.view = "practice-guide";
+          render();
         }
+        if (action === "start-mode") {
+          if (button.getAttribute("data-mode") === "practice") {
+            state.message = "";
+            state.view = "practice-guide";
+            render();
+          } else {
+            startSession(button.getAttribute("data-mode"));
+          }
+        }
+        if (action === "begin-guided-practice") startSession("practice");
         if (action === "begin-session") {
           startSession(button.getAttribute("data-mode"));
         }
@@ -5124,6 +5687,7 @@
         if (state.view === "auth") app.innerHTML = authView();
         if (state.view === "student-join") app.innerHTML = studentJoinView();
         if (state.view === "student-menu") app.innerHTML = studentMenuView();
+        if (state.view === "practice-guide") app.innerHTML = practiceGuideView();
         if (state.view === "session") app.innerHTML = sessionView();
         if (state.view === "results") app.innerHTML = resultsView();
         if (state.view === "review") app.innerHTML = reviewView();

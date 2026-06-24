@@ -17,6 +17,7 @@ create table if not exists public.classes (
   name text not null,
   code text not null unique,
   code_rotated_at timestamptz,
+  default_year_level text not null default 'Y4',
   created_at timestamptz not null default now(),
   deleted_at timestamptz
 );
@@ -28,6 +29,7 @@ create table if not exists public.students (
   first_name text not null default '',
   last_name text not null default '',
   alias text not null,
+  year_level text not null default 'Y4',
   pin_hash text not null,
   student_token_hash text,
   student_token_expires_at timestamptz,
@@ -44,6 +46,40 @@ alter table public.students
 
 alter table public.students
   add column if not exists last_name text not null default '';
+
+alter table public.students
+  add column if not exists year_level text not null default 'Y4';
+
+alter table public.classes
+  add column if not exists default_year_level text not null default 'Y4';
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'students_year_level_check'
+      and conrelid = 'public.students'::regclass
+  ) then
+    alter table public.students
+      add constraint students_year_level_check
+      check (year_level in ('PP', 'Y1', 'Y2', 'Y3', 'Y4', 'Y5', 'Y6'));
+  end if;
+end $$;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'classes_default_year_level_check'
+      and conrelid = 'public.classes'::regclass
+  ) then
+    alter table public.classes
+      add constraint classes_default_year_level_check
+      check (default_year_level in ('PP', 'Y1', 'Y2', 'Y3', 'Y4', 'Y5', 'Y6'));
+  end if;
+end $$;
 
 create table if not exists public.sessions (
   id uuid primary key default gen_random_uuid(),
@@ -331,7 +367,12 @@ $$;
 
 drop function if exists public.create_student(uuid, text, text);
 drop function if exists public.create_student(uuid, text, text, text);
-create function public.create_student(p_class_id uuid, p_alias text, p_pin text)
+create function public.create_student(
+  p_class_id uuid,
+  p_alias text,
+  p_pin text,
+  p_year_level text default 'Y4'
+)
 returns table (
   id uuid,
   class_id uuid,
@@ -339,6 +380,7 @@ returns table (
   first_name text,
   last_name text,
   alias text,
+  year_level text,
   created_at timestamptz,
   deleted_at timestamptz
 )
@@ -349,6 +391,7 @@ as $$
 declare
   owner_id uuid;
   clean_alias text;
+  clean_year_level text;
   new_student public.students;
 begin
   if auth.uid() is null then
@@ -356,6 +399,11 @@ begin
   end if;
 
   clean_alias := regexp_replace(trim(coalesce(p_alias, '')), '[[:space:]]+', ' ', 'g');
+  clean_year_level := coalesce(nullif(trim(p_year_level), ''), 'Y4');
+
+  if clean_year_level not in ('PP', 'Y1', 'Y2', 'Y3', 'Y4', 'Y5', 'Y6') then
+    raise exception 'Invalid year level';
+  end if;
 
   if clean_alias = '' then
     raise exception 'Student alias is required';
@@ -387,24 +435,33 @@ begin
     raise exception 'That alias already exists in this class';
   end if;
 
-  insert into public.students (class_id, teacher_id, first_name, last_name, alias, pin_hash)
+  insert into public.students (class_id, teacher_id, first_name, last_name, alias, pin_hash, year_level)
   values (
     p_class_id,
     auth.uid(),
     '',
     '',
     clean_alias,
-    extensions.crypt(trim(coalesce(p_pin, '')), extensions.gen_salt('bf'))
+    extensions.crypt(trim(coalesce(p_pin, '')), extensions.gen_salt('bf')),
+    clean_year_level
   )
   returning * into new_student;
 
   insert into public.audit_log (teacher_id, action, details)
-  values (auth.uid(), 'student_added', jsonb_build_object('class_id', p_class_id, 'student_id', new_student.id));
+  values (
+    auth.uid(),
+    'student_added',
+    jsonb_build_object(
+      'class_id', p_class_id,
+      'student_id', new_student.id,
+      'year_level', new_student.year_level
+    )
+  );
 
   return query
   select new_student.id, new_student.class_id, new_student.teacher_id,
          new_student.first_name, new_student.last_name,
-         new_student.alias, new_student.created_at, new_student.deleted_at;
+         new_student.alias, new_student.year_level, new_student.created_at, new_student.deleted_at;
 end;
 $$;
 
@@ -673,6 +730,75 @@ begin
 end;
 $$;
 
+create or replace function public.update_student_year_level(
+  p_student_id uuid,
+  p_year_level text
+)
+returns table (
+  id uuid,
+  class_id uuid,
+  teacher_id uuid,
+  first_name text,
+  last_name text,
+  alias text,
+  year_level text,
+  created_at timestamptz,
+  deleted_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  clean_year_level text;
+  updated_student public.students;
+begin
+  if auth.uid() is null then
+    raise exception 'Not signed in';
+  end if;
+
+  clean_year_level := coalesce(nullif(trim(p_year_level), ''), 'Y4');
+
+  if clean_year_level not in ('PP', 'Y1', 'Y2', 'Y3', 'Y4', 'Y5', 'Y6') then
+    raise exception 'Invalid year level';
+  end if;
+
+  update public.students as s
+  set year_level = clean_year_level
+  where s.id = p_student_id
+    and s.teacher_id = auth.uid()
+    and s.deleted_at is null
+  returning s.* into updated_student;
+
+  if updated_student.id is null then
+    raise exception 'Student not found';
+  end if;
+
+  insert into public.audit_log (teacher_id, action, details)
+  values (
+    auth.uid(),
+    'student_year_level_updated',
+    jsonb_build_object(
+      'student_id', updated_student.id,
+      'class_id', updated_student.class_id,
+      'year_level', updated_student.year_level
+    )
+  );
+
+  return query
+  select
+    updated_student.id,
+    updated_student.class_id,
+    updated_student.teacher_id,
+    updated_student.first_name,
+    updated_student.last_name,
+    updated_student.alias,
+    updated_student.year_level,
+    updated_student.created_at,
+    updated_student.deleted_at;
+end;
+$$;
+
 create or replace function public.delete_student(p_student_id uuid)
 returns void
 language plpgsql
@@ -771,8 +897,9 @@ grant execute on function public.ensure_teacher_profile(text) to authenticated;
 grant execute on function public.create_class(text) to authenticated;
 grant execute on function public.rotate_class_code(uuid) to authenticated;
 grant execute on function public.generate_student_alias(uuid, text, text) to authenticated;
-grant execute on function public.create_student(uuid, text, text) to authenticated;
+grant execute on function public.create_student(uuid, text, text, text) to authenticated;
 grant execute on function public.reset_student_pin(uuid, text) to authenticated;
+grant execute on function public.update_student_year_level(uuid, text) to authenticated;
 grant execute on function public.delete_student(uuid) to authenticated;
 grant execute on function public.delete_class(uuid) to authenticated;
 grant execute on function public.join_student(text, text, text) to anon, authenticated;
