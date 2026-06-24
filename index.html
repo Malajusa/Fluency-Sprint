@@ -1389,6 +1389,7 @@
         { id: "subtraction", label: "Subtraction", symbol: "-" },
         { id: "multiplication", label: "Multiplication", symbol: "x" },
         { id: "division", label: "Division", symbol: "/" },
+        { id: "measurement", label: "Measurement", symbol: "mL/kg" },
         { id: "mixed", label: "Mixed Operations", symbol: "+-x/" }
       ];
 
@@ -1428,6 +1429,11 @@
         { id: "D4", operation: "division", name: "Divide within known times tables", tags: ["division"] },
         { id: "D5", operation: "division", name: "Mixed division fluency", tags: ["division"] },
         { id: "D6", operation: "division", name: "Choose division tables", tags: ["division", "customTables"] },
+        { id: "U1", operation: "measurement", name: "mm, cm, and m", tags: ["metric", "length", "milli", "centi", "baseUnits", "placeValue"] },
+        { id: "U2", operation: "measurement", name: "m and km", tags: ["metric", "length", "kilo", "baseUnits", "placeValue"] },
+        { id: "U3", operation: "measurement", name: "mL and L", tags: ["metric", "capacity", "milli", "baseUnits", "placeValue"] },
+        { id: "U4", operation: "measurement", name: "g and kg", tags: ["metric", "mass", "kilo", "baseUnits", "placeValue"] },
+        { id: "U5", operation: "measurement", name: "Mixed metric conversions", tags: ["metric", "length", "capacity", "mass", "placeValue"] },
         { id: "X1", operation: "mixed", name: "Addition and subtraction within 10", tags: ["addition", "subtraction"] },
         { id: "X2", operation: "mixed", name: "Friends of 10 mixed", tags: ["friends10"] },
         { id: "X3", operation: "mixed", name: "Facts ending in 5 mixed", tags: ["ending5"] },
@@ -1827,6 +1833,10 @@
           previewSession(students[3], 8, "practice", "D6", 22, 16, 5, "42 / 6", "8", 7, {
             levelName: "Division facts: 6s",
             tags: ["division", "customTables", "times6", "reverseDivision"]
+          }),
+          previewSession(students[3], 4, "practice", "U3", 18, 15, 6, "1500 mL = ? L", "1", 1.5, {
+            operation: "measurement",
+            tags: ["metric", "capacity", "milli", "baseUnits", "placeValue"]
           }),
           previewSession(students[3], 28, "practice", "A1", 12, 9, 3, "4 + 5", "8", 9),
           previewSession(students[3], 15, "sprint", "X2", 18, 13, 4, "10 - ? = 4", "5", 6)
@@ -2241,6 +2251,24 @@
           };
         }
 
+        if (level.operation === "measurement") {
+          return {
+            meaning: "Metric conversion means renaming the same amount using a different unit, such as metres, centimetres, millimetres, litres, millilitres, grams, or kilograms.",
+            strategy: "Use place value. Moving to a smaller unit makes the number larger; moving to a larger unit makes the number smaller.",
+            examples: [
+              "1 m = 100 cm",
+              "1000 mL = 1 L",
+              "2.5 kg = 2500 g"
+            ],
+            guided: [
+              "Name the unit you are starting with.",
+              "Ask whether the new unit is smaller or larger.",
+              "Multiply or divide by 10, 100, or 1000, then check whether the answer size makes sense."
+            ],
+            independent: "Start practice when you can explain why the number gets larger or smaller during the conversion."
+          };
+        }
+
         var friendGuideTarget = friendTargetFromTags(level.tags);
         if (friendGuideTarget && level.tags.indexOf("bridge") < 0 && level.operation === "addition") {
           var addVisible = friendGuideTarget === 10 ? 4 : (friendGuideTarget === 150 ? 85 : (friendGuideTarget === 1500 ? 900 : friendGuideTarget / 4));
@@ -2544,6 +2572,53 @@
         return question(target + " - " + known, missing, "subtraction", level.tags);
       }
 
+      function roundedMetricAnswer(value) {
+        return Math.round(value * 1000) / 1000;
+      }
+
+      function formatMetricNumber(value) {
+        var rounded = roundedMetricAnswer(value);
+        return String(rounded).replace(/(\.\d*?[1-9])0+$/, "$1").replace(/\.0+$/, "");
+      }
+
+      function metricQuestionFromPair(level, pair) {
+        var value = choice(pair.values);
+        var answer = roundedMetricAnswer((value * pair.fromFactor) / pair.toFactor);
+        var tags = level.tags.concat(pair.tags || []);
+        return question(formatMetricNumber(value) + " " + pair.from + " = ? " + pair.to, answer, "measurement", tags);
+      }
+
+      function generateMetricQuestion(level) {
+        var lengthSmall = [
+          { from: "m", fromFactor: 1, to: "cm", toFactor: 0.01, values: [1, 2, 3, 4, 5, 10], tags: ["length", "centi"] },
+          { from: "cm", fromFactor: 0.01, to: "m", toFactor: 1, values: [100, 150, 200, 250, 300, 500], tags: ["length", "centi"] },
+          { from: "m", fromFactor: 1, to: "mm", toFactor: 0.001, values: [1, 2, 3, 4, 5], tags: ["length", "milli"] },
+          { from: "mm", fromFactor: 0.001, to: "m", toFactor: 1, values: [1000, 1500, 2000, 2500, 5000], tags: ["length", "milli"] },
+          { from: "cm", fromFactor: 0.01, to: "mm", toFactor: 0.001, values: [1, 5, 10, 25, 50, 100], tags: ["length", "milli", "centi"] },
+          { from: "mm", fromFactor: 0.001, to: "cm", toFactor: 0.01, values: [10, 50, 100, 250, 500], tags: ["length", "milli", "centi"] }
+        ];
+        var kilometres = [
+          { from: "km", fromFactor: 1000, to: "m", toFactor: 1, values: [1, 2, 3, 4, 5, 10], tags: ["length", "kilo"] },
+          { from: "m", fromFactor: 1, to: "km", toFactor: 1000, values: [1000, 1500, 2000, 2500, 5000, 10000], tags: ["length", "kilo"] }
+        ];
+        var capacity = [
+          { from: "L", fromFactor: 1, to: "mL", toFactor: 0.001, values: [1, 2, 3, 4, 5, 1.5, 2.5], tags: ["capacity", "milli"] },
+          { from: "mL", fromFactor: 0.001, to: "L", toFactor: 1, values: [500, 1000, 1500, 2000, 2500, 5000], tags: ["capacity", "milli"] }
+        ];
+        var mass = [
+          { from: "kg", fromFactor: 1, to: "g", toFactor: 0.001, values: [1, 2, 3, 4, 5, 1.5, 2.5], tags: ["mass", "kilo"] },
+          { from: "g", fromFactor: 0.001, to: "kg", toFactor: 1, values: [500, 1000, 1500, 2000, 2500, 5000], tags: ["mass", "kilo"] }
+        ];
+        var pools = {
+          U1: lengthSmall,
+          U2: kilometres,
+          U3: capacity,
+          U4: mass,
+          U5: lengthSmall.concat(kilometres, capacity, mass)
+        };
+        return metricQuestionFromPair(level, choice(pools[level.id] || pools.U5));
+      }
+
       function generateCustomMultiplicationQuestion(options) {
         var settings = options || currentMultiplicationOptions();
         var tables = normalizeTables(settings.tables);
@@ -2721,6 +2796,8 @@
         }
 
         if (id === "D5") return generateQuestion(choice(["D1", "D2", "D3", "D4"]));
+
+        if (id === "U1" || id === "U2" || id === "U3" || id === "U4" || id === "U5") return generateMetricQuestion(level);
 
         if (id === "X1") return generateQuestion(choice(["A1", "S1"]));
         if (id === "X2") return generateQuestion(choice(["A2", "A3", "S2", "S3"]));
@@ -3176,6 +3253,14 @@
           friends150: "Friends of 150",
           friends1500: "Friends of 1500",
           placeValue: "Place value",
+          metric: "Metric conversion",
+          length: "Length",
+          capacity: "Capacity",
+          mass: "Mass",
+          milli: "Milli units",
+          centi: "Centi units",
+          kilo: "Kilo units",
+          baseUnits: "Base units",
           ending5: "Ends in 5",
           missing: "Missing number",
           bridge: "Bridge to 10",
@@ -3417,7 +3502,7 @@
           '    <form class="panel question stack" data-form="answer">',
           '      <div class="pill" style="margin: 0 auto">' + escapeHTML(operationLabel(active.question.operation)) + '</div>',
           '      <div class="question-text">' + escapeHTML(active.question.text) + '</div>',
-          '      <input id="answerInput" class="answer-input" name="answer" inputmode="none" enterkeyhint="done" pattern="[0-9-]*" autocomplete="off" spellcheck="false" readonly aria-readonly="true" value="' + escapeHTML(active.input) + '" aria-label="Answer">',
+          '      <input id="answerInput" class="answer-input" name="answer" inputmode="none" enterkeyhint="done" pattern="[0-9.-]*" autocomplete="off" spellcheck="false" readonly aria-readonly="true" value="' + escapeHTML(active.input) + '" aria-label="Answer">',
           active.feedback ? '<div class="feedback-toast notice ' + (active.feedback.indexOf("Correct") === 0 ? "success" : "danger") + '">' + escapeHTML(active.feedback) + '</div>' : '',
           '    </form>',
           '    <aside class="panel section stack keypad-panel">',
@@ -3436,7 +3521,7 @@
       }
 
       function keypadHTML() {
-        var keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];
+        var keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "0"];
         return keys.map(function (key) {
           return '<button class="key" type="button" data-action="keypad" data-key="' + key + '">' + key + '</button>';
         }).join("") +
@@ -3457,7 +3542,13 @@
       }
 
       function sanitizeAnswerValue(value) {
-        return String(value || "").replace(/[^\d-]/g, "").slice(0, 6);
+        var raw = String(value || "").replace(/[^\d.-]/g, "");
+        var negative = raw.charAt(0) === "-";
+        raw = raw.replace(/-/g, "");
+        var parts = raw.split(".");
+        var whole = parts.shift() || "";
+        var decimal = parts.length ? "." + parts.join("").slice(0, 3) : "";
+        return ((negative ? "-" : "") + whole + decimal).slice(0, 8);
       }
 
       function updateInputFromDom() {
@@ -3513,6 +3604,12 @@
           return true;
         }
 
+        if (event.key === "." && !String(state.active.input || "").includes(".")) {
+          event.preventDefault();
+          setAnswerInput(String(state.active.input || "") + ".");
+          return true;
+        }
+
         if (event.key === "Backspace" || event.key === "Delete") {
           event.preventDefault();
           setAnswerInput(String(state.active.input || "").slice(0, -1));
@@ -3546,7 +3643,7 @@
         }
         var submitted = Number(raw);
         var q = active.question;
-        if (submitted === q.answer) {
+        if (Math.abs(submitted - Number(q.answer)) < 0.0001) {
           var correctedAfterRetry = active.pendingWrong != null;
           active.correct += 1;
           active.attempted += 1;
@@ -4349,6 +4446,7 @@
           operationOption("subtraction"),
           operationOption("multiplication"),
           operationOption("division"),
+          operationOption("measurement"),
           operationOption("mixed"),
           '      </select>',
           '      <select data-action="dashboard-tag" aria-label="Skill filter">',
@@ -4359,6 +4457,13 @@
           tagOption("friends150", "Friends of 150"),
           tagOption("friends1500", "Friends of 1500"),
           tagOption("placeValue", "Place value friends"),
+          tagOption("metric", "Metric conversion"),
+          tagOption("length", "Length conversion"),
+          tagOption("capacity", "Capacity conversion"),
+          tagOption("mass", "Mass conversion"),
+          tagOption("milli", "Milli conversions"),
+          tagOption("centi", "Centi conversions"),
+          tagOption("kilo", "Kilo conversions"),
           tagOption("ending5", "Facts ending in 5"),
           tagOption("times5", "5-times-table facts"),
           tagOption("customTables", "Chosen times tables"),
