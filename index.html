@@ -668,10 +668,81 @@
       box-shadow: 0 0 0 4px rgba(240, 93, 79, 0.12);
     }
 
+    .level.locked {
+      opacity: 0.62;
+      background: #f8fafc;
+    }
+
     .level-code {
       font-size: 0.78rem;
       color: var(--muted);
       font-weight: 900;
+    }
+
+    .ladder {
+      display: grid;
+      gap: 0.65rem;
+    }
+
+    .ladder-step {
+      position: relative;
+      display: grid;
+      grid-template-columns: 2.6rem minmax(0, 1fr) auto;
+      gap: 0.7rem;
+      align-items: center;
+      min-height: 5.2rem;
+      border: 2px solid var(--line);
+      border-radius: var(--radius);
+      background: white;
+      padding: 0.75rem;
+      text-align: left;
+    }
+
+    .ladder-step.active {
+      border-color: var(--coral);
+      box-shadow: 0 0 0 4px rgba(240, 93, 79, 0.12);
+    }
+
+    .ladder-step.locked {
+      opacity: 0.62;
+      background: #f8fafc;
+    }
+
+    .step-rung {
+      width: 2.2rem;
+      height: 2.2rem;
+      border-radius: 999px;
+      display: inline-grid;
+      place-items: center;
+      background: #e8fbf8;
+      color: var(--teal-dark);
+      font-weight: 950;
+    }
+
+    .reward-card {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 0.9rem;
+      align-items: center;
+    }
+
+    .avatar-badge {
+      width: 4.25rem;
+      height: 4.25rem;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      background: var(--teal);
+      color: white;
+      font-size: 1.8rem;
+      font-weight: 950;
+      box-shadow: var(--shadow);
+    }
+
+    .reward-shop {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
     }
 
     .practice-layout {
@@ -1380,6 +1451,7 @@
 
       var STORE_KEY = "fluencySprintLocalV1";
       var APPEARANCE_KEY = "fluencySprintAppearanceV1";
+      var REWARD_PREFS_KEY = "fluencySprintRewardPrefsV1";
       var SUPABASE_URL = "https://vumbzfgpatojufdtfvni.supabase.co";
       var SUPABASE_PUBLISHABLE_KEY = "sb_publishable_j588PG55dSjJ-DEQJGIgFQ_WRiNnY7V";
       var supabaseClient = window.supabase
@@ -1510,9 +1582,24 @@
         A10: 5, A11: 5, S10: 5, S11: 5, M6: 5, D5: 5, U1: 5, U2: 5, X6: 5, X7: 5,
         U5: 6
       };
+      var DIAGNOSTIC_OPERATIONS = ["addition", "subtraction", "multiplication", "division", "measurement", "mixed"];
+      var REWARD_AVATARS = [
+        { id: "spark", label: "Spark", symbol: "S", cost: 0 },
+        { id: "bolt", label: "Bolt", symbol: "B", cost: 60 },
+        { id: "nova", label: "Nova", symbol: "N", cost: 120 },
+        { id: "orbit", label: "Orbit", symbol: "O", cost: 180 }
+      ];
+      var REWARD_THEMES = [
+        { id: "classic", label: "Classic", cost: 0 },
+        { id: "ocean", label: "Ocean", cost: 80 },
+        { id: "forest", label: "Forest", cost: 140 },
+        { id: "sunset", label: "Sunset", cost: 200 },
+        { id: "bright", label: "Bright", cost: 260 }
+      ];
 
       var liveStore = loadStore();
       var savedAppearance = loadAppearance();
+      var savedRewardPrefs = loadRewardPrefs();
       var previewStore = null;
       var store = liveStore;
       var state = {
@@ -1543,6 +1630,7 @@
         studentImportClassId: null,
         studentImportRows: [],
         appearance: savedAppearance,
+        rewardPrefs: savedRewardPrefs,
         multiplicationTables: [6, 7],
         includeReverseDivision: false,
         includeZeroMultiplicationFacts: false,
@@ -1603,6 +1691,20 @@
         }
       }
 
+      function loadRewardPrefs() {
+        try {
+          var parsed = JSON.parse(localStorage.getItem(REWARD_PREFS_KEY) || "{}");
+          return parsed && typeof parsed === "object" ? parsed : {};
+        } catch (error) {
+          return {};
+        }
+      }
+
+      function saveRewardPrefs() {
+        localStorage.setItem(REWARD_PREFS_KEY, JSON.stringify(state.rewardPrefs || {}));
+        applyAppearance();
+      }
+
       function saveAppearance() {
         state.appearance = normalizeAppearance(state.appearance);
         localStorage.setItem(APPEARANCE_KEY, JSON.stringify(state.appearance));
@@ -1611,7 +1713,8 @@
 
       function applyAppearance() {
         var appearance = normalizeAppearance(state.appearance);
-        document.body.setAttribute("data-theme", appearance.theme);
+        var studentPrefs = state.student ? rewardPrefsForStudent(state.student.id) : null;
+        document.body.setAttribute("data-theme", studentPrefs && studentPrefs.theme ? studentPrefs.theme : appearance.theme);
         document.body.setAttribute("data-keypad-size", appearance.keypadSize);
       }
 
@@ -2237,12 +2340,176 @@
         return yearLevelLabel(value) + ": " + guide.note;
       }
 
-      function tablePracticeOperation(operation) {
-        return operation === "multiplication" || operation === "division";
+      function currentStudentRecord() {
+        if (!state.student) return null;
+        var remote = state.remoteStudents.find(function (student) { return student.id === state.student.id; });
+        var local = store.students.find(function (student) { return student.id === state.student.id; });
+        return Object.assign({}, local || {}, remote || {}, state.student);
       }
 
-      function tablePracticeLevelId(operation) {
-        return operation === "division" ? "D6" : "M7";
+      function studentPathwayYearOrder(student) {
+        var record = student || currentStudentRecord();
+        return yearLevelOrder(record && record.yearLevel);
+      }
+
+      function diagnosticStartYear(student) {
+        var order = studentPathwayYearOrder(student);
+        return order <= 1 ? 0 : Math.max(0, order - 1);
+      }
+
+      function pathwayLevelsForOperation(operation) {
+        return LEVELS.filter(function (level) {
+          return level.operation === operation;
+        }).sort(function (a, b) {
+          var accessDiff = levelAccessYear(a.id) - levelAccessYear(b.id);
+          if (accessDiff) return accessDiff;
+          return LEVELS.indexOf(a) - LEVELS.indexOf(b);
+        });
+      }
+
+      function pathwayStageIndex(levelId) {
+        var level = levelById(levelId);
+        var pathway = pathwayLevelsForOperation(level.operation);
+        var index = pathway.findIndex(function (item) { return item.id === level.id; });
+        return index < 0 ? 0 : index;
+      }
+
+      function studentLevelStageLabel(level) {
+        return "Stage " + (pathwayStageIndex(level.id) + 1);
+      }
+
+      function diagnosticStartLevelForOperation(student, operation) {
+        var pathway = pathwayLevelsForOperation(operation);
+        if (!pathway.length) return null;
+        var targetYear = diagnosticStartYear(student);
+        var index = pathway.findIndex(function (level) {
+          return levelAccessYear(level.id) >= targetYear;
+        });
+        return pathway[index < 0 ? pathway.length - 1 : index];
+      }
+
+      function diagnosticStartIndexForOperation(student, operation) {
+        var pathway = pathwayLevelsForOperation(operation);
+        var start = diagnosticStartLevelForOperation(student, operation);
+        return start ? pathway.findIndex(function (level) { return level.id === start.id; }) : 0;
+      }
+
+      function sprintUnlockInfo(student, level) {
+        var record = student || currentStudentRecord();
+        if (!record) return { unlocked: true, reason: "practiceChoice", label: "Open" };
+        var pathway = pathwayLevelsForOperation(level.operation);
+        var index = pathway.findIndex(function (item) { return item.id === level.id; });
+        if (index < 0) return { unlocked: true, reason: "open", label: "Open" };
+        var profile = proficiencyForStudentLevel(record.id, level.id);
+        if (profile.sessions > 0) return { unlocked: true, reason: "retry", label: progressSignal(profile) };
+        var startIndex = diagnosticStartIndexForOperation(record, level.operation);
+        if (index === startIndex) return { unlocked: true, reason: "diagnosticStart", label: "Diagnostic start" };
+        if (index > 0) {
+          var previous = proficiencyForStudentLevel(record.id, pathway[index - 1].id);
+          if (previous.status === "secure") return { unlocked: true, reason: "previousSecure", label: "Unlocked" };
+          if (levelHasDiagnosticPass(record.id, pathway[index - 1].id)) return { unlocked: true, reason: "diagnosticPass", label: "Challenge unlocked" };
+        }
+        if (index < startIndex && pathway[index + 1]) {
+          var next = proficiencyForStudentLevel(record.id, pathway[index + 1].id);
+          if ((next.sessions > 0 || levelHasSprintAttempt(record.id, pathway[index + 1].id)) && next.status !== "secure") return { unlocked: true, reason: "supportStep", label: "Support step" };
+        }
+        return { unlocked: false, reason: "locked", label: "Locked" };
+      }
+
+      function sprintDiagnosticPass(session) {
+        return !!session && session.mode === "sprint" && Number(session.attempted) >= 10 && Number(session.accuracy) >= 85;
+      }
+
+      function levelHasDiagnosticPass(studentId, levelId) {
+        if (state.results && state.results.studentId === studentId && state.results.levelId === levelId && sprintDiagnosticPass(state.results)) return true;
+        return sessionsForChallenge(studentId, levelId).some(sprintDiagnosticPass);
+      }
+
+      function levelHasSprintAttempt(studentId, levelId) {
+        if (state.results && state.results.studentId === studentId && state.results.levelId === levelId && state.results.mode === "sprint") return true;
+        return sessionsForChallenge(studentId, levelId).some(function (session) {
+          return session.mode === "sprint";
+        });
+      }
+
+      function diagnosticFollowUp(session) {
+        if (!state.student || !session || session.mode !== "sprint") return null;
+        var level = levelById(session.levelId);
+        if (!level) return null;
+        var pathway = pathwayLevelsForOperation(level.operation);
+        var index = pathway.findIndex(function (item) { return item.id === level.id; });
+        if (index < 0) return null;
+        if (sprintDiagnosticPass(session)) {
+          if (pathway[index + 1]) {
+            return {
+              level: pathway[index + 1],
+              title: "Next sprint unlocked",
+              body: "Strong sprint. Try the next stage in the climb.",
+              action: "Continue climb"
+            };
+          }
+          return {
+            level: null,
+            title: "Top of this climb",
+            body: "This pathway is looking strong. Choose another operation when you are ready.",
+            action: ""
+          };
+        }
+        if (pathway[index - 1]) {
+          return {
+            level: pathway[index - 1],
+            title: "Support step ready",
+            body: "This earlier stage can help make the next sprint easier.",
+            action: "Try support sprint"
+          };
+        }
+        return {
+          level: level,
+          title: "Keep building",
+          body: "Practise this stage, then try the sprint again.",
+          action: "Retry sprint"
+        };
+      }
+
+      function rewardPrefsForStudent(studentId) {
+        var id = studentId || (state.student && state.student.id) || "guest";
+        var prefs = state.rewardPrefs[id] || {};
+        return {
+          avatar: prefs.avatar || REWARD_AVATARS[0].id,
+          theme: prefs.theme || "classic"
+        };
+      }
+
+      function saveRewardPref(studentId, key, value) {
+        var id = studentId || (state.student && state.student.id);
+        if (!id) return;
+        state.rewardPrefs[id] = Object.assign({}, rewardPrefsForStudent(id));
+        state.rewardPrefs[id][key] = value;
+        saveRewardPrefs();
+      }
+
+      function coinsForSession(session) {
+        var base = Number(session.correct) || 0;
+        if (session.mode !== "sprint") {
+          return Math.floor(base / 5);
+        }
+        var accuracyBonus = Number(session.accuracy) >= 90 ? 10 : 0;
+        return base + 10 + accuracyBonus;
+      }
+
+      function studentCoins(student) {
+        var record = student || currentStudentRecord();
+        if (!record) return 0;
+        return sum(sessionsForStudent(record.id).map(coinsForSession));
+      }
+
+      function rewardAvatarForStudent(student) {
+        var prefs = rewardPrefsForStudent(student && student.id);
+        return REWARD_AVATARS.find(function (avatar) { return avatar.id === prefs.avatar; }) || REWARD_AVATARS[0];
+      }
+
+      function customTableLevel(level) {
+        return !!level && (level.id === "M7" || level.id === "D6");
       }
 
       function isAllMultiplicationFacts(options) {
@@ -3207,7 +3474,7 @@
         if (!state.student) return homeView();
         var level = levelById(state.selectedLevelId);
         var guide = practiceGuideForLevel(level);
-        var tablePractice = tablePracticeOperation(level.operation);
+        var tablePractice = customTableLevel(level);
         var levelName = tablePractice ? customMultiplicationLevelName() : level.name;
         return [
           '<div class="page">',
@@ -3217,7 +3484,7 @@
           '    <div>',
           '      <span class="pill">Practice</span>',
           '      <h2>' + escapeHTML(levelName) + '</h2>',
-          '      <p class="muted">' + escapeHTML(level.id + ": " + operationLabel(level.operation)) + '</p>',
+          '      <p class="muted">' + escapeHTML(studentLevelStageLabel(level) + " | " + operationLabel(level.operation)) + '</p>',
           '    </div>',
           '    <button class="btn ghost" data-action="student-menu">Back</button>',
           '  </section>',
@@ -3244,36 +3511,36 @@
 
       function studentMenuView() {
         var levels = LEVELS.filter(function (level) { return level.operation === state.selectedOperation; });
-        var tablePractice = tablePracticeOperation(state.selectedOperation);
-        if (tablePractice) {
-          state.selectedLevelId = tablePracticeLevelId(state.selectedOperation);
-        } else if (!levels.some(function (level) { return level.id === state.selectedLevelId; })) {
-          state.selectedLevelId = levels[0].id;
+        if (!levels.some(function (level) { return level.id === state.selectedLevelId; })) {
+          var startLevel = diagnosticStartLevelForOperation(currentStudentRecord(), state.selectedOperation);
+          state.selectedLevelId = startLevel ? startLevel.id : levels[0].id;
         }
+        var tablePractice = customTableLevel(levelById(state.selectedLevelId));
         return [
           '<div class="page">',
           header(),
           '<main class="shell stack student-shell">',
           '  <section class="between">',
           '    <div>',
-          '      <h2>Choose your sprint</h2>',
-          '      <p class="muted">' + escapeHTML(state.student.alias) + ', pick a skill to practise.</p>',
+          '      <h2>Choose your practice</h2>',
+          '      <p class="muted">' + escapeHTML(state.student.alias) + ', practice is open. Sprints unlock as you climb.</p>',
           '    </div>',
           '    <button class="btn ghost" data-action="home">Home</button>',
           '  </section>',
           messageHTML(),
+          studentRewardPanel(),
           '  <section class="panel section stack student-menu-panel">',
           '    <div>',
           '      <h3>Operation</h3>',
           '      <div class="tabs">' + operationTabs() + '</div>',
           '    </div>',
-          tablePractice ? tablePracticePanel() : levelSelectionHTML(levels),
+          tablePractice ? tablePracticePanel() : '',
+          studentPracticeChoiceHTML(levels),
           '    <div class="row action-row">',
-          '      <button class="btn primary" data-action="open-practice-guide">Practice</button>',
-          '      <button class="btn gold" data-action="begin-session" data-mode="sprint">100-second sprint</button>',
+          '      <button class="btn primary" data-action="open-practice-guide">Practise this skill</button>',
           '    </div>',
           '  </section>',
-          studentChallengeProgressPanel(state.student.id, state.selectedLevelId, "Your challenge graph"),
+          studentSprintLadderHTML(levels),
           '</main>',
           '</div>'
         ].join("");
@@ -3285,22 +3552,88 @@
         }).join("");
       }
 
+      function studentRewardPanel() {
+        var record = currentStudentRecord();
+        if (!record) return "";
+        var coins = studentCoins(record);
+        var avatar = rewardAvatarForStudent(record);
+        return [
+          '<section class="panel section stack">',
+          '  <div class="reward-card">',
+          '    <div class="avatar-badge">' + escapeHTML(avatar.symbol) + '</div>',
+          '    <div>',
+          '      <div class="between">',
+          '        <div><h3>' + escapeHTML(avatar.label) + ' avatar</h3><p class="muted">Earn sprint coins by finishing challenges.</p></div>',
+          '        <span class="pill">' + coins + ' coins</span>',
+          '      </div>',
+          '      <div class="reward-shop">' + REWARD_AVATARS.map(function (item) { return rewardButtonHTML("avatar", item, coins); }).join("") + '</div>',
+          '      <div class="reward-shop">' + REWARD_THEMES.map(function (item) { return rewardButtonHTML("theme", item, coins); }).join("") + '</div>',
+          '    </div>',
+          '  </div>',
+          '</section>'
+        ].join("");
+      }
+
+      function rewardButtonHTML(kind, item, coins) {
+        var prefs = rewardPrefsForStudent(state.student && state.student.id);
+        var selected = kind === "avatar" ? prefs.avatar === item.id : prefs.theme === item.id;
+        var unlocked = coins >= item.cost;
+        return [
+          '<button class="btn ' + (selected ? "primary" : "ghost") + '" data-action="choose-' + kind + '" data-reward="' + escapeHTML(item.id) + '" ' + (unlocked ? "" : "disabled") + '>',
+          escapeHTML(item.label) + (item.cost ? ' <span class="tiny">(' + item.cost + ')</span>' : ''),
+          '</button>'
+        ].join("");
+      }
+
       function levelButton(level) {
         return [
           '<button class="level ' + (state.selectedLevelId === level.id ? "active" : "") + '" data-action="select-level" data-level="' + level.id + '">',
-          '  <span class="level-code">' + level.id + '</span>',
+          '  <span class="level-code">' + escapeHTML(studentLevelStageLabel(level)) + '</span>',
           '  <strong>' + escapeHTML(level.name) + '</strong>',
           '  <div class="tiny muted">' + level.tags.map(tagLabel).join(" | ") + '</div>',
           '</button>'
         ].join("");
       }
 
-      function levelSelectionHTML(levels) {
+      function studentPracticeChoiceHTML(levels) {
         return [
           '    <div>',
-          '      <h3>Level</h3>',
+          '      <h3>Free practice</h3>',
+          '      <p class="muted">Choose any skill to practise. This does not have to be unlocked.</p>',
           '      <div class="level-list">' + levels.map(levelButton).join("") + '</div>',
           '    </div>'
+        ].join("");
+      }
+
+      function studentSprintLadderHTML(levels) {
+        var selected = levelById(state.selectedLevelId);
+        var selectedUnlock = sprintUnlockInfo(currentStudentRecord(), selected);
+        var diagnosticStart = diagnosticStartLevelForOperation(currentStudentRecord(), state.selectedOperation);
+        return [
+          '<section class="panel section stack student-menu-panel">',
+          '  <div class="between">',
+          '    <div><h3>Sprint climb</h3><p class="muted">Complete diagnostics and secure each stage to unlock the next sprint.</p></div>',
+          '    <button class="btn gold" data-action="start-diagnostic" data-operation="' + escapeHTML(state.selectedOperation) + '">Start diagnostic</button>',
+          '  </div>',
+          diagnosticStart ? '<div class="notice small">Diagnostic starts at a just-right stage and moves the climb from there.</div>' : '',
+          '  <div class="ladder">' + levels.map(sprintLadderStepHTML).join("") + '</div>',
+          '  <div class="row action-row">',
+          '    <button class="btn gold" data-action="begin-session" data-mode="sprint" ' + (selectedUnlock.unlocked ? "" : "disabled") + '>Start unlocked sprint</button>',
+          selectedUnlock.unlocked ? '<span class="pill">' + escapeHTML(selectedUnlock.label) + '</span>' : '<span class="pill">Locked for now</span>',
+          '  </div>',
+          '</section>'
+        ].join("");
+      }
+
+      function sprintLadderStepHTML(level) {
+        var unlock = sprintUnlockInfo(currentStudentRecord(), level);
+        var profile = proficiencyForStudentLevel(state.student.id, level.id);
+        return [
+          '<button class="ladder-step ' + (state.selectedLevelId === level.id ? "active " : "") + (unlock.unlocked ? "" : "locked") + '" data-action="select-level" data-level="' + level.id + '" ' + (unlock.unlocked ? "" : "disabled") + '>',
+          '  <span class="step-rung">' + (pathwayStageIndex(level.id) + 1) + '</span>',
+          '  <span><strong>' + escapeHTML(level.name) + '</strong><span class="tiny muted">' + escapeHTML(progressSignal(profile)) + ' | ' + escapeHTML(proficiencyEvidenceText(profile)) + '</span></span>',
+          '  <span class="proficiency ' + (unlock.unlocked ? profile.className : "none") + '">' + escapeHTML(unlock.unlocked ? unlock.label : "Locked") + '</span>',
+          '</button>'
         ].join("");
       }
 
@@ -3553,7 +3886,13 @@
 
       function startSession(mode) {
         var level = levelById(state.selectedLevelId);
-        var practiceOptions = tablePracticeOperation(level.operation) ? currentMultiplicationOptions() : null;
+        if (mode === "sprint" && !sprintUnlockInfo(currentStudentRecord(), level).unlocked) {
+          state.message = "That sprint is locked for now. Use practice or start the diagnostic.";
+          state.view = "student-menu";
+          render();
+          return;
+        }
+        var practiceOptions = customTableLevel(level) ? currentMultiplicationOptions() : null;
         var sessionTags = practiceOptions ? customMultiplicationTags(practiceOptions) : level.tags;
         var sessionLevelName = practiceOptions ? customMultiplicationLevelName(practiceOptions) : level.name;
         state.active = {
@@ -3897,7 +4236,7 @@
           '  <section class="between">',
           '    <div>',
           '      <h2>Results</h2>',
-          '      <p class="muted">' + escapeHTML(r.levelId + ": " + r.levelName) + '</p>',
+          '      <p class="muted">' + escapeHTML(studentLevelStageLabel(levelById(r.levelId)) + ": " + r.levelName) + '</p>',
           '    </div>',
           '    <button class="btn ghost" data-action="student-menu">Choose another level</button>',
           '  </section>',
@@ -3907,8 +4246,10 @@
           statHTML("Accuracy", r.accuracy + "%"),
           statHTML("Best streak", r.bestStreak),
           '  </section>',
+          state.student ? '<div class="notice success">You earned <strong>' + coinsForSession(r) + ' coins</strong>. Sprints earn the biggest rewards.</div>' : '',
           r.saveError ? '<div class="notice danger">Could not save to Supabase: ' + escapeHTML(r.saveError) + '</div>' : '',
           r.synced ? '<div class="notice success">Saved to teacher dashboard.</div>' : '',
+          diagnosticFollowUpHTML(r),
           '  <section class="grid two result-actions">',
           '    <button class="tile" data-action="retry-level"><span class="iconbox">R</span><h3>Try again</h3><p class="muted">Repeat the same level.</p></button>',
           '    <button class="tile" data-action="review-mistakes" ' + (r.mistakes.length ? "" : "disabled") + '><span class="iconbox">?</span><h3>Review mistakes</h3><p class="muted">' + r.mistakes.length + ' items to revisit.</p></button>',
@@ -3917,6 +4258,23 @@
           mistakeTable(r.mistakes),
           '</main>',
           '</div>'
+        ].join("");
+      }
+
+      function diagnosticFollowUpHTML(session) {
+        var followUp = diagnosticFollowUp(session);
+        if (!followUp) return "";
+        var action = followUp.level
+          ? '<button class="btn gold" data-action="continue-diagnostic" data-level="' + escapeHTML(followUp.level.id) + '">' + escapeHTML(followUp.action) + '</button>'
+          : '<button class="btn ghost" data-action="student-menu">Choose operation</button>';
+        return [
+          '<section class="panel section between">',
+          '  <div>',
+          '    <h3>' + escapeHTML(followUp.title) + '</h3>',
+          '    <p class="muted">' + escapeHTML(followUp.body) + '</p>',
+          '  </div>',
+          action,
+          '</section>'
         ].join("");
       }
 
@@ -4954,10 +5312,11 @@
         var level = levelById(levelId);
         var sessions = sessionsForChallenge(studentId, level.id);
         var stats = scoreStats(sessions);
+        var challengeLabel = state.view === "teacher-results" ? levelLabel(level.id) : studentLevelStageLabel(level) + ": " + level.name;
         return [
           useFrame ? '<section class="panel section stack">' : '<div class="stack">',
           '  <div class="between">',
-          '    <div><h3>' + escapeHTML(title) + '</h3><p class="muted">' + escapeHTML(levelLabel(level.id)) + '</p></div>',
+          '    <div><h3>' + escapeHTML(title) + '</h3><p class="muted">' + escapeHTML(challengeLabel) + '</p></div>',
           '    <span class="pill">' + sessions.length + ' sessions</span>',
           '  </div>',
           showError && state.studentHistoryError ? '<div class="notice small">Saved history is not available yet: ' + escapeHTML(state.studentHistoryError) + '</div>' : '',
@@ -5506,6 +5865,7 @@
             state.student = {
               id: previewStudentMatch.id,
               alias: previewStudentMatch.alias,
+              yearLevel: previewStudentMatch.yearLevel,
               classId: previewClass.id,
               teacherId: previewClass.teacherId
             };
@@ -5529,6 +5889,7 @@
               state.student = {
                 id: joined.student_id,
                 alias: joined.alias,
+                yearLevel: normalizeYearLevel(joined.year_level),
                 classId: joined.class_id,
                 teacherId: joined.teacher_id,
                 accessToken: joined.access_token
@@ -5564,6 +5925,7 @@
           state.student = {
             id: studentJoin.id,
             alias: studentJoin.alias,
+            yearLevel: studentJoin.yearLevel,
             classId: klassJoin.id,
             teacherId: klassJoin.teacherId
           };
@@ -5679,8 +6041,44 @@
         if (action === "select-operation") {
           state.selectedOperation = button.getAttribute("data-operation");
           var levels = LEVELS.filter(function (level) { return level.operation === state.selectedOperation; });
-          state.selectedLevelId = tablePracticeOperation(state.selectedOperation) ? tablePracticeLevelId(state.selectedOperation) : levels[0].id;
+          var diagnosticStart = diagnosticStartLevelForOperation(currentStudentRecord(), state.selectedOperation);
+          state.selectedLevelId = diagnosticStart ? diagnosticStart.id : levels[0].id;
           render();
+        }
+        if (action === "start-diagnostic") {
+          var diagnosticOperation = button.getAttribute("data-operation") || state.selectedOperation;
+          var diagnosticLevel = diagnosticStartLevelForOperation(currentStudentRecord(), diagnosticOperation);
+          if (diagnosticLevel) {
+            state.selectedOperation = diagnosticOperation;
+            state.selectedLevelId = diagnosticLevel.id;
+            state.message = "";
+            startSession("sprint");
+          }
+        }
+        if (action === "choose-avatar") {
+          var avatarId = button.getAttribute("data-reward");
+          var avatarItem = REWARD_AVATARS.find(function (item) { return item.id === avatarId; });
+          if (avatarItem && studentCoins(currentStudentRecord()) >= avatarItem.cost) {
+            saveRewardPref(state.student.id, "avatar", avatarItem.id);
+            render();
+          }
+        }
+        if (action === "choose-theme") {
+          var themeId = button.getAttribute("data-reward");
+          var themeItem = REWARD_THEMES.find(function (item) { return item.id === themeId; });
+          if (themeItem && studentCoins(currentStudentRecord()) >= themeItem.cost) {
+            saveRewardPref(state.student.id, "theme", themeItem.id);
+            render();
+          }
+        }
+        if (action === "continue-diagnostic") {
+          var followUpLevel = levelById(button.getAttribute("data-level"));
+          if (followUpLevel) {
+            state.selectedOperation = followUpLevel.operation;
+            state.selectedLevelId = followUpLevel.id;
+            state.message = "";
+            startSession("sprint");
+          }
         }
         if (action === "select-level") {
           state.selectedLevelId = button.getAttribute("data-level");
@@ -5982,6 +6380,7 @@
       });
 
       function render() {
+        applyAppearance();
         if (state.view === "home") app.innerHTML = homeView();
         if (state.view === "preview") app.innerHTML = previewView();
         if (state.view === "appearance") app.innerHTML = appearanceView();

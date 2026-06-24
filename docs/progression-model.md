@@ -2,7 +2,7 @@
 
 This document defines the intended access, progression, and unlocking model for Fluency Sprint.
 
-The aim is to move beyond a flat menu of skills. Students should receive access based on their assigned year level, but the app should guide progression based on demonstrated prerequisite proficiency.
+The aim is to move beyond a flat menu of skills. Students should be able to choose freely during practice, but sprint challenges should guide progression based on diagnostic placement and demonstrated prerequisite proficiency.
 
 ## Core model
 
@@ -11,14 +11,15 @@ Each student has an assigned year level.
 That year level controls default access:
 
 ```text
-Student access = current year-level skills + all prior-year skills
+Practice access = student choice across visible skills
+Sprint access = diagnostic start point + unlocked ladder steps
 ```
 
 Progression within and beyond those skills is controlled by prerequisites and proficiency evidence.
 
 ```text
-Year-level access determines what is available.
-Prerequisites determine what is recommended next.
+Year-level placement determines where diagnostics begin.
+Prerequisites determine the next sprint ladder step.
 Proficiency determines what unlocks.
 Teacher override preserves professional judgement.
 ```
@@ -37,7 +38,9 @@ Initial year-level values:
 - Year 5
 - Year 6
 
-A student assigned to Year 5 should have access to Pre-primary through Year 5 skills. Year 6 skills should not appear by default unless they are extension-unlocked or teacher-assigned.
+A student assigned to Year 5 should not see the year-level label, but the diagnostic should usually begin around the Year 4 pathway for each operation or skill. If the student is secure, the app can expose the next sprint stage. If not, the diagnostic pathway should move down to find the right starting point.
+
+Pre-primary and Year 1 students should begin at the earliest pathway stages.
 
 ## Student-facing language
 
@@ -52,6 +55,8 @@ Use simple labels:
 - Next skill
 - Challenge unlocked
 - Locked for now
+- Start diagnostic
+- Sprint climb
 
 Avoid language such as:
 
@@ -148,6 +153,8 @@ Possible unlock reasons:
 - prerequisitesSecure
 - diagnosticRecommendation
 - previewMode
+- diagnosticStart
+- supportStep
 
 This helps the teacher understand why a student can access a skill.
 
@@ -250,6 +257,21 @@ Override records should include:
 ```
 
 This may require a future Supabase table if overrides need to persist across devices.
+
+## Student practice and sprint behaviour
+
+Practice should remain open-choice and low pressure. Students can choose a skill to rehearse even if they have not unlocked the sprint for that skill.
+
+Sprint mode is the game/progression layer:
+
+- each operation or skill pathway is shown vertically as a climb;
+- diagnostics choose the initial sprint point without showing year-level labels to students;
+- a strong diagnostic sprint can expose the next stage;
+- repeated secure evidence confirms proficiency for teacher reporting;
+- an insecure sprint can reveal an earlier support stage;
+- teachers can later override locked or unlocked stages.
+
+Rewards should attach mainly to sprint completion so the fun loop supports fluency rather than blocking exploration.
 
 ## Teacher dashboard behaviour
 

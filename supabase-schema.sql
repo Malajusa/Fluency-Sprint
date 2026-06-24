@@ -465,12 +465,15 @@ begin
 end;
 $$;
 
-create or replace function public.join_student(p_class_code text, p_alias text, p_pin text)
+drop function if exists public.join_student(text, text, text);
+
+create function public.join_student(p_class_code text, p_alias text, p_pin text)
 returns table (
   student_id uuid,
   class_id uuid,
   teacher_id uuid,
   alias text,
+  year_level text,
   access_token text
 )
 language plpgsql
@@ -502,7 +505,7 @@ begin
   where s.id = student.id;
 
   return query
-  select student.id, student.class_id, student.teacher_id, student.alias, token;
+  select student.id, student.class_id, student.teacher_id, student.alias, student.year_level, token;
 end;
 $$;
 
