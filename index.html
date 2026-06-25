@@ -4403,7 +4403,434 @@
         ].join("");
       }
 
+
+      // Update 07A: full Mr Slay addition/subtraction lesson bank
+      function fluencyLessonBankForLevel(level, guide, levelName) {
+        if (!level) return null;
+        var id = level.id;
+        var commonBadge = "Fluency mini lesson";
+
+        function lesson(data) {
+          return Object.assign({
+            title: levelName || level.name,
+            badge: commonBadge,
+            focus: guide && guide.meaning ? guide.meaning : "Learn the structure first, then retrieve accurately.",
+            visualTitle: "See the structure",
+            visualHTML: "",
+            boardTitle: "Mr Slay models it",
+            boardLines: [],
+            examples: [],
+            guided: ["Read the question.", "Choose the strategy.", "Answer carefully.", "Check it makes sense."],
+            retrievalPrompt: "Try one more without rushing.",
+            warning: "Speed comes after accuracy.",
+            fluencyTarget: "Aim for correct, smooth answers before sprinting."
+          }, data || {});
+        }
+
+        switch (id) {
+          case "A1":
+            return lesson({
+              title: "Add within 10",
+              focus: "Addition means joining parts to find the total. For small numbers, count on from the bigger part.",
+              visualTitle: "Join the counters",
+              visualHTML: '<div class="fluency-visual">' + fluencyDotRow(4, 0, 0) + '<div class="fluency-visual-row"><strong>+</strong></div>' + fluencyDotRow(3, 0, 0) + '</div>',
+              boardTitle: "Count on",
+              boardLines: ["4 + 3", "Start at 4", "Count on: 5, 6, 7", "4 + 3 = 7"],
+              examples: [
+                { title: "I do", lines: ["6 + 2", "Start at 6", "Count 7, 8", "6 + 2 = 8"] },
+                { title: "We do", lines: ["5 + 4", "Start at 5", "Count 6, 7, 8, 9", "5 + 4 = 9"] }
+              ],
+              guided: ["Find the bigger number.", "Put it in your head.", "Count on the smaller number.", "Say the whole number sentence."],
+              retrievalPrompt: "Try: 7 + 2. Start at 7 and count on two.",
+              warning: "Do not count the starting number again.",
+              fluencyTarget: "Move from counting all to counting on."
+            });
+
+          case "A2":
+            return lesson({
+              title: "Friends of 10",
+              focus: "Friends of 10 are number pairs that fill a ten-frame exactly.",
+              visualTitle: "Fill the ten-frame",
+              visualHTML: fluencyTenFrameHTML(7, 0),
+              boardTitle: "Count the empty spaces",
+              boardLines: ["7 + ? = 10", "7 spaces are full", "3 spaces are empty", "7 + 3 = 10"],
+              examples: [
+                { title: "I do", lines: ["4 + ? = 10", "4 are shown", "6 spaces are empty", "4 + 6 = 10"] },
+                { title: "We do", lines: ["2 + ? = 10", "2 are shown", "8 spaces are empty", "2 + 8 = 10"] }
+              ],
+              guided: ["Look at the ten-frame.", "Count the filled spaces.", "Count the empty spaces.", "Join the two parts to make 10."],
+              retrievalPrompt: "Try: 6 + ? = 10. Picture six counters in a ten-frame.",
+              warning: "Do not guess. The empty spaces show the missing friend.",
+              fluencyTarget: "Recall all friends of 10 automatically."
+            });
+
+          case "A3":
+            return lesson({
+              title: "Missing friends of 10",
+              focus: "The missing number can come first, middle or last. The whole is still 10.",
+              visualTitle: "Known part and missing part",
+              visualHTML: fluencyTenFrameHTML(8, 0),
+              boardTitle: "Find the hidden friend",
+              boardLines: ["? + 8 = 10", "8 counters are shown", "2 spaces are empty", "2 + 8 = 10"],
+              examples: [
+                { title: "I do", lines: ["10 = 6 + ?", "6 are shown", "4 spaces are empty", "10 = 6 + 4"] },
+                { title: "We do", lines: ["? + 3 = 10", "3 are shown", "7 are missing", "7 + 3 = 10"] }
+              ],
+              guided: ["Find the whole.", "Find the known part.", "Use the ten-frame to find the missing part.", "Read the equation again."],
+              retrievalPrompt: "Try: 10 = 9 + ?. What friend does 9 need?",
+              warning: "Do not assume the blank is always at the end.",
+              fluencyTarget: "Recognise missing friends of 10 in any position."
+            });
+
+          case "A4":
+            return lesson({
+              title: "Add within 20",
+              focus: "Teen addition uses 10 and some more. Use doubles, near doubles or bridge to 10.",
+              visualTitle: "Ten and more",
+              visualHTML: fluencyTenFrameHTML(10, 0) + '<div class="fluency-visual">' + fluencyDotRow(4, 0, 0) + '</div>',
+              boardTitle: "Use a known structure",
+              boardLines: ["10 + 4", "One full ten", "4 more", "10 + 4 = 14"],
+              examples: [
+                { title: "Bridge example", lines: ["8 + 5", "8 needs 2 to make 10", "5 = 2 + 3", "10 + 3 = 13"] },
+                { title: "Double example", lines: ["7 + 7", "Double 7", "7 + 7 = 14"] }
+              ],
+              guided: ["Look for 10 and some more.", "Check for a double or near double.", "Bridge to 10 if the sum crosses 10."],
+              retrievalPrompt: "Try: 9 + 6. Which part makes 10?",
+              warning: "Do not always count by ones when a known fact is available.",
+              fluencyTarget: "Use a known fact instead of slow counting."
+            });
+
+          case "A5":
+            return lesson({
+              title: "Addition facts ending in 5",
+              focus: "Facts ending in 5 often use a 5 as a helpful halfway anchor.",
+              visualTitle: "Five as a halfway anchor",
+              visualHTML: '<div class="fluency-visual">' + fluencyDotRow(5, 0, 0) + '<div class="fluency-visual-row"><strong>+</strong></div>' + fluencyDotRow(10, 0, 0) + '</div>',
+              boardTitle: "Keep the tens and ones",
+              boardLines: ["12 + 3", "2 + 3 = 5", "Keep the ten", "12 + 3 = 15"],
+              examples: [
+                { title: "I do", lines: ["10 + 5", "One ten and five more", "10 + 5 = 15"] },
+                { title: "We do", lines: ["18 + 7", "8 + 7 = 15", "One ten plus 15", "18 + 7 = 25"] }
+              ],
+              guided: ["Notice the 5 or 0 pattern.", "Add the ones.", "Keep the tens place correct."],
+              retrievalPrompt: "Try: 25 + 5. What is the next number ending in 0?",
+              warning: "Do not drop the tens. 12 + 3 is 15, not 5.",
+              fluencyTarget: "Use 5s and 10s as quick anchors."
+            });
+
+          case "A6":
+            return lesson({
+              title: "Bridge to 10",
+              focus: "Bridge to 10 by splitting one addend, making 10 first, then adding the leftover.",
+              visualTitle: "Make the ten-frame full",
+              visualHTML: fluencyTenFrameHTML(8, 0),
+              boardTitle: "Split the second number",
+              boardLines: ["8 + 5", "8 needs 2 to make 10", "5 = 2 + 3", "10 + 3 = 13"],
+              examples: [
+                { title: "I do", lines: ["9 + 4", "9 needs 1", "4 = 1 + 3", "10 + 3 = 13"] },
+                { title: "We do", lines: ["7 + 6", "7 needs 3", "6 = 3 + 3", "10 + 3 = 13"] }
+              ],
+              guided: ["Ask: how many to 10?", "Split the other number.", "Make 10.", "Add the leftover."],
+              retrievalPrompt: "Try: 8 + 7. How many does 8 need to make 10?",
+              warning: "Do not add the full second number after using part of it to make 10.",
+              fluencyTarget: "See crossing-10 addition as make-10 plus leftover."
+            });
+
+          case "A7":
+            return lesson({
+              title: "Mixed addition fluency",
+              focus: "Mixed addition means choosing the best strategy quickly and accurately.",
+              visualTitle: "Choose the strategy",
+              visualHTML: '<div class="fluency-visual"><div class="fluency-visual-row"><strong>count on | double | friend of 10 | bridge</strong></div></div>',
+              boardTitle: "Name the pattern first",
+              boardLines: ["9 + 4", "This crosses 10", "Use bridge to 10", "9 + 4 = 13"],
+              examples: [
+                { title: "Double", lines: ["6 + 6", "Double 6", "6 + 6 = 12"] },
+                { title: "Friend of 10", lines: ["7 + 3", "7 and 3 make 10", "7 + 3 = 10"] }
+              ],
+              guided: ["Read the fact.", "Name the pattern.", "Use the matching strategy.", "Check if the total is reasonable."],
+              retrievalPrompt: "Try: 8 + 8, then 8 + 9. Which is a double? Which is near a double?",
+              warning: "Do not rush before choosing the strategy.",
+              fluencyTarget: "Switch between addition strategies without losing accuracy."
+            });
+
+          case "A8":
+            return lesson({
+              title: "Friends of 100",
+              focus: "Friends of 100 use the same thinking as friends of 10, but with tens and ones.",
+              visualTitle: "Jump to 100",
+              visualHTML: '<div class="fluency-visual"><div class="fluency-visual-row"><strong>36 â†’ 40 â†’ 100</strong></div></div>',
+              boardTitle: "Count up to the target",
+              boardLines: ["36 + ? = 100", "36 â†’ 40 is 4", "40 â†’ 100 is 60", "4 + 60 = 64"],
+              examples: [
+                { title: "I do", lines: ["75 + ? = 100", "75 needs 25", "75 + 25 = 100"] },
+                { title: "We do", lines: ["45 + ? = 100", "45 â†’ 50 is 5", "50 â†’ 100 is 50", "55"] }
+              ],
+              guided: ["Say the target: 100.", "Jump to the next ten.", "Then jump to 100.", "Add the jumps."],
+              retrievalPrompt: "Try: 68 + ? = 100.",
+              warning: "Do not only find the friend of the ones digit.",
+              fluencyTarget: "Use friendly jumps until common pairs become automatic."
+            });
+
+          case "A9":
+            return lesson({
+              title: "Friends of 1000",
+              focus: "Friends of 1000 use place-value jumps to reach the next thousand.",
+              visualTitle: "Jump to 1000",
+              visualHTML: '<div class="fluency-visual"><div class="fluency-visual-row"><strong>725 â†’ 800 â†’ 1000</strong></div></div>',
+              boardTitle: "Use helpful jumps",
+              boardLines: ["725 + ? = 1000", "725 â†’ 800 is 75", "800 â†’ 1000 is 200", "75 + 200 = 275"],
+              examples: [
+                { title: "I do", lines: ["650 + ? = 1000", "650 â†’ 700 is 50", "700 â†’ 1000 is 300", "350"] },
+                { title: "We do", lines: ["400 + ? = 1000", "400 needs 600", "400 + 600 = 1000"] }
+              ],
+              guided: ["Say the target: 1000.", "Jump to the next hundred.", "Jump to 1000.", "Add the jumps."],
+              retrievalPrompt: "Try: 840 + ? = 1000.",
+              warning: "Do not stop at the next hundred. The target is 1000.",
+              fluencyTarget: "Recognise large friend pairs through place-value structure."
+            });
+
+          case "A10":
+            return lesson({
+              title: "Friends of 150",
+              focus: "Friends of 150 are pairs that make 100 and another 50.",
+              visualTitle: "Target is 150",
+              visualHTML: '<div class="fluency-visual"><div class="fluency-visual-row"><strong>90 â†’ 100 â†’ 150</strong></div></div>',
+              boardTitle: "Do not stop at 100",
+              boardLines: ["90 + ? = 150", "90 â†’ 100 is 10", "100 â†’ 150 is 50", "10 + 50 = 60"],
+              examples: [
+                { title: "I do", lines: ["125 + ? = 150", "125 needs 25", "125 + 25 = 150"] },
+                { title: "We do", lines: ["80 + ? = 150", "80 â†’ 100 is 20", "100 â†’ 150 is 50", "70"] }
+              ],
+              guided: ["Say the target: 150.", "Bridge through 100 if helpful.", "Finish at 150.", "Add the jumps."],
+              retrievalPrompt: "Try: 110 + ? = 150.",
+              warning: "The target is 150, not 100.",
+              fluencyTarget: "Use known 100 facts and extend them to 150."
+            });
+
+          case "A11":
+            return lesson({
+              title: "Friends of 1500",
+              focus: "Friends of 1500 extend the 150 pattern by a factor of 10.",
+              visualTitle: "Target is 1500",
+              visualHTML: '<div class="fluency-visual"><div class="fluency-visual-row"><strong>900 â†’ 1000 â†’ 1500</strong></div></div>',
+              boardTitle: "Bridge through 1000",
+              boardLines: ["900 + ? = 1500", "900 â†’ 1000 is 100", "1000 â†’ 1500 is 500", "100 + 500 = 600"],
+              examples: [
+                { title: "I do", lines: ["1250 + ? = 1500", "1250 needs 250", "1250 + 250 = 1500"] },
+                { title: "We do", lines: ["750 + ? = 1500", "750 + 750 = 1500", "The friend is 750"] }
+              ],
+              guided: ["Say the target: 1500.", "Bridge through 1000 if helpful.", "Finish at 1500.", "Check the size of the answer."],
+              retrievalPrompt: "Try: 1200 + ? = 1500.",
+              warning: "Do not treat 1500 like 1000.",
+              fluencyTarget: "Transfer 150 patterns into 1500 patterns."
+            });
+
+          case "S1":
+            return lesson({
+              title: "Subtract within 10",
+              focus: "Subtraction means take away, find what is left, or find the missing part.",
+              visualTitle: "Take away counters",
+              visualHTML: '<div class="fluency-visual">' + fluencyDotRow(5, 0, 3) + '</div>',
+              boardTitle: "Count what is left",
+              boardLines: ["8 - 3", "Start with 8", "Take away 3", "5 are left"],
+              examples: [
+                { title: "I do", lines: ["6 - 2", "Start with 6", "Take away 2", "4 are left"] },
+                { title: "We do", lines: ["9 - 4", "Start with 9", "Take away 4", "5 are left"] }
+              ],
+              guided: ["Find the whole.", "Cross out the amount taken away.", "Count only what is left."],
+              retrievalPrompt: "Try: 7 - 2. Count only what remains.",
+              warning: "Do not count the counters that were taken away.",
+              fluencyTarget: "Move from counting objects to knowing small subtraction facts."
+            });
+
+          case "S2":
+            return lesson({
+              title: "Subtract from 10",
+              focus: "Subtracting from 10 uses a full ten-frame and friends of 10.",
+              visualTitle: "Start full, then take away",
+              visualHTML: fluencyTenFrameHTML(6, 4),
+              boardTitle: "Use the friend of 10",
+              boardLines: ["10 - 4", "Start with 10", "Take away 4", "6 are left"],
+              examples: [
+                { title: "I do", lines: ["10 - 7", "7 and 3 are friends of 10", "10 - 7 = 3"] },
+                { title: "We do", lines: ["10 - 6", "6 and 4 are friends of 10", "10 - 6 = 4"] }
+              ],
+              guided: ["Picture a full ten-frame.", "Remove the amount after the minus sign.", "The empty/leftover part is the answer."],
+              retrievalPrompt: "Try: 10 - 8. What friend goes with 8?",
+              warning: "The number after the minus sign is the amount being taken away.",
+              fluencyTarget: "Use friends of 10 to subtract from 10 automatically."
+            });
+
+          case "S3":
+            return lesson({
+              title: "Missing subtraction facts for 10",
+              focus: "A missing subtraction fact asks for either the amount taken away or the amount left.",
+              visualTitle: "Whole, taken away, left",
+              visualHTML: fluencyTenFrameHTML(6, 4),
+              boardTitle: "Find the missing part",
+              boardLines: ["10 - ? = 6", "Start with 10", "Keep 6 left", "4 must have been taken away"],
+              examples: [
+                { title: "I do", lines: ["10 - 8 = ?", "Take away 8", "2 are left", "10 - 8 = 2"] },
+                { title: "We do", lines: ["10 - ? = 3", "3 are left", "7 were taken away", "10 - 7 = 3"] }
+              ],
+              guided: ["Find the whole.", "Find which part is shown.", "Use the ten-frame to find the missing part."],
+              retrievalPrompt: "Try: 10 - ? = 4.",
+              warning: "Check whether the missing number is the taken-away amount or the amount left.",
+              fluencyTarget: "Connect missing subtraction to part-part-whole thinking."
+            });
+
+          case "S4":
+            return lesson({
+              title: "Subtract within 20",
+              focus: "Subtract within 20 by counting back, counting up, or using a known fact.",
+              visualTitle: "Use a number line",
+              visualHTML: '<div class="fluency-visual"><div class="fluency-visual-row"><strong>7 â†’ 10 â†’ 15</strong></div></div>',
+              boardTitle: "Count up to find the difference",
+              boardLines: ["15 - 7", "7 â†’ 10 is 3", "10 â†’ 15 is 5", "3 + 5 = 8"],
+              examples: [
+                { title: "Count back", lines: ["18 - 4", "18, 17, 16, 15, 14", "18 - 4 = 14"] },
+                { title: "Use addition", lines: ["16 - 9", "9 + ? = 16", "9 + 7 = 16", "16 - 9 = 7"] }
+              ],
+              guided: ["Ask if counting back is easy.", "If not, count up from the smaller number.", "Use addition to check."],
+              retrievalPrompt: "Try: 14 - 8. Count up from 8 to 14.",
+              warning: "Counting back is not always the quickest method.",
+              fluencyTarget: "Choose the subtraction strategy that matches the numbers."
+            });
+
+          case "S5":
+            return lesson({
+              title: "Subtraction facts ending in 5",
+              focus: "Numbers ending in 5 are halfway anchors. Keep the tens and ones clear.",
+              visualTitle: "Keep the 5",
+              visualHTML: '<div class="fluency-visual"><div class="fluency-visual-row"><strong>25 = 2 tens + 5 ones</strong></div></div>',
+              boardTitle: "Subtract the tens",
+              boardLines: ["25 - 10", "2 tens and 5 ones", "Take away 1 ten", "15"],
+              examples: [
+                { title: "I do", lines: ["35 - 20", "3 tens and 5 ones", "Take away 2 tens", "15"] },
+                { title: "We do", lines: ["15 - 7", "7 + ? = 15", "7 + 8 = 15", "8"] }
+              ],
+              guided: ["Look at the tens.", "Look at the ones.", "Keep the place value correct."],
+              retrievalPrompt: "Try: 45 - 20.",
+              warning: "Do not only subtract the ones digit.",
+              fluencyTarget: "Use 5s and 10s as stable anchors in subtraction."
+            });
+
+          case "S6":
+            return lesson({
+              title: "Bridge through 10",
+              focus: "Bridge through 10 by subtracting in two jumps.",
+              visualTitle: "Jump back to 10",
+              visualHTML: '<div class="fluency-visual"><div class="fluency-visual-row"><strong>14 â”€ -4 â”€ 10 â”€ -2 â”€ 8</strong></div></div>',
+              boardTitle: "Split the amount being subtracted",
+              boardLines: ["14 - 6", "14 - 4 = 10", "6 = 4 + 2", "10 - 2 = 8"],
+              examples: [
+                { title: "I do", lines: ["13 - 5", "13 - 3 = 10", "5 = 3 + 2", "10 - 2 = 8"] },
+                { title: "We do", lines: ["12 - 7", "12 - 2 = 10", "7 = 2 + 5", "10 - 5 = 5"] }
+              ],
+              guided: ["Find how far back to 10.", "Split the subtraction amount.", "Finish the leftover jump."],
+              retrievalPrompt: "Try: 15 - 8. How far back to 10?",
+              warning: "Do not subtract the whole amount again after landing on 10.",
+              fluencyTarget: "See crossing-10 subtraction as two efficient jumps."
+            });
+
+          case "S7":
+            return lesson({
+              title: "Mixed subtraction fluency",
+              focus: "Mixed subtraction means choosing between take away, count back, count up or bridge through 10.",
+              visualTitle: "Choose the strategy",
+              visualHTML: '<div class="fluency-visual"><div class="fluency-visual-row"><strong>take away | count back | count up | bridge</strong></div></div>',
+              boardTitle: "Name the strategy first",
+              boardLines: ["16 - 9", "Numbers are close to 10", "Use 9 + ? = 16", "16 - 9 = 7"],
+              examples: [
+                { title: "Count back", lines: ["9 - 3", "9, 8, 7, 6", "9 - 3 = 6"] },
+                { title: "Bridge", lines: ["14 - 6", "14 - 4 = 10", "10 - 2 = 8"] }
+              ],
+              guided: ["Read the numbers.", "Choose the strategy.", "Solve.", "Check with addition."],
+              retrievalPrompt: "Try: 13 - 8. Which strategy is best?",
+              warning: "Do not use the same strategy for every subtraction fact.",
+              fluencyTarget: "Switch strategies accurately without slowing down too much."
+            });
+
+          case "S8":
+            return lesson({
+              title: "Subtract from 100",
+              focus: "Subtracting from 100 is finding the missing friend of 100.",
+              visualTitle: "Count up to 100",
+              visualHTML: '<div class="fluency-visual"><div class="fluency-visual-row"><strong>36 â†’ 40 â†’ 100</strong></div></div>',
+              boardTitle: "Find the gap",
+              boardLines: ["100 - 36", "36 â†’ 40 is 4", "40 â†’ 100 is 60", "4 + 60 = 64"],
+              examples: [
+                { title: "I do", lines: ["100 - 75", "75 + ? = 100", "75 + 25 = 100", "25"] },
+                { title: "We do", lines: ["100 - 48", "48 â†’ 50 is 2", "50 â†’ 100 is 50", "52"] }
+              ],
+              guided: ["Think of the matching addition fact.", "Jump to the next ten.", "Then jump to 100."],
+              retrievalPrompt: "Try: 100 - 67.",
+              warning: "Do not only subtract the ones digit.",
+              fluencyTarget: "Use complement-to-100 facts fluently."
+            });
+
+          case "S9":
+            return lesson({
+              title: "Subtract from 1000",
+              focus: "Subtracting from 1000 is finding the missing friend of 1000.",
+              visualTitle: "Count up to 1000",
+              visualHTML: '<div class="fluency-visual"><div class="fluency-visual-row"><strong>725 â†’ 800 â†’ 1000</strong></div></div>',
+              boardTitle: "Find the gap",
+              boardLines: ["1000 - 725", "725 â†’ 800 is 75", "800 â†’ 1000 is 200", "75 + 200 = 275"],
+              examples: [
+                { title: "I do", lines: ["1000 - 650", "650 â†’ 700 is 50", "700 â†’ 1000 is 300", "350"] },
+                { title: "We do", lines: ["1000 - 400", "400 needs 600", "1000 - 400 = 600"] }
+              ],
+              guided: ["Think of the matching addition fact.", "Jump to the next hundred.", "Then jump to 1000."],
+              retrievalPrompt: "Try: 1000 - 840.",
+              warning: "Do not stop at the next hundred.",
+              fluencyTarget: "Use complement-to-1000 facts fluently."
+            });
+
+          case "S10":
+            return lesson({
+              title: "Subtract from 150",
+              focus: "Subtracting from 150 means finding how much is needed to reach 150.",
+              visualTitle: "Target is 150",
+              visualHTML: '<div class="fluency-visual"><div class="fluency-visual-row"><strong>90 â†’ 100 â†’ 150</strong></div></div>',
+              boardTitle: "Find the gap",
+              boardLines: ["150 - 90", "90 â†’ 100 is 10", "100 â†’ 150 is 50", "10 + 50 = 60"],
+              examples: [
+                { title: "I do", lines: ["150 - 125", "125 needs 25", "150 - 125 = 25"] },
+                { title: "We do", lines: ["150 - 80", "80 â†’ 100 is 20", "100 â†’ 150 is 50", "70"] }
+              ],
+              guided: ["Say the target: 150.", "Count up from the part.", "Add the jumps."],
+              retrievalPrompt: "Try: 150 - 110.",
+              warning: "Do not accidentally make 100 instead of 150.",
+              fluencyTarget: "Use complement-to-150 facts fluently."
+            });
+
+          case "S11":
+            return lesson({
+              title: "Subtract from 1500",
+              focus: "Subtracting from 1500 extends the 150 pattern into larger place value.",
+              visualTitle: "Target is 1500",
+              visualHTML: '<div class="fluency-visual"><div class="fluency-visual-row"><strong>900 â†’ 1000 â†’ 1500</strong></div></div>',
+              boardTitle: "Find the gap",
+              boardLines: ["1500 - 900", "900 â†’ 1000 is 100", "1000 â†’ 1500 is 500", "100 + 500 = 600"],
+              examples: [
+                { title: "I do", lines: ["1500 - 1250", "1250 needs 250", "1500 - 1250 = 250"] },
+                { title: "We do", lines: ["1500 - 750", "750 + 750 = 1500", "1500 - 750 = 750"] }
+              ],
+              guided: ["Say the target: 1500.", "Count up from the part.", "Use 1000 as a bridge if helpful."],
+              retrievalPrompt: "Try: 1500 - 1200.",
+              warning: "Do not treat 1500 like 1000.",
+              fluencyTarget: "Use complement-to-1500 facts fluently."
+            });
+
+          default:
+            return null;
+        }
+      }
       function fluencyLessonForLevel(level, guide, levelName) {
+        var bankLesson = fluencyLessonBankForLevel(level, guide, levelName);
+        if (bankLesson) return bankLesson;
         var base = {
           title: levelName || level.name,
           badge: "Mini lesson first",
@@ -7982,6 +8409,7 @@
   </script>
 </body>
 </html>
+
 
 
 
