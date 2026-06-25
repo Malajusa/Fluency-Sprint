@@ -1,0 +1,399 @@
+name: Apply Mr Slay helper implementation
+
+on:
+  push:
+    branches:
+      - feature/mr-slay-helper-implementation
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: contains(github.event.head_commit.message, '[apply-mr-slay-helper]')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Patch index.html
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const workflowPath = '.github/workflows/apply-mr-slay-helper.yml';
+          let html = fs.readFileSync('index.html', 'utf8');
+
+          function fail(message) {
+            throw new Error(message);
+          }
+
+          function insertBefore(anchor, insertion, marker) {
+            if (html.includes(marker)) return;
+            const index = html.indexOf(anchor);
+            if (index < 0) fail('Anchor not found for insertBefore: ' + anchor.slice(0, 80));
+            html = html.slice(0, index) + insertion + html.slice(index);
+          }
+
+          function replaceOnce(search, replacement, marker) {
+            if (marker && html.includes(marker)) return;
+            if (!html.includes(search)) fail('Search block not found: ' + search.slice(0, 120));
+            html = html.replace(search, replacement);
+          }
+
+          const css = `
+
+    .mr-slay-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      display: grid;
+      place-items: center;
+      padding: 1rem;
+      background: rgba(23, 32, 51, 0.42);
+    }
+
+    .mr-slay-modal {
+      width: min(940px, 100%);
+      max-height: min(92vh, 780px);
+      overflow: auto;
+      border: 3px solid var(--line);
+      border-radius: calc(var(--radius) + 4px);
+      background: #fffdf7;
+      box-shadow: 0 24px 70px rgba(23, 32, 51, 0.24);
+    }
+
+    .mr-slay-grid {
+      display: grid;
+      grid-template-columns: minmax(13rem, 0.85fr) minmax(0, 1.35fr);
+      gap: 1rem;
+      align-items: stretch;
+    }
+
+    .mr-slay-card {
+      border: 2px solid #fed7aa;
+      border-radius: var(--radius);
+      background: linear-gradient(160deg, #fff7ed, #ffffff);
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      min-height: 100%;
+    }
+
+    .mr-slay-portrait {
+      width: 6.25rem;
+      height: 6.25rem;
+      border-radius: 24px;
+      display: grid;
+      place-items: center;
+      background: #1f2937;
+      color: white;
+      border: 4px solid #fed7aa;
+      font-size: 2rem;
+      font-weight: 950;
+      box-shadow: var(--shadow);
+    }
+
+    .mr-slay-bubble {
+      position: relative;
+      border: 2px solid var(--blue);
+      border-radius: 22px;
+      background: white;
+      padding: 0.85rem 1rem;
+      font-weight: 900;
+      line-height: 1.25;
+    }
+
+    .mr-slay-bubble::after {
+      content: "";
+      position: absolute;
+      left: 1.2rem;
+      bottom: -0.75rem;
+      width: 1rem;
+      height: 1rem;
+      background: white;
+      border-left: 2px solid var(--blue);
+      border-bottom: 2px solid var(--blue);
+      transform: rotate(-25deg);
+    }
+
+    .mr-slay-whiteboard {
+      border: 3px solid #cbd5e1;
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+      padding: 1rem;
+      box-shadow: inset 0 0 0 2px rgba(203, 213, 225, 0.5);
+      min-height: 18rem;
+    }
+
+    .mr-slay-whiteboard h3 {
+      margin-bottom: 0.75rem;
+      color: var(--blue);
+    }
+
+    .mr-slay-board-lines {
+      display: grid;
+      gap: 0.45rem;
+      font-size: clamp(1.35rem, 3vw, 2rem);
+      font-weight: 950;
+      line-height: 1.2;
+    }
+
+    .mr-slay-board-line {
+      padding: 0.15rem 0;
+      color: #172033;
+    }
+
+    .mr-slay-board-line.final {
+      color: var(--teal-dark);
+      font-size: 1.12em;
+      text-decoration: underline;
+      text-decoration-thickness: 3px;
+      text-underline-offset: 0.18em;
+    }
+
+    .mr-slay-prompt {
+      margin-top: 0.85rem;
+      border-left: 4px solid var(--gold);
+      padding-left: 0.75rem;
+      color: var(--muted);
+    }
+`;
+
+          insertBefore('\n    @media (min-width: 861px)', css, '.mr-slay-overlay');
+
+          const helperRegistry = `
+      var MR_SLAY_HELPERS = {
+        general: {
+          title: "Mr Slay says...",
+          bubble: "Pick a strategy before you rush.",
+          board: ["1. Read the question", "2. Choose a fact you know", "3. Check your answer"],
+          prompt: "Try the next one carefully first. Speed can come after accuracy."
+        },
+        multiplicationGeneral: {
+          title: "Multiplication strategy",
+          bubble: "Swap the order if it helps.",
+          board: ["7 x 3 = 3 x 7", "Both facts have the same product.", "3 x 7 = 21"],
+          prompt: "Look for the order that feels easier."
+        },
+        times0: {
+          title: "0 times table",
+          bubble: "Zero groups means zero altogether.",
+          board: ["0 x 8 = 0", "8 groups of nothing is still 0."],
+          prompt: "Any number multiplied by 0 gives 0."
+        },
+        times1: {
+          title: "1 times table",
+          bubble: "The 1s keep the number the same.",
+          board: ["1 x 9 = 9", "One group of 9 is 9."],
+          prompt: "Think: one group only."
+        },
+        times2: {
+          title: "2 times table",
+          bubble: "For 2s, just double it.",
+          board: ["2 x 8", "= 8 + 8", "= 16"],
+          prompt: "Double the other factor."
+        },
+        times3: {
+          title: "3 times table",
+          bubble: "For 3s, check the digit sum.",
+          board: ["3 x 8 = 24", "2 + 4 = 6", "6 follows the 3s pattern."],
+          prompt: "Use this as a check after you calculate."
+        },
+        times4: {
+          title: "4 times table",
+          bubble: "For 4s, double it, then double it again.",
+          board: ["4 x 6", "6 -> 12 -> 24"],
+          prompt: "Double once for 2 groups, then again for 4 groups."
+        },
+        times5: {
+          title: "5 times table",
+          bubble: "5s end in 0 or 5.",
+          board: ["5 x 7 = 35", "Odd x 5 ends in 5.", "5 x 8 = 40", "Even x 5 ends in 0."],
+          prompt: "Use the final digit to check your answer."
+        },
+        times6: {
+          title: "6 times table",
+          bubble: "For 6s, double the 3s fact.",
+          board: ["6 x 4", "= 2 x (3 x 4)", "= 2 x 12", "= 24"],
+          prompt: "If you know the 3s, double it for the 6s."
+        },
+        times7: {
+          title: "7 times table",
+          bubble: "For 7s, use 5 groups and 2 groups.",
+          board: ["7 x 4", "= (5 x 4) + (2 x 4)", "= 20 + 8", "= 28"],
+          prompt: "Now try your question using the same 5 + 2 idea."
+        },
+        times8: {
+          title: "8 times table",
+          bubble: "For 8s, double three times.",
+          board: ["8 x 3", "3 -> 6 -> 12 -> 24"],
+          prompt: "Double, double, then double once more."
+        },
+        times9: {
+          title: "9 times table",
+          bubble: "For 9s, do 10 groups then take one group away.",
+          board: ["9 x 7", "= (10 x 7) - 7", "= 70 - 7", "= 63"],
+          prompt: "Use the 10s fact, then subtract one group."
+        },
+        times10: {
+          title: "10 times table",
+          bubble: "For 10s, think place value.",
+          board: ["10 x 6 = 60", "6 ones become 6 tens."],
+          prompt: "The number shifts into the tens place."
+        },
+        times11: {
+          title: "11 times table",
+          bubble: "For 11s up to 9, repeat the digit.",
+          board: ["11 x 8 = 88", "11 x 12", "= 110 + 22", "= 132"],
+          prompt: "For larger facts, break 11 into 10 and 1."
+        },
+        times12: {
+          title: "12 times table",
+          bubble: "For 12s, use 10 groups and 2 groups.",
+          board: ["12 x 7", "= (10 x 7) + (2 x 7)", "= 70 + 14", "= 84"],
+          prompt: "Break 12 apart into 10 and 2."
+        },
+        divisionGeneral: {
+          title: "Division fact families",
+          bubble: "Turn division into a multiplication fact.",
+          board: ["42 / 6 = ?", "6 x ? = 42", "6 x 7 = 42", "So 42 / 6 = 7"],
+          prompt: "Think of the matching times-table fact."
+        }
+      };
+`;
+
+          insertBefore('\n      var liveStore = loadStore();', helperRegistry, 'var MR_SLAY_HELPERS = {');
+
+          const stateSearch = '        reviewIndex: 0,\n        message: "",';
+          const stateReplace = '        reviewIndex: 0,\n        mrSlayOpen: false,\n        message: "",';
+          replaceOnce(stateSearch, stateReplace, 'mrSlayOpen: false');
+
+          const helperFunctions = `
+      function mrSlayTableFromQuestion(active) {
+        if (!active || !active.question) return null;
+        var text = String(active.question.text || "");
+        var tables = active.practiceOptions ? normalizeTables(active.practiceOptions.tables) : [];
+        if (active.question.operation === "division") {
+          var divisionMatch = text.match(/(-?\\d+)\\s*\\/\\s*(-?\\d+)/);
+          if (divisionMatch) return Number(divisionMatch[2]);
+        }
+        var multiplicationMatch = text.match(/(-?\\d+)\\s*x\\s*(-?\\d+)/i);
+        if (multiplicationMatch) {
+          var a = Number(multiplicationMatch[1]);
+          var b = Number(multiplicationMatch[2]);
+          var fromSelected = tables.find(function (table) { return table === a || table === b; });
+          if (fromSelected != null) return fromSelected;
+          if (a >= 0 && a <= 12 && b >= 0 && b <= 12) {
+            if (a === 0 || b === 0) return 0;
+            if (a === 1 || b === 1) return 1;
+            return Math.max(a, b);
+          }
+        }
+        var tags = active.sessionTags || [];
+        for (var i = 0; i < TIMES_TABLES.length; i += 1) {
+          if (tags.indexOf("times" + TIMES_TABLES[i]) >= 0) return TIMES_TABLES[i];
+        }
+        return null;
+      }
+
+      function helperForActiveSession(active) {
+        if (!active) return MR_SLAY_HELPERS.general;
+        if (active.levelOperation === "division" || (active.question && active.question.operation === "division")) {
+          var divisor = mrSlayTableFromQuestion(active);
+          return MR_SLAY_HELPERS["times" + divisor] || MR_SLAY_HELPERS.divisionGeneral;
+        }
+        if (active.levelOperation === "multiplication" || (active.question && active.question.operation === "multiplication")) {
+          var table = mrSlayTableFromQuestion(active);
+          return MR_SLAY_HELPERS["times" + table] || MR_SLAY_HELPERS.multiplicationGeneral;
+        }
+        return MR_SLAY_HELPERS.general;
+      }
+
+      function mrSlayHelperButton(active) {
+        if (!active) return "";
+        var label = active.mode === "sprint" ? "Hint" : "Ask Mr Slay";
+        return '<button class="btn gold" type="button" data-action="open-mr-slay">' + label + '</button>';
+      }
+
+      function mrSlayPanelHTML(active) {
+        if (!state.mrSlayOpen || !active) return "";
+        var helper = helperForActiveSession(active);
+        var boardLines = (helper.board || []).map(function (line, index, items) {
+          var className = "mr-slay-board-line" + (index === items.length - 1 ? " final" : "");
+          return '<div class="' + className + '">' + escapeHTML(line) + '</div>';
+        }).join("");
+        return [
+          '<div class="mr-slay-overlay" role="dialog" aria-modal="true" aria-label="Mr Slay helper">',
+          '  <section class="mr-slay-modal section stack">',
+          '    <div class="between">',
+          '      <div><span class="pill">Summoned helper</span><h2>Mr Slay</h2><p class="muted">A quick strategy and a worked example for this skill.</p></div>',
+          '      <button class="btn ghost" type="button" data-action="close-mr-slay">Continue practice</button>',
+          '    </div>',
+          '    <div class="mr-slay-grid">',
+          '      <aside class="mr-slay-card">',
+          '        <div class="mr-slay-portrait" aria-hidden="true">MS</div>',
+          '        <div><h3>Mr Slay says...</h3><p class="muted tiny">Use the strategy, then try your question again.</p></div>',
+          '        <div class="mr-slay-bubble">' + escapeHTML(helper.bubble || "Try a known fact first.") + '</div>',
+          '      </aside>',
+          '      <section class="mr-slay-whiteboard">',
+          '        <h3>' + escapeHTML(helper.title || "Worked example") + '</h3>',
+          '        <div class="mr-slay-board-lines">' + boardLines + '</div>',
+          helper.prompt ? '        <p class="mr-slay-prompt">' + escapeHTML(helper.prompt) + '</p>' : '',
+          '      </section>',
+          '    </div>',
+          '  </section>',
+          '</div>'
+        ].join("");
+      }
+`;
+
+          insertBefore('\n      function sessionView() {', helperFunctions, 'function helperForActiveSession(active)');
+
+          const setViewSearch = '        state.active = null;\n        state.results = null;\n        render();';
+          const setViewReplace = '        state.active = null;\n        state.results = null;\n        state.mrSlayOpen = false;\n        render();';
+          replaceOnce(setViewSearch, setViewReplace, 'state.mrSlayOpen = false;\n        render();');
+
+          const startSearch = '        state.results = null;\n        state.view = "session";';
+          const startReplace = '        state.results = null;\n        state.mrSlayOpen = false;\n        state.view = "session";';
+          replaceOnce(startSearch, startReplace, 'state.results = null;\n        state.mrSlayOpen = false;\n        state.view = "session";');
+
+          const finishSearch = '        state.results = session;\n        state.active = null;\n        state.view = "results";';
+          const finishReplace = '        state.results = session;\n        state.active = null;\n        state.mrSlayOpen = false;\n        state.view = "results";';
+          replaceOnce(finishSearch, finishReplace, 'state.active = null;\n        state.mrSlayOpen = false;\n        state.view = "results";');
+
+          const buttonSearch = '          active.mode === "sprint" ? \'<span class="pill">Time: \' + active.timeLeft + \'s</span>\' : \'<span class="pill">No timer</span>\',\n          \'      <button class="btn ghost" data-action="finish-session">Finish</button>\',';
+          const buttonReplace = '          active.mode === "sprint" ? \'<span class="pill">Time: \' + active.timeLeft + \'s</span>\' : \'<span class="pill">No timer</span>\',\n          mrSlayHelperButton(active),\n          \'      <button class="btn ghost" data-action="finish-session">Finish</button>\',';
+          replaceOnce(buttonSearch, buttonReplace, 'mrSlayHelperButton(active)');
+
+          const modalSearch = '          \'      <div class="notice tiny">Use the keypad. Physical keyboards work too.</div>\',\n          \'    </aside>\',\n          \'  </section>\',\n          \'</main>\',';
+          const modalReplace = '          \'      <div class="notice tiny">Use the keypad. Physical keyboards work too.</div>\',\n          \'    </aside>\',\n          \'  </section>\',\n          mrSlayPanelHTML(active),\n          \'</main>\',';
+          replaceOnce(modalSearch, modalReplace, 'mrSlayPanelHTML(active)');
+
+          const actionSearch = '        var action = button.getAttribute("data-action");\n';
+          const actionReplace = '        var action = button.getAttribute("data-action");\n        if (action === "open-mr-slay") {\n          state.mrSlayOpen = true;\n          render();\n          return;\n        }\n        if (action === "close-mr-slay") {\n          state.mrSlayOpen = false;\n          render();\n          return;\n        }\n';
+          replaceOnce(actionSearch, actionReplace, 'action === "open-mr-slay"');
+
+          const coachSearch = '      function coachNPCPanel(advice) {\n        if (!advice) return "";\n        return [\n          \'<section class="panel section coach-panel">\',\n          \'  <div class="coach-avatar" aria-hidden="true">i</div>\',\n          \'  <div class="stack coach-copy">\',\n          \'    <div class="between">\',\n          \'      <h3>\' + escapeHTML(advice.title || "Guide coach") + \'</h3>\',\n          advice.kicker ? \'      <span class="pill">\' + escapeHTML(advice.kicker) + \'</span>\' : \'\',\n          \'    </div>\',\n          \'    <p class="muted">\' + escapeHTML(advice.body || "") + \'</p>\',\n          advice.action ? \'    <p class="tiny"><strong>Try this:</strong> \' + escapeHTML(advice.action) + \'</p>\' : \'\',\n          \'  </div>\',\n          \'</section>\'\n        ].join("");\n      }';
+          const coachReplace = '      function coachNPCPanel(advice) {\n        if (!advice) return "";\n        return [\n          \'<section class="panel section coach-panel">\',\n          \'  <div class="coach-avatar" aria-hidden="true">MS</div>\',\n          \'  <div class="stack coach-copy">\',\n          \'    <div class="between">\',\n          \'      <h3>\' + escapeHTML(advice.title || "Mr Slay") + \'</h3>\',\n          advice.kicker ? \'      <span class="pill">\' + escapeHTML(advice.kicker) + \'</span>\' : \'\',\n          \'    </div>\',\n          \'    <p class="muted">\' + escapeHTML(advice.body || "") + \'</p>\',\n          advice.action ? \'    <p class="tiny"><strong>Try this:</strong> \' + escapeHTML(advice.action) + \'</p>\' : \'\',\n          \'  </div>\',\n          \'</section>\'\n        ].join("");\n      }';
+          replaceOnce(coachSearch, coachReplace, 'coach-avatar" aria-hidden="true">MS</div>');
+
+          html = html.replace(/title: "Guide coach"/g, 'title: "Mr Slay"');
+          html = html.replace(/Guide coach/g, 'Mr Slay');
+
+          fs.writeFileSync('index.html', html);
+          if (fs.existsSync(workflowPath)) fs.unlinkSync(workflowPath);
+          NODE
+
+      - name: Check diff
+        run: |
+          git diff -- index.html | head -n 240
+          git diff --check
+
+      - name: Commit patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html .github/workflows/apply-mr-slay-helper.yml
+          git commit -m "Implement Mr Slay helper NPC"
+          git push
