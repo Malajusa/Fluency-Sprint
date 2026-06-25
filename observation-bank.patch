@@ -1,0 +1,236 @@
+diff --git a/ROADMAP.md b/ROADMAP.md
+index 0a625b4..35902cf 100644
+--- a/ROADMAP.md
++++ b/ROADMAP.md
+@@ -104,7 +104,9 @@ Future filters should include class, student, operation, skill, year level, curr
+ 
+ ## Mistake analysis and observation bank
+ 
+-Future versions should identify repeated patterns in student responses and turn them into useful teacher observations.
++The first observation bank now derives teacher-facing notes from saved sessions, recent mistakes, readiness focus, operation gaps, practice-to-sprint transfer, participation gaps, and pace patterns.
++
++Future versions should deepen this into more precise repeated-error analysis from student response patterns.
+ 
+ Examples:
+ 
+diff --git a/index.html b/index.html
+index 9144328..6f16491 100644
+--- a/index.html
++++ b/index.html
+@@ -4517,6 +4517,7 @@
+         return [
+           classResultsSummary(klass, students, sessions),
+           readinessResultsTable(students),
++          classObservationBank(students),
+           growthPanel(klass, sessions),
+           classProfileTable(students),
+           timesTableClassProfile(students)
+@@ -4660,6 +4661,7 @@
+           studentResultsSummary(sessions),
+           '</section>',
+           studentYearPathwayPanel(student),
++          studentObservationPanel(student),
+           studentChallengeProgressPanel(student.id, levelId, "Selected challenge", true, false),
+           timesTableStudentProfile(student),
+           studentSessionsTable(student)
+@@ -4935,6 +4937,200 @@
+         };
+       }
+ 
++      function classObservationBank(students) {
++        if (!students.length) return "";
++        var rows = students.map(function (student) {
++          return {
++            student: student,
++            observations: observationsForStudent(student)
++          };
++        }).filter(function (row) {
++          return row.observations.length;
++        }).sort(function (a, b) {
++          return b.observations[0].priority - a.observations[0].priority;
++        }).slice(0, 8);
++        if (!rows.length) {
++          return '<section class="panel section stack"><div><h3>Observation bank</h3><p class="muted">Teacher observations will appear after students complete more saved sessions.</p></div></section>';
++        }
++        return [
++          '<section class="panel section stack">',
++          '  <div><h3>Observation bank</h3><p class="muted">Pattern notes generated from saved fluency sessions. Use as prompts for teaching decisions, not fixed labels.</p></div>',
++          '  <table><thead><tr><th>Student</th><th>Observation</th><th>Evidence</th><th>Suggested next move</th></tr></thead><tbody>',
++          rows.map(function (row) {
++            var primary = row.observations[0];
++            return [
++              '<tr>',
++              '<td><strong>' + escapeHTML(studentFullName(row.student)) + '</strong><div class="tiny muted">' + escapeHTML(row.student.alias) + '</div></td>',
++              '<td>' + escapeHTML(primary.text) + '</td>',
++              '<td>' + escapeHTML(primary.evidence) + '</td>',
++              '<td>' + escapeHTML(primary.action) + '</td>',
++              '</tr>'
++            ].join("");
++          }).join(""),
++          '  </tbody></table>',
++          '</section>'
++        ].join("");
++      }
++
++      function studentObservationPanel(student) {
++        var observations = observationsForStudent(student);
++        return [
++          '<section class="panel section stack">',
++          '  <div><h3>Observation bank</h3><p class="muted">Instructional notes generated from this student\'s saved practice and sprint evidence.</p></div>',
++          observations.length ? [
++            '  <table><thead><tr><th>Observation</th><th>Evidence</th><th>Suggested next move</th></tr></thead><tbody>',
++            observations.map(function (item) {
++              return [
++                '<tr>',
++                '<td>' + escapeHTML(item.text) + '</td>',
++                '<td>' + escapeHTML(item.evidence) + '</td>',
++                '<td>' + escapeHTML(item.action) + '</td>',
++                '</tr>'
++              ].join("");
++            }).join(""),
++            '  </tbody></table>'
++          ].join("") : '<div class="empty">More saved sessions are needed before observations can be generated.</div>',
++          '</section>'
++        ].join("");
++      }
++
++      function observationsForStudent(student) {
++        var sessions = sessionsForStudent(student.id).slice().sort(function (a, b) {
++          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
++        });
++        if (!sessions.length) return [];
++        var recent = sessions.slice(-5);
++        var observations = [];
++        var last = recent[recent.length - 1];
++        if (last && daysAgo(last.createdAt) > 7) {
++          observations.push({
++            priority: 80,
++            text: "Participation has dropped recently.",
++            evidence: "Last saved session was " + formatDate(last.createdAt) + ".",
++            action: "Use a short free-practice return task before the next sprint."
++          });
++        }
++        var readiness = readinessForStudent(student);
++        if (readiness.focusLevelId) {
++          observations.push({
++            priority: readiness.status === "focus" ? 70 : 45,
++            text: "Current pathway focus is " + levelLabel(readiness.focusLevelId) + ".",
++            evidence: readiness.focusProfile ? proficiencyEvidenceText(readiness.focusProfile) : "No secure evidence yet.",
++            action: "Assign practice on this skill, then use the sprint climb to confirm."
++          });
++        }
++        addOperationGapObservation(observations, recent);
++        addMistakePatternObservation(observations, recent);
++        addPracticeSprintTransferObservation(observations, recent);
++        addPaceObservation(observations, recent);
++        return observations.sort(function (a, b) {
++          return b.priority - a.priority;
++        }).slice(0, 4);
++      }
++
++      function addOperationGapObservation(observations, sessions) {
++        var operations = ["addition", "subtraction", "multiplication", "division", "measurement"];
++        var profiles = operations.map(function (operation) {
++          var items = sessions.filter(function (session) {
++            return sessionMatchesOperation(session, operation);
++          });
++          return {
++            operation: operation,
++            count: items.length,
++            accuracy: items.length ? Math.round(avg(items.map(function (session) { return session.accuracy; }))) : null
++          };
++        }).filter(function (item) {
++          return item.count >= 2 && item.accuracy != null;
++        }).sort(function (a, b) {
++          return a.accuracy - b.accuracy;
++        });
++        if (profiles.length && profiles[0].accuracy < 75) {
++          observations.push({
++            priority: 65,
++            text: operationLabel(profiles[0].operation) + " is the most pressing recent operation gap.",
++            evidence: profiles[0].count + " recent sessions averaged " + profiles[0].accuracy + "% accuracy.",
++            action: "Use the lowest unlocked sprint or a focused practice guide for this operation."
++          });
++        }
++      }
++
++      function addMistakePatternObservation(observations, sessions) {
++        var mistakes = [];
++        sessions.forEach(function (session) {
++          (session.mistakes || []).forEach(function (mistake) {
++            mistakes.push(Object.assign({ sessionOperation: session.operation }, mistake));
++          });
++        });
++        if (mistakes.length < 3) return;
++        var tagCounts = {};
++        mistakes.forEach(function (mistake) {
++          (mistake.tags || []).forEach(function (tag) {
++            tagCounts[tag] = (tagCounts[tag] || 0) + 1;
++          });
++        });
++        var tag = Object.keys(tagCounts).sort(function (a, b) {
++          return tagCounts[b] - tagCounts[a];
++        })[0];
++        if (tag && tagCounts[tag] >= 2) {
++          observations.push({
++            priority: 75,
++            text: "Repeated mistakes are clustering around " + tagLabel(tag) + ".",
++            evidence: tagCounts[tag] + " recent mistake records share this tag.",
++            action: "Review missed examples, then retry that specific skill in practice."
++          });
++          return;
++        }
++        var operationCounts = {};
++        mistakes.forEach(function (mistake) {
++          var operation = mistake.operation || mistake.sessionOperation;
++          operationCounts[operation] = (operationCounts[operation] || 0) + 1;
++        });
++        var operation = Object.keys(operationCounts).sort(function (a, b) {
++          return operationCounts[b] - operationCounts[a];
++        })[0];
++        if (operation) {
++          observations.push({
++            priority: 60,
++            text: "Recent mistakes are most common in " + operationLabel(operation) + ".",
++            evidence: operationCounts[operation] + " recent mistake records.",
++            action: "Use mistake review, then repeat a short targeted sprint."
++          });
++        }
++      }
++
++      function addPracticeSprintTransferObservation(observations, sessions) {
++        var practice = sessions.filter(function (session) { return session.mode === "practice"; });
++        var sprint = sessions.filter(function (session) { return session.mode === "sprint"; });
++        if (practice.length < 2 || sprint.length < 2) return;
++        var practiceAccuracy = Math.round(avg(practice.map(function (session) { return session.accuracy; })));
++        var sprintAccuracy = Math.round(avg(sprint.map(function (session) { return session.accuracy; })));
++        if (practiceAccuracy >= 80 && sprintAccuracy <= practiceAccuracy - 12) {
++          observations.push({
++            priority: 62,
++            text: "Practice accuracy is stronger than sprint accuracy.",
++            evidence: "Practice average " + practiceAccuracy + "%; sprint average " + sprintAccuracy + "%.",
++            action: "Try one familiar sprint goal with emphasis on calm pace before speed."
++          });
++        }
++      }
++
++      function addPaceObservation(observations, sessions) {
++        var sprint = sessions.filter(function (session) {
++          return session.mode === "sprint" && Number(session.timeSpent) >= 60;
++        });
++        if (sprint.length < 2) return;
++        var accuracy = Math.round(avg(sprint.map(function (session) { return session.accuracy; })));
++        var score = Math.round(avg(sprint.map(function (session) { return session.score; })));
++        if (accuracy >= 85 && score < 18) {
++          observations.push({
++            priority: 50,
++            text: "Accuracy is solid, but sprint pace may be limiting score growth.",
++            evidence: "Recent sprint average " + accuracy + "% accuracy with about " + score + " correct.",
++            action: "Keep the same skill and aim for a small score increase without lowering accuracy."
++          });
++        }
++      }
++
+       function timesTableClassProfile(students) {
+         if (!students.length) return "";
+         return [

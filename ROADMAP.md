@@ -104,7 +104,9 @@ Future filters should include class, student, operation, skill, year level, curr
 
 ## Mistake analysis and observation bank
 
-Future versions should identify repeated patterns in student responses and turn them into useful teacher observations.
+The first observation bank now derives teacher-facing notes from saved sessions, recent mistakes, readiness focus, operation gaps, practice-to-sprint transfer, participation gaps, and pace patterns.
+
+Future versions should deepen this into more precise repeated-error analysis from student response patterns.
 
 Examples:
 
