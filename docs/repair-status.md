@@ -1,0 +1,1 @@
+Repair status: level selection still failing. Root cause appears to be missing diagnostic functions in current index. This will be repaired by restoring diagnostic functions or index.html.
