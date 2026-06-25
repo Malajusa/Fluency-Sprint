@@ -1,0 +1,1 @@
+The likely runtime error is missing studentFourOperationDiagnosticPanel after lesson-first patch removed the diagnostic block.
