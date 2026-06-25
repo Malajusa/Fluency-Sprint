@@ -1786,6 +1786,7 @@
         { id: "large", label: "Large" }
       ];
       var TIMES_TABLES = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+      var ALL_TIMES_TABLES = [0, 1].concat(TIMES_TABLES);
       var YEAR_LEVELS = [
         { id: "PP", label: "Pre-primary", order: 0 },
         { id: "Y1", label: "Year 1", order: 1 },
@@ -2710,10 +2711,10 @@
         var selected = (Array.isArray(tables) ? tables : []).map(function (table) {
           return Number(table);
         }).filter(function (table) {
-          return TIMES_TABLES.indexOf(table) >= 0 && !seen[table] && (seen[table] = true);
+          return ALL_TIMES_TABLES.indexOf(table) >= 0 && !seen[table] && (seen[table] = true);
         });
         if (!selected.length) selected = [6, 7];
-        return TIMES_TABLES.filter(function (table) {
+        return ALL_TIMES_TABLES.filter(function (table) {
           return selected.indexOf(table) >= 0;
         });
       }
@@ -2975,8 +2976,58 @@
         };
       }
 
+      function timesTableTagsFromMistake(mistake) {
+        return (mistakeTags(mistake) || []).filter(function (tag) {
+          return /^times\d+$/.test(tag);
+        }).map(function (tag) {
+          return Number(tag.replace("times", ""));
+        }).filter(function (table) {
+          return ALL_TIMES_TABLES.indexOf(table) >= 0;
+        });
+      }
+
+      function tableWeaknessCountsFromMistakes(mistakes) {
+        var counts = {};
+        (mistakes || []).forEach(function (mistake) {
+          timesTableTagsFromMistake(mistake).forEach(function (table) {
+            counts[table] = (counts[table] || 0) + 1;
+          });
+        });
+        return Object.keys(counts).map(function (key) {
+          return { table: Number(key), count: counts[key] };
+        }).sort(function (a, b) {
+          return b.count - a.count || a.table - b.table;
+        });
+      }
+
+      function tableWeaknessLabel(items) {
+        if (!items || !items.length) return "";
+        var labels = items.slice(0, 3).map(function (item) {
+          return item.table + "s";
+        });
+        if (labels.length === 1) return labels[0];
+        return labels.slice(0, -1).join(", ") + " and " + labels[labels.length - 1];
+      }
+
+      function mrSlayTablePracticeAdvice(session) {
+        if (!state.student || !session || session.mode !== "sprint") return null;
+        if (session.operation !== "multiplication" && session.operation !== "division") return null;
+        var weakness = tableWeaknessCountsFromMistakes(session.mistakes || []);
+        if (!weakness.length) return null;
+        var focusTables = tableWeaknessLabel(weakness);
+        var operationText = session.operation === "division" ? "division facts linked to the " + focusTables : focusTables + " times-table facts";
+        return {
+          title: "Mr Slay",
+          kicker: "Table focus",
+          body: "This sprint showed the most friction with " + operationText + ". That is the best place to practise next.",
+          action: "Use free practice for " + focusTables + ", then repeat the year-level sprint."
+        };
+      }
+
       function coachAdviceForResult(session) {
         if (!state.student || !session) return null;
+        var tableAdvice = mrSlayTablePracticeAdvice(session);
+        if (tableAdvice) return tableAdvice;
         var followUp = diagnosticFollowUp(session);
         var mistakes = session.mistakes || [];
         var accuracy = Number(session.accuracy) || 0;
@@ -3084,6 +3135,70 @@
         return settings.practiceMode === "multiplication"
           && !!settings.includeZeroMultiplicationFacts
           && normalizeTables(settings.tables).length === TIMES_TABLES.length;
+      }
+
+      function yearLevelSprintTables(yearLevel) {
+        var order = yearLevelOrder(yearLevel);
+        if (order <= 3) return [0, 1, 2, 3, 5, 10];
+        if (order === 4) return [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+        return [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+      }
+
+      function yearLevelSprintTablesForStudent(student, operation) {
+        var tables = yearLevelSprintTables(student ? student.yearLevel : "Y4");
+        if (operation === "division") return tables.filter(function (table) { return table > 0; });
+        return tables;
+      }
+
+      function yearLevelSprintOptions(operation, student) {
+        var yearLevel = normalizeYearLevel(student && student.yearLevel);
+        return {
+          tables: yearLevelSprintTablesForStudent(student, operation),
+          includeReverseDivision: false,
+          includeZeroMultiplicationFacts: operation === "multiplication",
+          practiceMode: operation === "division" ? "division" : "multiplication",
+          yearLevelSprint: true,
+          yearLevel: yearLevel
+        };
+      }
+
+      function isYearLevelMultiplicationDivisionSprint(mode, level) {
+        return mode === "sprint" && !!level && (level.operation === "multiplication" || level.operation === "division");
+      }
+
+      function yearLevelSprintLevelForOperation(operation) {
+        return levelById(operation === "division" ? "D6" : "M7");
+      }
+
+      function yearLevelSprintLevelName(operation, options) {
+        var yearLabel = yearLevelLabel(options && options.yearLevel);
+        var tableLabel = tableListLabel(options && options.tables);
+        if (operation === "division") return yearLabel + " division sprint: " + tableLabel;
+        return yearLabel + " multiplication sprint: " + tableLabel;
+      }
+
+      function yearLevelSprintScopeNotice(level) {
+        if (!level || (level.operation !== "multiplication" && level.operation !== "division")) return "";
+        var student = currentStudentRecord();
+        var options = yearLevelSprintOptions(level.operation, student);
+        var label = yearLevelSprintLevelName(level.operation, options);
+        return '<div class="notice small"><strong>' + escapeHTML(label) + '.</strong> Sprint questions are matched to the student year level. Mr Slay will use sprint errors to suggest which tables to practise.</div>';
+      }
+
+      function customMultiplicationQuestionTags(settings, table, extraTables) {
+        var mode = settings.practiceMode === "division" ? "division" : "multiplication";
+        var tables = [table].concat(extraTables || []).filter(function (value) {
+          return value != null && ALL_TIMES_TABLES.indexOf(Number(value)) >= 0;
+        });
+        var tags = [mode, "customTables"].concat(tableTags(tables));
+        if (settings.yearLevelSprint) {
+          tags.push("yearLevelSprint");
+          tags.push("yearLevel" + normalizeYearLevel(settings.yearLevel));
+        }
+        if (mode === "division") tags.push("reverseDivision");
+        if (mode === "multiplication" && settings.includeReverseDivision) tags = tags.concat(["division", "reverseDivision"]);
+        if (mode === "multiplication" && settings.includeZeroMultiplicationFacts && tables.indexOf(0) >= 0) tags.push("zeroFacts");
+        return unique(tags);
       }
 
       function currentMultiplicationOptions() {
@@ -3565,20 +3680,26 @@
         var settings = options || currentMultiplicationOptions();
         var tables = normalizeTables(settings.tables);
         var practiceMode = settings.practiceMode === "division" ? "division" : "multiplication";
-        var factor = choice(tables);
-        var allMultiplicationFacts = isAllMultiplicationFacts(settings);
-        var other = allMultiplicationFacts ? rand(0, 12) : rand(1, 12);
-        var tags = customMultiplicationTags(settings);
-        if (practiceMode === "division" || (settings.includeReverseDivision && Math.random() > 0.5)) {
-          return question((factor * other) + " / " + factor, other, "division", tags);
+
+        if (practiceMode === "division") {
+          var divisorTables = tables.filter(function (table) { return table > 0; });
+          var divisor = choice(divisorTables.length ? divisorTables : [2, 3, 5, 10]);
+          var quotient = settings.yearLevelSprint ? rand(0, 12) : rand(1, 12);
+          return question((divisor * quotient) + " / " + divisor, quotient, "division", customMultiplicationQuestionTags(settings, divisor));
         }
-        if (allMultiplicationFacts) {
+
+        var allMultiplicationFacts = isAllMultiplicationFacts(settings);
+        if (allMultiplicationFacts && !settings.yearLevelSprint) {
           var allA = rand(0, 12);
           var allB = rand(0, 12);
-          return question(allA + " x " + allB, allA * allB, "multiplication", tags);
+          var tableForAll = Math.max(allA, allB);
+          return question(allA + " x " + allB, allA * allB, "multiplication", customMultiplicationQuestionTags(settings, tableForAll, [allA, allB]));
         }
+
+        var factor = choice(tables);
+        var other = rand(0, 12);
         var ordered = shufflePair(factor, other);
-        return question(ordered[0] + " x " + ordered[1], factor * other, "multiplication", tags);
+        return question(ordered[0] + " x " + ordered[1], factor * other, "multiplication", customMultiplicationQuestionTags(settings, factor));
       }
 
       function generateQuestion(levelId, options) {
@@ -4307,6 +4428,7 @@
           '    <button class="btn gold" data-action="start-diagnostic" data-operation="' + escapeHTML(state.selectedOperation) + '">Start diagnostic</button>',
           '  </div>',
           diagnosticStart ? '<div class="notice small">Diagnostic starts at a just-right stage and moves the climb from there.</div>' : '',
+          yearLevelSprintScopeNotice(selected),
           '  <div class="ladder">' + levels.map(sprintLadderStepHTML).join("") + '</div>',
           '  <div class="row action-row">',
           '    <button class="btn gold" data-action="begin-session" data-mode="sprint" ' + (selectedUnlock.unlocked ? "" : "disabled") + '>Start unlocked sprint</button>',
@@ -4583,14 +4705,22 @@
           render();
           return;
         }
-        var practiceOptions = customTableLevel(level) ? currentMultiplicationOptions() : null;
-        var sessionTags = practiceOptions ? customMultiplicationTags(practiceOptions) : level.tags;
-        var sessionLevelName = practiceOptions ? customMultiplicationLevelName(practiceOptions) : level.name;
+
+        var yearLevelSprint = isYearLevelMultiplicationDivisionSprint(mode, level);
+        var sessionLevel = yearLevelSprint ? yearLevelSprintLevelForOperation(level.operation) : level;
+        var practiceOptions = yearLevelSprint
+          ? yearLevelSprintOptions(level.operation, currentStudentRecord())
+          : (customTableLevel(sessionLevel) ? currentMultiplicationOptions() : null);
+        var sessionTags = practiceOptions ? customMultiplicationTags(practiceOptions) : sessionLevel.tags;
+        var sessionLevelName = yearLevelSprint
+          ? yearLevelSprintLevelName(level.operation, practiceOptions)
+          : (practiceOptions ? customMultiplicationLevelName(practiceOptions) : sessionLevel.name);
+
         state.active = {
           mode: mode,
-          levelId: level.id,
+          levelId: sessionLevel.id,
           levelName: sessionLevelName,
-          levelOperation: level.operation,
+          levelOperation: sessionLevel.operation,
           sessionTags: sessionTags,
           practiceOptions: practiceOptions,
           startedAt: Date.now(),
@@ -4604,7 +4734,7 @@
           tries: 0,
           pendingWrong: null,
           feedback: "",
-          question: generateQuestion(level.id, practiceOptions)
+          question: generateQuestion(sessionLevel.id, practiceOptions)
         };
         state.results = null;
         state.mrSlayOpen = false;
@@ -7439,4 +7569,5 @@
   </script>
 </body>
 </html>
+
 
