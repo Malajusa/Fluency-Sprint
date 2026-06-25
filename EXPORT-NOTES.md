@@ -1,29 +1,26 @@
-# Fluency Sprint Observation Bank Export
+# Fluency Sprint guide coach export
 
-Date: 2026-06-25
+Export created: 2026-06-25
 
-Suggested commit message:
+This package contains the current local changes for:
 
-`Add teacher observation bank`
+- teacher observation bank work already present in the working tree;
+- avatar, rewards, and guide NPC product direction notes;
+- first text-based guide coach panel for students;
+- guide coach advice on the student practice menu and results screen.
 
-Changed files:
+Included files:
 
 - `index.html`
 - `ROADMAP.md`
+- `docs/progression-model.md`
+- `guide-coach.patch`
 
-Summary:
+Checks run:
 
-- Adds a class-level Observation bank to Teacher Results.
-- Adds an individual Observation bank to Student Results.
-- Generates instructional notes from existing saved sessions and mistakes.
-- Uses readiness focus, participation gaps, operation gaps, mistake tags, practice-to-sprint transfer, and sprint pace patterns.
-- Updates the roadmap to reflect that the first observation-bank version is now implemented.
+- `git diff --check` passed with CRLF warnings only.
+- Inline JavaScript compile check passed.
+- Runtime/source smoke check passed.
+- Conflict marker scan found no matches.
 
-Checks already run:
-
-- `git diff --check`
-- inline JavaScript compile
-- runtime/source smoke check
-- conflict-marker scan
-
-No Supabase SQL change is required for this release.
+The repository itself has not been committed or pushed by Codex in this release.

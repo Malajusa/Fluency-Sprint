@@ -1,0 +1,485 @@
+diff --git a/ROADMAP.md b/ROADMAP.md
+index 0a625b4..40e4c1f 100644
+--- a/ROADMAP.md
++++ b/ROADMAP.md
+@@ -104,7 +104,9 @@ Future filters should include class, student, operation, skill, year level, curr
+ 
+ ## Mistake analysis and observation bank
+ 
+-Future versions should identify repeated patterns in student responses and turn them into useful teacher observations.
++The first observation bank now derives teacher-facing notes from saved sessions, recent mistakes, readiness focus, operation gaps, practice-to-sprint transfer, participation gaps, and pace patterns.
++
++Future versions should deepen this into more precise repeated-error analysis from student response patterns.
+ 
+ Examples:
+ 
+@@ -122,6 +124,32 @@ These should be framed as instructional observations, not labels or diagnoses.
+ 
+ Add a four-operations fluency diagnostic before challenge selection when ready. It should sample key skills, identify likely strengths and gaps, suggest next practice areas, and give the teacher a concise summary.
+ 
++## Avatar, rewards, and guide NPC direction
++
++The current reward avatars are a placeholder foundation. The intended student reward system is a customisable cartoon human avatar that students can use to represent themselves without uploading photos or personal images.
++
++Future avatar customisation should include:
++
++- skin colour;
++- facial features;
++- hair style and colour;
++- outfits and accessories;
++- celebratory poses.
++
++Students should unlock further customisation options through sprint rewards, proficiency milestones, and trophy achievements. Trophy certificates should be printable by teachers and should feature the student's avatar striking an earned celebration pose.
++
++The app should also include a helpful guide NPC. This character should:
++
++- suggest what a student should focus on next;
++- explain tips and tricks for improving fluency;
++- point students back to the right practice guide or sprint step;
++- use encouraging, concise language;
++- avoid labels, diagnoses, or comments that could make students feel ranked.
++
++The NPC should support the learning pathway and teacher guidance. It should not replace teacher judgement.
++
++The first implementation slice can be a text-first guide coach panel that uses saved session evidence and sprint-climb readiness. Later releases can attach that advice to the custom cartoon character and certificate system.
++
+ ## Data model direction
+ 
+ As the app expands, skills should be represented through structured metadata rather than only hard-coded display strings.
+diff --git a/docs/progression-model.md b/docs/progression-model.md
+index 6190991..2944159 100644
+--- a/docs/progression-model.md
++++ b/docs/progression-model.md
+@@ -273,6 +273,12 @@ Sprint mode is the game/progression layer:
+ 
+ Rewards should attach mainly to sprint completion so the fun loop supports fluency rather than blocking exploration.
+ 
++The long-term reward identity should be a customisable cartoon human avatar, not uploaded photos or realistic student images. Sprint coins and trophy achievements should unlock avatar options such as facial features, skin colour, hair styles, outfits, accessories, and celebration poses. Printable trophy certificates should be able to feature the student's avatar in an earned celebration pose.
++
++The progression model should also support a helpful guide NPC. The NPC should explain the next recommended focus, offer strategy tips, and point students to the right practice guide or sprint step. It should use concise, encouraging language and avoid ranking or diagnostic labels.
++
++The initial guide NPC can ship as a text-first coach panel using existing session evidence. Future releases can pair the same advice model with the custom cartoon avatar and certificate visuals.
++
+ ## Teacher dashboard behaviour
+ 
+ The dashboard should eventually show:
+diff --git a/index.html b/index.html
+index 9144328..ccd9972 100644
+--- a/index.html
++++ b/index.html
+@@ -739,6 +739,30 @@
+       box-shadow: var(--shadow);
+     }
+ 
++    .coach-panel {
++      display: grid;
++      grid-template-columns: auto minmax(0, 1fr);
++      gap: 0.9rem;
++      align-items: start;
++    }
++
++    .coach-avatar {
++      width: 3.5rem;
++      height: 3.5rem;
++      border-radius: 999px;
++      display: grid;
++      place-items: center;
++      background: #ffe8d5;
++      color: #7a3412;
++      border: 2px solid #fed7aa;
++      font-weight: 950;
++      box-shadow: var(--shadow);
++    }
++
++    .coach-copy {
++      gap: 0.45rem;
++    }
++
+     .reward-shop {
+       display: flex;
+       flex-wrap: wrap;
+@@ -2471,6 +2495,141 @@
+         };
+       }
+ 
++      function coachAdviceForStudent(level) {
++        var student = currentStudentRecord();
++        if (!student || !level) return null;
++        var allSessions = sessionsForStudent(student.id);
++        var readiness = readinessForStudent(student);
++        var focusLevel = readiness.focusLevelId ? levelById(readiness.focusLevelId) : null;
++        var profile = proficiencyForStudentLevel(student.id, level.id);
++        var unlock = sprintUnlockInfo(student, level);
++        if (!allSessions.length) {
++          return {
++            title: "Guide coach",
++            kicker: "First run",
++            body: "Start with a diagnostic sprint so your practice path has a useful first signal.",
++            action: "Use the sprint climb diagnostic for this operation."
++          };
++        }
++        if (focusLevel && focusLevel.id !== level.id && readiness.status !== "extensionReady") {
++          return {
++            title: "Guide coach",
++            kicker: readiness.label,
++            body: "Your clearest next focus is " + focusLevel.name + ". You can still practise this skill if you want a warm-up.",
++            action: "Open " + studentLevelStageLabel(focusLevel) + " when you are ready."
++          };
++        }
++        if (!unlock.unlocked) {
++          return {
++            title: "Guide coach",
++            kicker: "Climb step",
++            body: "This sprint opens after earlier evidence in the climb. Free practice is still available here.",
++            action: "Practise this skill, or choose the unlocked support sprint."
++          };
++        }
++        if (profile.status === "secure") {
++          return {
++            title: "Guide coach",
++            kicker: "Secure",
++            body: "This skill is looking steady. Keep it fresh, or move to the next unlocked sprint.",
++            action: "Try a short sprint check before changing focus."
++          };
++        }
++        if (profile.recentMistakes > 2) {
++          return {
++            title: "Guide coach",
++            kicker: "Review",
++            body: "Recent attempts show a few misses to revisit. Slow the first answers and check the fact family.",
++            action: "Review mistakes, then retry this level."
++          };
++        }
++        if (profile.status === "nearlySecure" || profile.improving) {
++          return {
++            title: "Guide coach",
++            kicker: progressSignal(profile),
++            body: "You are close. Keep accuracy calm first, then let your speed build.",
++            action: "Use practice once, then retry the sprint."
++          };
++        }
++        if (profile.status === "notStarted") {
++          return {
++            title: "Guide coach",
++            kicker: "Ready",
++            body: "This skill has no saved attempts yet. A short practice round gives you a clean start.",
++            action: "Start fluency practice before a sprint."
++          };
++        }
++        return {
++          title: "Guide coach",
++          kicker: progressSignal(profile),
++          body: "Build a few clean attempts and watch the graph for a steadier line.",
++          action: "Aim for accurate first answers before chasing speed."
++        };
++      }
++
++      function coachAdviceForResult(session) {
++        if (!state.student || !session) return null;
++        var followUp = diagnosticFollowUp(session);
++        var mistakes = session.mistakes || [];
++        var accuracy = Number(session.accuracy) || 0;
++        var attempted = Number(session.attempted) || 0;
++        if (mistakes.length) {
++          return {
++            title: "Guide coach",
++            kicker: "Review",
++            body: "Corrections are useful. Your accuracy still keeps the first answer so the graph shows what to practise.",
++            action: "Review mistakes before the next attempt."
++          };
++        }
++        if (followUp) {
++          return {
++            title: "Guide coach",
++            kicker: followUp.title,
++            body: followUp.body,
++            action: followUp.level ? followUp.action + ": " + followUp.level.name + "." : "Choose another operation when you are ready."
++          };
++        }
++        if (accuracy >= 90 && attempted >= 20) {
++          return {
++            title: "Guide coach",
++            kicker: "Strong run",
++            body: "That was accurate and fluent. Keep the skill warm or step up when the climb allows it.",
++            action: "Try the next unlocked sprint."
++          };
++        }
++        if (accuracy >= 85) {
++          return {
++            title: "Guide coach",
++            kicker: "Accurate",
++            body: "Your accuracy is in a useful range. A repeat attempt can help make the skill steadier.",
++            action: "Repeat once, then check your graph."
++          };
++        }
++        return {
++          title: "Guide coach",
++          kicker: "Next try",
++          body: "Take the next round a little slower and focus on clean first answers.",
++          action: "Use practice mode before another sprint."
++        };
++      }
++
++      function coachNPCPanel(advice) {
++        if (!advice) return "";
++        return [
++          '<section class="panel section coach-panel">',
++          '  <div class="coach-avatar" aria-hidden="true">i</div>',
++          '  <div class="stack coach-copy">',
++          '    <div class="between">',
++          '      <h3>' + escapeHTML(advice.title || "Guide coach") + '</h3>',
++          advice.kicker ? '      <span class="pill">' + escapeHTML(advice.kicker) + '</span>' : '',
++          '    </div>',
++          '    <p class="muted">' + escapeHTML(advice.body || "") + '</p>',
++          advice.action ? '    <p class="tiny"><strong>Try this:</strong> ' + escapeHTML(advice.action) + '</p>' : '',
++          '  </div>',
++          '</section>'
++        ].join("");
++      }
++
+       function rewardPrefsForStudent(studentId) {
+         var id = studentId || (state.student && state.student.id) || "guest";
+         var prefs = state.rewardPrefs[id] || {};
+@@ -3515,7 +3674,8 @@
+           var startLevel = diagnosticStartLevelForOperation(currentStudentRecord(), state.selectedOperation);
+           state.selectedLevelId = startLevel ? startLevel.id : levels[0].id;
+         }
+-        var tablePractice = customTableLevel(levelById(state.selectedLevelId));
++        var selectedLevel = levelById(state.selectedLevelId);
++        var tablePractice = customTableLevel(selectedLevel);
+         return [
+           '<div class="page">',
+           header(),
+@@ -3529,6 +3689,7 @@
+           '  </section>',
+           messageHTML(),
+           studentRewardPanel(),
++          coachNPCPanel(coachAdviceForStudent(selectedLevel)),
+           '  <section class="panel section stack student-menu-panel">',
+           '    <div>',
+           '      <h3>Operation</h3>',
+@@ -4250,6 +4411,7 @@
+           r.saveError ? '<div class="notice danger">Could not save to Supabase: ' + escapeHTML(r.saveError) + '</div>' : '',
+           r.synced ? '<div class="notice success">Saved to teacher dashboard.</div>' : '',
+           diagnosticFollowUpHTML(r),
++          coachNPCPanel(coachAdviceForResult(r)),
+           '  <section class="grid two result-actions">',
+           '    <button class="tile" data-action="retry-level"><span class="iconbox">R</span><h3>Try again</h3><p class="muted">Repeat the same level.</p></button>',
+           '    <button class="tile" data-action="review-mistakes" ' + (r.mistakes.length ? "" : "disabled") + '><span class="iconbox">?</span><h3>Review mistakes</h3><p class="muted">' + r.mistakes.length + ' items to revisit.</p></button>',
+@@ -4517,6 +4679,7 @@
+         return [
+           classResultsSummary(klass, students, sessions),
+           readinessResultsTable(students),
++          classObservationBank(students),
+           growthPanel(klass, sessions),
+           classProfileTable(students),
+           timesTableClassProfile(students)
+@@ -4660,6 +4823,7 @@
+           studentResultsSummary(sessions),
+           '</section>',
+           studentYearPathwayPanel(student),
++          studentObservationPanel(student),
+           studentChallengeProgressPanel(student.id, levelId, "Selected challenge", true, false),
+           timesTableStudentProfile(student),
+           studentSessionsTable(student)
+@@ -4935,6 +5099,200 @@
+         };
+       }
+ 
++      function classObservationBank(students) {
++        if (!students.length) return "";
++        var rows = students.map(function (student) {
++          return {
++            student: student,
++            observations: observationsForStudent(student)
++          };
++        }).filter(function (row) {
++          return row.observations.length;
++        }).sort(function (a, b) {
++          return b.observations[0].priority - a.observations[0].priority;
++        }).slice(0, 8);
++        if (!rows.length) {
++          return '<section class="panel section stack"><div><h3>Observation bank</h3><p class="muted">Teacher observations will appear after students complete more saved sessions.</p></div></section>';
++        }
++        return [
++          '<section class="panel section stack">',
++          '  <div><h3>Observation bank</h3><p class="muted">Pattern notes generated from saved fluency sessions. Use as prompts for teaching decisions, not fixed labels.</p></div>',
++          '  <table><thead><tr><th>Student</th><th>Observation</th><th>Evidence</th><th>Suggested next move</th></tr></thead><tbody>',
++          rows.map(function (row) {
++            var primary = row.observations[0];
++            return [
++              '<tr>',
++              '<td><strong>' + escapeHTML(studentFullName(row.student)) + '</strong><div class="tiny muted">' + escapeHTML(row.student.alias) + '</div></td>',
++              '<td>' + escapeHTML(primary.text) + '</td>',
++              '<td>' + escapeHTML(primary.evidence) + '</td>',
++              '<td>' + escapeHTML(primary.action) + '</td>',
++              '</tr>'
++            ].join("");
++          }).join(""),
++          '  </tbody></table>',
++          '</section>'
++        ].join("");
++      }
++
++      function studentObservationPanel(student) {
++        var observations = observationsForStudent(student);
++        return [
++          '<section class="panel section stack">',
++          '  <div><h3>Observation bank</h3><p class="muted">Instructional notes generated from this student\'s saved practice and sprint evidence.</p></div>',
++          observations.length ? [
++            '  <table><thead><tr><th>Observation</th><th>Evidence</th><th>Suggested next move</th></tr></thead><tbody>',
++            observations.map(function (item) {
++              return [
++                '<tr>',
++                '<td>' + escapeHTML(item.text) + '</td>',
++                '<td>' + escapeHTML(item.evidence) + '</td>',
++                '<td>' + escapeHTML(item.action) + '</td>',
++                '</tr>'
++              ].join("");
++            }).join(""),
++            '  </tbody></table>'
++          ].join("") : '<div class="empty">More saved sessions are needed before observations can be generated.</div>',
++          '</section>'
++        ].join("");
++      }
++
++      function observationsForStudent(student) {
++        var sessions = sessionsForStudent(student.id).slice().sort(function (a, b) {
++          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
++        });
++        if (!sessions.length) return [];
++        var recent = sessions.slice(-5);
++        var observations = [];
++        var last = recent[recent.length - 1];
++        if (last && daysAgo(last.createdAt) > 7) {
++          observations.push({
++            priority: 80,
++            text: "Participation has dropped recently.",
++            evidence: "Last saved session was " + formatDate(last.createdAt) + ".",
++            action: "Use a short free-practice return task before the next sprint."
++          });
++        }
++        var readiness = readinessForStudent(student);
++        if (readiness.focusLevelId) {
++          observations.push({
++            priority: readiness.status === "focus" ? 70 : 45,
++            text: "Current pathway focus is " + levelLabel(readiness.focusLevelId) + ".",
++            evidence: readiness.focusProfile ? proficiencyEvidenceText(readiness.focusProfile) : "No secure evidence yet.",
++            action: "Assign practice on this skill, then use the sprint climb to confirm."
++          });
++        }
++        addOperationGapObservation(observations, recent);
++        addMistakePatternObservation(observations, recent);
++        addPracticeSprintTransferObservation(observations, recent);
++        addPaceObservation(observations, recent);
++        return observations.sort(function (a, b) {
++          return b.priority - a.priority;
++        }).slice(0, 4);
++      }
++
++      function addOperationGapObservation(observations, sessions) {
++        var operations = ["addition", "subtraction", "multiplication", "division", "measurement"];
++        var profiles = operations.map(function (operation) {
++          var items = sessions.filter(function (session) {
++            return sessionMatchesOperation(session, operation);
++          });
++          return {
++            operation: operation,
++            count: items.length,
++            accuracy: items.length ? Math.round(avg(items.map(function (session) { return session.accuracy; }))) : null
++          };
++        }).filter(function (item) {
++          return item.count >= 2 && item.accuracy != null;
++        }).sort(function (a, b) {
++          return a.accuracy - b.accuracy;
++        });
++        if (profiles.length && profiles[0].accuracy < 75) {
++          observations.push({
++            priority: 65,
++            text: operationLabel(profiles[0].operation) + " is the most pressing recent operation gap.",
++            evidence: profiles[0].count + " recent sessions averaged " + profiles[0].accuracy + "% accuracy.",
++            action: "Use the lowest unlocked sprint or a focused practice guide for this operation."
++          });
++        }
++      }
++
++      function addMistakePatternObservation(observations, sessions) {
++        var mistakes = [];
++        sessions.forEach(function (session) {
++          (session.mistakes || []).forEach(function (mistake) {
++            mistakes.push(Object.assign({ sessionOperation: session.operation }, mistake));
++          });
++        });
++        if (mistakes.length < 3) return;
++        var tagCounts = {};
++        mistakes.forEach(function (mistake) {
++          (mistake.tags || []).forEach(function (tag) {
++            tagCounts[tag] = (tagCounts[tag] || 0) + 1;
++          });
++        });
++        var tag = Object.keys(tagCounts).sort(function (a, b) {
++          return tagCounts[b] - tagCounts[a];
++        })[0];
++        if (tag && tagCounts[tag] >= 2) {
++          observations.push({
++            priority: 75,
++            text: "Repeated mistakes are clustering around " + tagLabel(tag) + ".",
++            evidence: tagCounts[tag] + " recent mistake records share this tag.",
++            action: "Review missed examples, then retry that specific skill in practice."
++          });
++          return;
++        }
++        var operationCounts = {};
++        mistakes.forEach(function (mistake) {
++          var operation = mistake.operation || mistake.sessionOperation;
++          operationCounts[operation] = (operationCounts[operation] || 0) + 1;
++        });
++        var operation = Object.keys(operationCounts).sort(function (a, b) {
++          return operationCounts[b] - operationCounts[a];
++        })[0];
++        if (operation) {
++          observations.push({
++            priority: 60,
++            text: "Recent mistakes are most common in " + operationLabel(operation) + ".",
++            evidence: operationCounts[operation] + " recent mistake records.",
++            action: "Use mistake review, then repeat a short targeted sprint."
++          });
++        }
++      }
++
++      function addPracticeSprintTransferObservation(observations, sessions) {
++        var practice = sessions.filter(function (session) { return session.mode === "practice"; });
++        var sprint = sessions.filter(function (session) { return session.mode === "sprint"; });
++        if (practice.length < 2 || sprint.length < 2) return;
++        var practiceAccuracy = Math.round(avg(practice.map(function (session) { return session.accuracy; })));
++        var sprintAccuracy = Math.round(avg(sprint.map(function (session) { return session.accuracy; })));
++        if (practiceAccuracy >= 80 && sprintAccuracy <= practiceAccuracy - 12) {
++          observations.push({
++            priority: 62,
++            text: "Practice accuracy is stronger than sprint accuracy.",
++            evidence: "Practice average " + practiceAccuracy + "%; sprint average " + sprintAccuracy + "%.",
++            action: "Try one familiar sprint goal with emphasis on calm pace before speed."
++          });
++        }
++      }
++
++      function addPaceObservation(observations, sessions) {
++        var sprint = sessions.filter(function (session) {
++          return session.mode === "sprint" && Number(session.timeSpent) >= 60;
++        });
++        if (sprint.length < 2) return;
++        var accuracy = Math.round(avg(sprint.map(function (session) { return session.accuracy; })));
++        var score = Math.round(avg(sprint.map(function (session) { return session.score; })));
++        if (accuracy >= 85 && score < 18) {
++          observations.push({
++            priority: 50,
++            text: "Accuracy is solid, but sprint pace may be limiting score growth.",
++            evidence: "Recent sprint average " + accuracy + "% accuracy with about " + score + " correct.",
++            action: "Keep the same skill and aim for a small score increase without lowering accuracy."
++          });
++        }
++      }
++
+       function timesTableClassProfile(students) {
+         if (!students.length) return "";
+         return [

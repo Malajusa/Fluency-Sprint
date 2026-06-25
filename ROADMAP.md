@@ -124,6 +124,32 @@ These should be framed as instructional observations, not labels or diagnoses.
 
 Add a four-operations fluency diagnostic before challenge selection when ready. It should sample key skills, identify likely strengths and gaps, suggest next practice areas, and give the teacher a concise summary.
 
+## Avatar, rewards, and guide NPC direction
+
+The current reward avatars are a placeholder foundation. The intended student reward system is a customisable cartoon human avatar that students can use to represent themselves without uploading photos or personal images.
+
+Future avatar customisation should include:
+
+- skin colour;
+- facial features;
+- hair style and colour;
+- outfits and accessories;
+- celebratory poses.
+
+Students should unlock further customisation options through sprint rewards, proficiency milestones, and trophy achievements. Trophy certificates should be printable by teachers and should feature the student's avatar striking an earned celebration pose.
+
+The app should also include a helpful guide NPC. This character should:
+
+- suggest what a student should focus on next;
+- explain tips and tricks for improving fluency;
+- point students back to the right practice guide or sprint step;
+- use encouraging, concise language;
+- avoid labels, diagnoses, or comments that could make students feel ranked.
+
+The NPC should support the learning pathway and teacher guidance. It should not replace teacher judgement.
+
+The first implementation slice can be a text-first guide coach panel that uses saved session evidence and sprint-climb readiness. Later releases can attach that advice to the custom cartoon character and certificate system.
+
 ## Data model direction
 
 As the app expands, skills should be represented through structured metadata rather than only hard-coded display strings.

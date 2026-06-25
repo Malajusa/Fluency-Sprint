@@ -739,6 +739,30 @@
       box-shadow: var(--shadow);
     }
 
+    .coach-panel {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 0.9rem;
+      align-items: start;
+    }
+
+    .coach-avatar {
+      width: 3.5rem;
+      height: 3.5rem;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      background: #ffe8d5;
+      color: #7a3412;
+      border: 2px solid #fed7aa;
+      font-weight: 950;
+      box-shadow: var(--shadow);
+    }
+
+    .coach-copy {
+      gap: 0.45rem;
+    }
+
     .reward-shop {
       display: flex;
       flex-wrap: wrap;
@@ -2471,6 +2495,141 @@
         };
       }
 
+      function coachAdviceForStudent(level) {
+        var student = currentStudentRecord();
+        if (!student || !level) return null;
+        var allSessions = sessionsForStudent(student.id);
+        var readiness = readinessForStudent(student);
+        var focusLevel = readiness.focusLevelId ? levelById(readiness.focusLevelId) : null;
+        var profile = proficiencyForStudentLevel(student.id, level.id);
+        var unlock = sprintUnlockInfo(student, level);
+        if (!allSessions.length) {
+          return {
+            title: "Guide coach",
+            kicker: "First run",
+            body: "Start with a diagnostic sprint so your practice path has a useful first signal.",
+            action: "Use the sprint climb diagnostic for this operation."
+          };
+        }
+        if (focusLevel && focusLevel.id !== level.id && readiness.status !== "extensionReady") {
+          return {
+            title: "Guide coach",
+            kicker: readiness.label,
+            body: "Your clearest next focus is " + focusLevel.name + ". You can still practise this skill if you want a warm-up.",
+            action: "Open " + studentLevelStageLabel(focusLevel) + " when you are ready."
+          };
+        }
+        if (!unlock.unlocked) {
+          return {
+            title: "Guide coach",
+            kicker: "Climb step",
+            body: "This sprint opens after earlier evidence in the climb. Free practice is still available here.",
+            action: "Practise this skill, or choose the unlocked support sprint."
+          };
+        }
+        if (profile.status === "secure") {
+          return {
+            title: "Guide coach",
+            kicker: "Secure",
+            body: "This skill is looking steady. Keep it fresh, or move to the next unlocked sprint.",
+            action: "Try a short sprint check before changing focus."
+          };
+        }
+        if (profile.recentMistakes > 2) {
+          return {
+            title: "Guide coach",
+            kicker: "Review",
+            body: "Recent attempts show a few misses to revisit. Slow the first answers and check the fact family.",
+            action: "Review mistakes, then retry this level."
+          };
+        }
+        if (profile.status === "nearlySecure" || profile.improving) {
+          return {
+            title: "Guide coach",
+            kicker: progressSignal(profile),
+            body: "You are close. Keep accuracy calm first, then let your speed build.",
+            action: "Use practice once, then retry the sprint."
+          };
+        }
+        if (profile.status === "notStarted") {
+          return {
+            title: "Guide coach",
+            kicker: "Ready",
+            body: "This skill has no saved attempts yet. A short practice round gives you a clean start.",
+            action: "Start fluency practice before a sprint."
+          };
+        }
+        return {
+          title: "Guide coach",
+          kicker: progressSignal(profile),
+          body: "Build a few clean attempts and watch the graph for a steadier line.",
+          action: "Aim for accurate first answers before chasing speed."
+        };
+      }
+
+      function coachAdviceForResult(session) {
+        if (!state.student || !session) return null;
+        var followUp = diagnosticFollowUp(session);
+        var mistakes = session.mistakes || [];
+        var accuracy = Number(session.accuracy) || 0;
+        var attempted = Number(session.attempted) || 0;
+        if (mistakes.length) {
+          return {
+            title: "Guide coach",
+            kicker: "Review",
+            body: "Corrections are useful. Your accuracy still keeps the first answer so the graph shows what to practise.",
+            action: "Review mistakes before the next attempt."
+          };
+        }
+        if (followUp) {
+          return {
+            title: "Guide coach",
+            kicker: followUp.title,
+            body: followUp.body,
+            action: followUp.level ? followUp.action + ": " + followUp.level.name + "." : "Choose another operation when you are ready."
+          };
+        }
+        if (accuracy >= 90 && attempted >= 20) {
+          return {
+            title: "Guide coach",
+            kicker: "Strong run",
+            body: "That was accurate and fluent. Keep the skill warm or step up when the climb allows it.",
+            action: "Try the next unlocked sprint."
+          };
+        }
+        if (accuracy >= 85) {
+          return {
+            title: "Guide coach",
+            kicker: "Accurate",
+            body: "Your accuracy is in a useful range. A repeat attempt can help make the skill steadier.",
+            action: "Repeat once, then check your graph."
+          };
+        }
+        return {
+          title: "Guide coach",
+          kicker: "Next try",
+          body: "Take the next round a little slower and focus on clean first answers.",
+          action: "Use practice mode before another sprint."
+        };
+      }
+
+      function coachNPCPanel(advice) {
+        if (!advice) return "";
+        return [
+          '<section class="panel section coach-panel">',
+          '  <div class="coach-avatar" aria-hidden="true">i</div>',
+          '  <div class="stack coach-copy">',
+          '    <div class="between">',
+          '      <h3>' + escapeHTML(advice.title || "Guide coach") + '</h3>',
+          advice.kicker ? '      <span class="pill">' + escapeHTML(advice.kicker) + '</span>' : '',
+          '    </div>',
+          '    <p class="muted">' + escapeHTML(advice.body || "") + '</p>',
+          advice.action ? '    <p class="tiny"><strong>Try this:</strong> ' + escapeHTML(advice.action) + '</p>' : '',
+          '  </div>',
+          '</section>'
+        ].join("");
+      }
+
       function rewardPrefsForStudent(studentId) {
         var id = studentId || (state.student && state.student.id) || "guest";
         var prefs = state.rewardPrefs[id] || {};
@@ -3515,7 +3674,8 @@
           var startLevel = diagnosticStartLevelForOperation(currentStudentRecord(), state.selectedOperation);
           state.selectedLevelId = startLevel ? startLevel.id : levels[0].id;
         }
-        var tablePractice = customTableLevel(levelById(state.selectedLevelId));
+        var selectedLevel = levelById(state.selectedLevelId);
+        var tablePractice = customTableLevel(selectedLevel);
         return [
           '<div class="page">',
           header(),
@@ -3529,6 +3689,7 @@
           '  </section>',
           messageHTML(),
           studentRewardPanel(),
+          coachNPCPanel(coachAdviceForStudent(selectedLevel)),
           '  <section class="panel section stack student-menu-panel">',
           '    <div>',
           '      <h3>Operation</h3>',
@@ -4250,6 +4411,7 @@
           r.saveError ? '<div class="notice danger">Could not save to Supabase: ' + escapeHTML(r.saveError) + '</div>' : '',
           r.synced ? '<div class="notice success">Saved to teacher dashboard.</div>' : '',
           diagnosticFollowUpHTML(r),
+          coachNPCPanel(coachAdviceForResult(r)),
           '  <section class="grid two result-actions">',
           '    <button class="tile" data-action="retry-level"><span class="iconbox">R</span><h3>Try again</h3><p class="muted">Repeat the same level.</p></button>',
           '    <button class="tile" data-action="review-mistakes" ' + (r.mistakes.length ? "" : "disabled") + '><span class="iconbox">?</span><h3>Review mistakes</h3><p class="muted">' + r.mistakes.length + ' items to revisit.</p></button>',

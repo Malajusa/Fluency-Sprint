@@ -273,6 +273,12 @@ Sprint mode is the game/progression layer:
 
 Rewards should attach mainly to sprint completion so the fun loop supports fluency rather than blocking exploration.
 
+The long-term reward identity should be a customisable cartoon human avatar, not uploaded photos or realistic student images. Sprint coins and trophy achievements should unlock avatar options such as facial features, skin colour, hair styles, outfits, accessories, and celebration poses. Printable trophy certificates should be able to feature the student's avatar in an earned celebration pose.
+
+The progression model should also support a helpful guide NPC. The NPC should explain the next recommended focus, offer strategy tips, and point students to the right practice guide or sprint step. It should use concise, encouraging language and avoid ranking or diagnostic labels.
+
+The initial guide NPC can ship as a text-first coach panel using existing session evidence. Future releases can pair the same advice model with the custom cartoon avatar and certificate visuals.
+
 ## Teacher dashboard behaviour
 
 The dashboard should eventually show:
