@@ -1,0 +1,1 @@
+Final marker before restoring index.
