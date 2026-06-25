@@ -1,0 +1,1 @@
+Temporary trigger file for the Mr Slay helper patch workflow. This should be removed after the workflow applies the index.html patch.
