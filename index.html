@@ -1243,8 +1243,8 @@
       border-radius: 24px;
       display: grid;
       place-items: center;
-      background: #1f2937;
-      color: white;
+      background: #fff7ed;
+      color: var(--ink);
       border: 4px solid #fed7aa;
       font-size: 2rem;
       font-weight: 950;
@@ -1331,6 +1331,101 @@
         height: 5rem;
       }
     }
+
+    /* Mr Slay visual upgrade v3 */
+    .mr-slay-portrait img,
+    .coach-avatar-image img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+      border-radius: inherit;
+    }
+
+    .coach-avatar-image {
+      width: 4.75rem;
+      height: 4.75rem;
+      border-radius: 20px;
+      border: 3px solid #fed7aa;
+      box-shadow: var(--shadow);
+      background: #fff7ed;
+      overflow: hidden;
+      padding: 0;
+    }
+
+
+    /* Four-operation diagnostic foundation */
+    .diagnostic-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.8rem;
+    }
+
+    .diagnostic-card {
+      border: 2px solid var(--line);
+      border-radius: var(--radius);
+      background: white;
+      padding: 0.9rem;
+      display: grid;
+      gap: 0.45rem;
+      min-height: 8.5rem;
+    }
+
+    .diagnostic-card.secure { border-color: #b6e4bd; background: #ecfff0; }
+    .diagnostic-card.nearly { border-color: #b9d6ff; background: #eef6ff; }
+    .diagnostic-card.building { border-color: #f3d28b; background: #fff8df; }
+    .diagnostic-card.focus { border-color: #ffc7bd; background: #fff1ef; }
+    .diagnostic-card.none { background: #f8fafc; }
+
+    .diagnostic-op-symbol {
+      width: 2.35rem;
+      height: 2.35rem;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      background: var(--ink);
+      color: white;
+      font-weight: 950;
+      font-size: 1.15rem;
+    }
+
+    .diagnostic-summary-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.8rem;
+    }
+
+    @media (max-width: 860px) {
+      .diagnostic-grid,
+      .diagnostic-summary-row { grid-template-columns: 1fr; }
+    }
+
+
+    /* Four-operation progress graph */
+    .operation-progress-graph { display: grid; gap: 1rem; }
+    .operation-progress-chart { width: 100%; overflow-x: auto; border: 2px solid var(--line); border-radius: var(--radius); background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%); padding: 0.5rem; }
+    .operation-progress-chart svg { display: block; min-width: 720px; width: 100%; height: auto; }
+    .operation-progress-grid-line { stroke: #d7deea; stroke-width: 1.5; stroke-dasharray: 5 6; }
+    .operation-progress-axis { stroke: #172033; stroke-width: 2; }
+    .operation-progress-label { fill: var(--muted); font-size: 13px; font-weight: 800; }
+    .operation-progress-stage-label { fill: var(--ink); font-size: 14px; font-weight: 900; }
+    .operation-progress-line { fill: none; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+    .operation-progress-dot { stroke: white; stroke-width: 3; }
+    .operation-progress-legend { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+    .operation-progress-legend-item { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.35rem 0.55rem; border: 1px solid var(--line); border-radius: 999px; background: white; font-weight: 900; font-size: 0.82rem; }
+    .operation-progress-swatch { width: 0.9rem; height: 0.9rem; border-radius: 999px; display: inline-block; }
+
+
+    /* Common mistake observation bank */
+    .mistake-bank-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1rem; }
+    .mistake-bank-card { border: 2px solid var(--line); border-radius: var(--radius); background: white; padding: 0.95rem; display: grid; gap: 0.45rem; }
+    .mistake-bank-card.priority { border-color: #ffc7bd; background: #fff1ef; }
+    .mistake-bank-card.watch { border-color: #f3d28b; background: #fff8df; }
+    .mistake-bank-card.ready { border-color: #b6e4bd; background: #ecfff0; }
+    .mistake-bank-evidence { border-left: 4px solid var(--gold); padding-left: 0.7rem; color: var(--muted); font-size: 0.86rem; }
+    .mistake-bank-tag { display: inline-flex; align-items: center; min-height: 1.8rem; border: 1px solid var(--line); border-radius: 999px; padding: 0.25rem 0.55rem; background: white; font-weight: 900; font-size: 0.78rem; color: var(--muted); }
+    @media (max-width: 860px) { .mistake-bank-grid { grid-template-columns: 1fr; } }
+
     @media (min-width: 861px) and (max-width: 1180px) and (orientation: landscape) {
       .practice-layout {
         grid-template-columns: minmax(0, 1fr) minmax(15rem, 19rem);
@@ -1953,7 +2048,7 @@
         active: null,
         results: null,
         reviewIndex: 0,
-                mrSlayOpen: false,
+        mrSlayOpen: false,
         message: "",
         previewMode: false,
         backendMode: !!supabaseClient,
@@ -3982,6 +4077,126 @@
         ].join("");
       }
 
+
+      var FOUR_OPERATION_DIAGNOSTIC_OPERATIONS = ["addition", "subtraction", "multiplication", "division"];
+
+      function diagnosticOperationProfile(student, operation) {
+        var sessions = student ? sessionsForStudent(student.id).filter(function (session) {
+          return session.mode === "sprint" && sessionMatchesOperation(session, operation);
+        }) : [];
+        var ordered = sessions.slice().sort(function (a, b) {
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        });
+        var recent = ordered.slice(-2);
+        var attempts = sum(ordered.map(function (session) { return Number(session.attempted) || 0; }));
+        var bestAccuracy = ordered.length ? Math.max.apply(null, ordered.map(function (session) { return Number(session.accuracy) || 0; })) : null;
+        var recentAccuracy = recent.length ? Math.round(avg(recent.map(function (session) { return Number(session.accuracy) || 0; }))) : null;
+        var latest = ordered[ordered.length - 1] || null;
+        var status = "notStarted";
+        var label = "Not started";
+        var className = "none";
+        if (ordered.length && attempts >= 10 && bestAccuracy >= 85) {
+          status = "secure";
+          label = "Secure";
+          className = "secure";
+        } else if (ordered.length && attempts >= 10 && recentAccuracy != null && recentAccuracy >= 75) {
+          status = "nearlySecure";
+          label = "Nearly secure";
+          className = "nearly";
+        } else if (ordered.length) {
+          status = "building";
+          label = "Building";
+          className = "building";
+        }
+        return { operation: operation, label: label, status: status, className: className, sessions: ordered.length, attempts: attempts, bestAccuracy: bestAccuracy, recentAccuracy: recentAccuracy, latest: latest };
+      }
+
+      function fourOperationDiagnosticProfile(student) {
+        var profiles = FOUR_OPERATION_DIAGNOSTIC_OPERATIONS.map(function (operation) { return diagnosticOperationProfile(student, operation); });
+        var started = profiles.filter(function (profile) { return profile.sessions > 0; });
+        var strongest = started.slice().sort(function (a, b) { return (b.bestAccuracy || 0) - (a.bestAccuracy || 0) || b.attempts - a.attempts; })[0] || null;
+        var focus = profiles.find(function (profile) { return profile.status === "notStarted"; }) || profiles.find(function (profile) { return profile.status === "building"; }) || profiles.find(function (profile) { return profile.status === "nearlySecure"; }) || profiles[0];
+        var secureCount = profiles.filter(function (profile) { return profile.status === "secure"; }).length;
+        return { profiles: profiles, strongest: strongest, focus: focus, secureCount: secureCount };
+      }
+
+      function diagnosticOperationEvidence(profile) {
+        if (!profile || !profile.sessions) return "No diagnostic sprint yet.";
+        var parts = [];
+        parts.push(profile.sessions + " sprint" + (profile.sessions === 1 ? "" : "s"));
+        if (profile.bestAccuracy != null) parts.push("best " + profile.bestAccuracy + "%");
+        if (profile.recentAccuracy != null) parts.push("recent " + profile.recentAccuracy + "%");
+        return parts.join(", ");
+      }
+
+      function diagnosticOperationCard(profile) {
+        var op = OPERATIONS.find(function (item) { return item.id === profile.operation; }) || { label: profile.operation, symbol: "?" };
+        return [
+          '<article class="diagnostic-card ' + escapeHTML(profile.className) + '">',
+          '  <div class="between" style="gap:0.5rem">',
+          '    <div class="diagnostic-op-symbol">' + escapeHTML(op.symbol) + '</div>',
+          '    <span class="proficiency ' + escapeHTML(profile.className) + '">' + escapeHTML(profile.label) + '</span>',
+          '  </div>',
+          '  <h3>' + escapeHTML(op.label) + '</h3>',
+          '  <p class="tiny muted">' + escapeHTML(diagnosticOperationEvidence(profile)) + '</p>',
+          '  <button class="btn ghost" data-action="start-diagnostic" data-operation="' + escapeHTML(profile.operation) + '">Check ' + escapeHTML(op.label.toLowerCase()) + '</button>',
+          '</article>'
+        ].join("");
+      }
+
+      function studentFourOperationDiagnosticPanel() {
+        var student = currentStudentRecord();
+        if (!student) return "";
+        var profile = fourOperationDiagnosticProfile(student);
+        var strongestText = profile.strongest ? operationLabel(profile.strongest.operation) + " (" + (profile.strongest.bestAccuracy == null ? "--" : profile.strongest.bestAccuracy + "%") + ")" : "Needs first diagnostic";
+        var focusText = profile.focus ? operationLabel(profile.focus.operation) : "None";
+        return [
+          '<section class="panel section stack">',
+          '  <div class="between">',
+          '    <div><span class="pill">4 operations check-up</span><h3>Diagnostic snapshot</h3><p class="muted">Check each core operation so your practice path is based on evidence.</p></div>',
+          '    <button class="btn gold" data-action="start-diagnostic" data-operation="' + escapeHTML(profile.focus.operation) + '">Start next diagnostic</button>',
+          '  </div>',
+          '  <div class="diagnostic-summary-row">',
+          statHTML("Secure operations", profile.secureCount + "/4"),
+          statHTML("Strongest", strongestText),
+          statHTML("Focus", focusText),
+          '  </div>',
+          '  <div class="diagnostic-grid">' + profile.profiles.map(diagnosticOperationCard).join("") + '</div>',
+          '</section>'
+        ].join("");
+      }
+
+      function diagnosticRecommendationForStudent(student) {
+        var profile = fourOperationDiagnosticProfile(student);
+        if (!profile.focus) return "No focus needed.";
+        if (profile.focus.status === "notStarted") return "Start " + operationLabel(profile.focus.operation) + " diagnostic.";
+        if (profile.focus.status === "building") return "Practise " + operationLabel(profile.focus.operation).toLowerCase() + ", then repeat the diagnostic sprint.";
+        if (profile.focus.status === "nearlySecure") return "Repeat " + operationLabel(profile.focus.operation).toLowerCase() + " to confirm security.";
+        return "All four operation diagnostics are secure.";
+      }
+
+      function fourOperationDiagnosticClassPanel(students, compact) {
+        if (!students || !students.length) return "";
+        var rows = students.map(function (student) { var profile = fourOperationDiagnosticProfile(student); return { student: student, profile: profile, focus: profile.focus }; }).sort(function (a, b) { return a.profile.secureCount - b.profile.secureCount; });
+        return [
+          '<section class="panel section stack">',
+          '  <div><h3>4 operations diagnostic</h3><p class="muted">' + (compact ? "Class evidence across addition, subtraction, multiplication and division." : "Use this to see who needs an initial diagnostic or follow-up practice.") + '</p></div>',
+          '  <table><thead><tr><th>Student</th><th>Secure</th><th>Strongest</th><th>Focus</th><th>Recommendation</th></tr></thead><tbody>',
+          rows.map(function (row) {
+            var strongest = row.profile.strongest ? operationLabel(row.profile.strongest.operation) + ' (' + (row.profile.strongest.bestAccuracy == null ? '--' : row.profile.strongest.bestAccuracy + '%') + ')' : '--';
+            return ['<tr>','<td><strong>' + escapeHTML(studentFullName(row.student)) + '</strong><div class="tiny muted">' + escapeHTML(row.student.alias) + '</div></td>','<td>' + row.profile.secureCount + '/4</td>','<td>' + escapeHTML(strongest) + '</td>','<td>' + (row.focus ? '<span class="proficiency ' + escapeHTML(row.focus.className) + '">' + escapeHTML(operationLabel(row.focus.operation)) + '</span><div class="tiny muted">' + escapeHTML(diagnosticOperationEvidence(row.focus)) + '</div>' : '--') + '</td>','<td>' + escapeHTML(diagnosticRecommendationForStudent(row.student)) + '</td>','</tr>'].join("");
+          }).join(""),
+          '  </tbody></table>',
+          '</section>'
+        ].join("");
+      }
+
+      function studentFourOperationDiagnosticEvidencePanel(student) {
+        if (!student) return "";
+        var profile = fourOperationDiagnosticProfile(student);
+        return ['<section class="panel section stack">','  <div><h3>4 operations diagnostic evidence</h3><p class="muted">Current evidence from diagnostic sprint attempts.</p></div>','  <div class="diagnostic-grid">' + profile.profiles.map(diagnosticOperationCard).join("") + '</div>','</section>'].join("");
+      }
+
       function studentMenuView() {
         var levels = LEVELS.filter(function (level) { return level.operation === state.selectedOperation; });
         if (!levels.some(function (level) { return level.id === state.selectedLevelId; })) {
@@ -4002,6 +4217,7 @@
           '    <button class="btn ghost" data-action="home">Home</button>',
           '  </section>',
           messageHTML(),
+          studentFourOperationDiagnosticPanel(),
           studentRewardPanel(),
           coachNPCPanel(coachAdviceForStudent(selectedLevel)),
           '  <section class="panel section stack student-menu-panel">',
@@ -4472,7 +4688,7 @@
           '    </div>',
           '    <div class="mr-slay-grid">',
           '      <aside class="mr-slay-card">',
-          '        <div class="mr-slay-portrait" aria-hidden="true">MS</div>',
+          '        <div class="mr-slay-portrait" aria-hidden="true"><img src="assets/mr-slay-npc.jpg" alt=""></div>',
           '        <div><h3>Mr Slay says...</h3><p class="muted tiny">Use the strategy, then try your question again.</p></div>',
           '        <div class="mr-slay-bubble">' + escapeHTML(helper.bubble || "Try a known fact first.") + '</div>',
           '      </aside>',
@@ -4501,6 +4717,7 @@
           '    </div>',
           '    <div class="row">',
           active.mode === "sprint" ? '<span class="pill">Time: ' + active.timeLeft + 's</span>' : '<span class="pill">No timer</span>',
+          mrSlayHelperButton(active),
           '      <button class="btn ghost" data-action="finish-session">Finish</button>',
           '    </div>',
           '  </section>',
@@ -4523,6 +4740,7 @@
           '      <div class="notice tiny">Use the keypad. Physical keyboards work too.</div>',
           '    </aside>',
           '  </section>',
+          mrSlayPanelHTML(active),
           '</main>',
           '</div>'
         ].join("");
@@ -4981,6 +5199,8 @@
           '  </div>',
           '</section>',
           dashboardReadinessPanel(students),
+          fourOperationDiagnosticClassPanel(students),
+          dashboardMistakeWatchPanel(students),
           addStudentForm(klass),
           studentImportForm(klass),
           studentTable(klass, students),
@@ -5084,7 +5304,9 @@
         return [
           classResultsSummary(klass, students, sessions),
           readinessResultsTable(students),
+          fourOperationDiagnosticClassPanel(students, true),
           classObservationBank(students),
+          classCommonMistakeBankPanel(students),
           growthPanel(klass, sessions),
           classProfileTable(students),
           timesTableClassProfile(students)
@@ -5206,6 +5428,38 @@
         ].join("");
       }
 
+
+      var FOUR_OPERATION_PROGRESS_GRAPH = [
+        { operation: "addition", label: "Addition", colour: "#0f9f8f" },
+        { operation: "subtraction", label: "Subtraction", colour: "#f05d4f" },
+        { operation: "multiplication", label: "Multiplication", colour: "#3c75d8" },
+        { operation: "division", label: "Division", colour: "#f4b63d" }
+      ];
+
+      function firstFourOperationStageLevels(operation) { return pathwayLevelsForOperation(operation).slice(0, 4); }
+      function bestAccuracyForStudentLevel(studentId, levelId) { var sessions = sessionsForChallenge(studentId, levelId); if (!sessions.length) return null; return Math.max.apply(null, sessions.map(function (session) { return Number(session.accuracy) || 0; })); }
+      function fourOperationProgressGraphData(student) { if (!student) return []; return FOUR_OPERATION_PROGRESS_GRAPH.map(function (entry) { var levels = firstFourOperationStageLevels(entry.operation); var points = [0, 1, 2, 3].map(function (stageIndex) { var level = levels[stageIndex] || null; var accuracy = level ? bestAccuracyForStudentLevel(student.id, level.id) : null; return { stage: stageIndex + 1, level: level, accuracy: accuracy }; }); return Object.assign({}, entry, { points: points }); }); }
+      function svgText(value) { return escapeHTML(value == null ? "" : value); }
+      function operationProgressPolyline(points, left, top, chartWidth, chartHeight) { var valid = points.filter(function (point) { return point.accuracy != null; }); if (!valid.length) return ""; return valid.map(function (point) { var x = left + ((point.stage - 1) / 3) * chartWidth; var y = top + ((100 - point.accuracy) / 100) * chartHeight; return Math.round(x * 10) / 10 + "," + Math.round(y * 10) / 10; }).join(" "); }
+      function operationProgressDots(points, colour, left, top, chartWidth, chartHeight) { return points.filter(function (point) { return point.accuracy != null; }).map(function (point) { var x = left + ((point.stage - 1) / 3) * chartWidth; var y = top + ((100 - point.accuracy) / 100) * chartHeight; var title = (point.level ? point.level.id + " " + point.level.name + ": " : "Stage " + point.stage + ": ") + point.accuracy + "%"; return '<circle class="operation-progress-dot" cx="' + x + '" cy="' + y + '" r="6" fill="' + colour + '"><title>' + svgText(title) + '</title></circle>'; }).join(""); }
+      function operationProgressGraphSVG(data) { var width = 760, height = 340, left = 64, right = 30, top = 26, bottom = 58; var chartWidth = width - left - right; var chartHeight = height - top - bottom; var grid = [100, 75, 50, 25, 0].map(function (value) { var y = top + ((100 - value) / 100) * chartHeight; return '<line class="operation-progress-grid-line" x1="' + left + '" y1="' + y + '" x2="' + (width - right) + '" y2="' + y + '"></line><text class="operation-progress-label" x="' + (left - 14) + '" y="' + (y + 5) + '" text-anchor="end">' + value + '%</text>'; }).join(""); var stages = [1, 2, 3, 4].map(function (stage) { var x = left + ((stage - 1) / 3) * chartWidth; return '<line class="operation-progress-grid-line" x1="' + x + '" y1="' + top + '" x2="' + x + '" y2="' + (height - bottom) + '"></line><text class="operation-progress-stage-label" x="' + x + '" y="' + (height - 25) + '" text-anchor="middle">Stage ' + stage + '</text>'; }).join(""); var lines = data.map(function (entry) { var points = operationProgressPolyline(entry.points, left, top, chartWidth, chartHeight); if (!points) return ""; return '<polyline class="operation-progress-line" points="' + points + '" stroke="' + entry.colour + '"><title>' + svgText(entry.label) + '</title></polyline>'; }).join(""); var dots = data.map(function (entry) { return operationProgressDots(entry.points, entry.colour, left, top, chartWidth, chartHeight); }).join(""); return '<svg viewBox="0 0 ' + width + ' ' + height + '" role="img" aria-label="Four-operation progress graph"><rect x="0" y="0" width="' + width + '" height="' + height + '" rx="18" fill="white"></rect>' + grid + stages + '<line class="operation-progress-axis" x1="' + left + '" y1="' + top + '" x2="' + left + '" y2="' + (height - bottom) + '"></line><line class="operation-progress-axis" x1="' + left + '" y1="' + (height - bottom) + '" x2="' + (width - right) + '" y2="' + (height - bottom) + '"></line>' + lines + dots + '</svg>'; }
+      function operationProgressLegend(data) { return '<div class="operation-progress-legend">' + data.map(function (entry) { return '<span class="operation-progress-legend-item"><span class="operation-progress-swatch" style="background:' + entry.colour + '"></span>' + escapeHTML(entry.label) + '</span>'; }).join("") + '</div>'; }
+      function operationProgressEvidenceTable(data) { return ['<table><thead><tr><th>Operation</th><th>Stage 1</th><th>Stage 2</th><th>Stage 3</th><th>Stage 4</th></tr></thead><tbody>', data.map(function (entry) { return ['<tr>','<td><strong>' + escapeHTML(entry.label) + '</strong></td>', entry.points.map(function (point) { if (!point.level) return '<td>--</td>'; return '<td>' + (point.accuracy == null ? "--" : point.accuracy + "%") + '<div class="tiny muted">' + escapeHTML(point.level.id + " " + point.level.name) + '</div></td>'; }).join(""), '</tr>'].join(""); }).join(""), '</tbody></table>'].join(""); }
+      function studentFourOperationProgressGraphPanel(student) { if (!student) return ""; var data = fourOperationProgressGraphData(student); var hasData = data.some(function (entry) { return entry.points.some(function (point) { return point.accuracy != null; }); }); return ['<section class="panel section stack operation-progress-graph">','  <div><h3>4 operations progress graph</h3><p class="muted">Best accuracy across the first four stages of addition, subtraction, multiplication and division. Mixed operations are excluded.</p></div>', hasData ? '  <div class="operation-progress-chart">' + operationProgressGraphSVG(data) + '</div>' : '  <div class="empty">No saved stage data yet. Complete diagnostic sprints or practice sessions to start the graph.</div>', operationProgressLegend(data), operationProgressEvidenceTable(data), '</section>'].join(""); }
+
+
+      function allMistakesForSession(session) { return (session && Array.isArray(session.mistakes) ? session.mistakes : []).map(function (mistake) { return Object.assign({}, mistake, { sessionId: session.id, studentId: session.studentId, studentAlias: session.studentAlias, classId: session.classId, sessionDate: session.createdAt, sessionLevelId: session.levelId, sessionLevelName: session.levelName, sessionMode: session.mode, sessionAccuracy: session.accuracy }); }); }
+      function mistakesForStudent(studentId) { return sessionsForStudent(studentId).reduce(function (items, session) { return items.concat(allMistakesForSession(session)); }, []).sort(function (a, b) { return new Date(b.sessionDate).getTime() - new Date(a.sessionDate).getTime(); }); }
+      function mistakesForClassStudents(students) { return students.reduce(function (items, student) { return items.concat(mistakesForStudent(student.id).map(function (mistake) { return Object.assign({}, mistake, { studentName: studentFullName(student), alias: student.alias }); })); }, []); }
+      function mistakeTags(mistake) { return Array.isArray(mistake.tags) ? mistake.tags : []; }
+      function mistakePattern(mistake) { var tags = mistakeTags(mistake); var text = String(mistake.question || ""); var operation = mistake.operation || ""; if (tags.indexOf("metric") >= 0 || operation === "measurement") return { id: "metric-place-value", label: "Metric place-value conversion", operation: "measurement", strategy: "Revisit whether the new unit is smaller or larger before multiplying or dividing.", teacherCue: "Ask the student to say the starting unit, target unit and whether the number should get larger or smaller." }; if (tags.indexOf("friends1000") >= 0 || tags.indexOf("friends1500") >= 0 || tags.indexOf("friends100") >= 0 || tags.indexOf("friends150") >= 0) return { id: "place-value-complements", label: "Place-value complements", operation: operation || "addition/subtraction", strategy: "Use part-part-whole and place value to find the missing complement.", teacherCue: "Have the student partition the target number before naming the missing part." }; if (tags.indexOf("bridge") >= 0) return { id: "bridging-through-ten", label: "Bridging through 10", operation: operation || "addition/subtraction", strategy: "Split the second number to land on 10 first.", teacherCue: "Ask: how many to 10, and what is left?" }; if (tags.indexOf("missing") >= 0 || text.indexOf("?") >= 0) return { id: "unknown-part", label: "Unknown part / missing number", operation: operation || "mixed", strategy: "Turn the equation into a part-part-whole relationship.", teacherCue: "Ask the student to identify the whole and the known part before calculating." }; if (operation === "division" || tags.indexOf("reverseDivision") >= 0) return { id: "division-fact-family", label: "Division fact family recall", operation: "division", strategy: "Turn the division fact into the related multiplication fact.", teacherCue: "Prompt: what times the divisor gives the total?" }; if (operation === "multiplication" || tags.some(function (tag) { return /^times\d+$/.test(tag); })) { var tableTag = tags.find(function (tag) { return /^times\d+$/.test(tag); }); var table = tableTag ? tableTag.replace("times", "") : ""; return { id: table ? "times-table-" + table : "multiplication-fact-recall", label: table ? table + " times-table recall" : "Multiplication fact recall", operation: "multiplication", strategy: table ? "Use the taught strategy for the " + table + "s before answering." : "Use a known fact, double, or nearby fact.", teacherCue: table ? "Ask the student to explain the " + table + "s strategy, not just give the answer." : "Ask which known fact helped." }; } if (operation === "subtraction") return { id: "subtraction-known-facts", label: "Subtraction known facts", operation: "subtraction", strategy: "Use a known addition fact or count back only for small amounts.", teacherCue: "Ask whether this is a take-away fact or a missing-part fact." }; if (operation === "addition") return { id: "addition-known-facts", label: "Addition known facts", operation: "addition", strategy: "Look for friends of 10, doubles or near doubles.", teacherCue: "Ask which known fact pattern is visible." }; return { id: "accuracy-and-checking", label: "Accuracy and checking", operation: operation || "mixed", strategy: "Slow down, name the operation and check the answer size.", teacherCue: "Prompt the student to estimate whether the answer should be larger or smaller." }; }
+      function mistakeObservationFromPattern(pattern, count, examples) { var frequency = count >= 5 ? "priority" : (count >= 2 ? "watch" : "ready"); var firstExample = examples && examples.length ? examples[0] : null; var evidence = firstExample ? firstExample.question + " -> answered " + firstExample.studentAnswer + ", expected " + firstExample.correctAnswer : "No example available."; return { pattern: pattern, count: count, frequency: frequency, evidence: evidence, strategy: pattern.strategy, teacherCue: pattern.teacherCue }; }
+      function groupedMistakeObservations(mistakes) { var grouped = {}; mistakes.forEach(function (mistake) { var pattern = mistakePattern(mistake); if (!grouped[pattern.id]) grouped[pattern.id] = { pattern: pattern, examples: [] }; grouped[pattern.id].examples.push(mistake); }); return Object.keys(grouped).map(function (key) { var group = grouped[key]; return mistakeObservationFromPattern(group.pattern, group.examples.length, group.examples); }).sort(function (a, b) { return b.count - a.count; }); }
+      function mistakeObservationCard(observation) { return ['<article class="mistake-bank-card ' + escapeHTML(observation.frequency) + '">','  <div class="between" style="gap:0.5rem">','    <h3>' + escapeHTML(observation.pattern.label) + '</h3>','    <span class="mistake-bank-tag">' + observation.count + ' error' + (observation.count === 1 ? "" : "s") + '</span>','  </div>','  <p class="mistake-bank-evidence">' + escapeHTML(observation.evidence) + '</p>','  <p><strong>Teaching cue:</strong> ' + escapeHTML(observation.teacherCue) + '</p>','  <p class="muted"><strong>Student strategy:</strong> ' + escapeHTML(observation.strategy) + '</p>','</article>'].join(""); }
+      function studentCommonMistakePanel(student) { if (!student) return ""; var mistakes = mistakesForStudent(student.id).slice(0, 30); var observations = groupedMistakeObservations(mistakes).slice(0, 4); return ['<section class="panel section stack">','  <div><h3>Common mistake observations</h3><p class="muted">Generated from recent saved mistakes. Use as a teacher prompt, not as a fixed judgement.</p></div>', observations.length ? '<div class="mistake-bank-grid">' + observations.map(mistakeObservationCard).join("") + '</div>' : '<div class="empty">No saved mistakes yet. Observation prompts will appear after practice or sprint errors.</div>','</section>'].join(""); }
+      function classCommonMistakeBankPanel(students) { if (!students || !students.length) return ""; var observations = groupedMistakeObservations(mistakesForClassStudents(students)).slice(0, 6); return ['<section class="panel section stack">','  <div><h3>Class common mistake bank</h3><p class="muted">Patterns across saved student errors. Useful for mini-lessons, small groups and reteach planning.</p></div>', observations.length ? '<div class="mistake-bank-grid">' + observations.map(mistakeObservationCard).join("") + '</div>' : '<div class="empty">No saved mistakes yet. Class-wide observation patterns will appear after students complete sessions.</div>','</section>'].join(""); }
+      function dashboardMistakeWatchPanel(students) { if (!students || !students.length) return ""; var rows = students.map(function (student) { var observations = groupedMistakeObservations(mistakesForStudent(student.id)).slice(0, 1); return { student: student, observation: observations[0] || null }; }).filter(function (row) { return !!row.observation; }).sort(function (a, b) { return b.observation.count - a.observation.count; }).slice(0, 6); if (!rows.length) return ""; return ['<section class="panel section stack">','  <div><h3>Observation watchlist</h3><p class="muted">Highest-frequency current error pattern for students with saved mistakes.</p></div>','  <table><thead><tr><th>Student</th><th>Pattern</th><th>Evidence</th><th>Teaching cue</th></tr></thead><tbody>', rows.map(function (row) { return ['<tr>','<td><strong>' + escapeHTML(studentFullName(row.student)) + '</strong><div class="tiny muted">' + escapeHTML(row.student.alias) + '</div></td>','<td>' + escapeHTML(row.observation.pattern.label) + '<div class="tiny muted">' + row.observation.count + ' error' + (row.observation.count === 1 ? "" : "s") + '</div></td>','<td>' + escapeHTML(row.observation.evidence) + '</td>','<td>' + escapeHTML(row.observation.teacherCue) + '</td>','</tr>'].join(""); }).join(""),'  </tbody></table>','</section>'].join(""); }
+
       function studentResultsPanel(klass) {
         var students = studentsForClass(klass.id);
         if (!students.length) return '<div class="empty">Add students before viewing student results.</div>';
@@ -5227,8 +5481,11 @@
           '  </div>',
           studentResultsSummary(sessions),
           '</section>',
+          studentFourOperationDiagnosticEvidencePanel(student),
+          studentFourOperationProgressGraphPanel(student),
           studentYearPathwayPanel(student),
           studentObservationPanel(student),
+          studentCommonMistakePanel(student),
           studentChallengeProgressPanel(student.id, levelId, "Selected challenge", true, false),
           timesTableStudentProfile(student),
           studentSessionsTable(student)
