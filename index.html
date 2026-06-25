@@ -1198,6 +1198,191 @@
       }
     }
 
+
+    /* Update 06: lesson-first fluency architecture */
+    .fluency-lesson-hero {
+      display: grid;
+      grid-template-columns: minmax(13rem, 0.8fr) minmax(0, 1.45fr);
+      gap: 1rem;
+      align-items: stretch;
+      border: 3px solid #fed7aa;
+      background: linear-gradient(135deg, #fff7ed 0%, #ffffff 55%, #eefcff 100%);
+    }
+
+    .fluency-lesson-hero .mr-slay-card {
+      min-height: 100%;
+    }
+
+    .fluency-lesson-copy {
+      display: grid;
+      gap: 0.65rem;
+      align-content: start;
+    }
+
+    .fluency-lesson-copy h2 {
+      font-size: clamp(2rem, 5vw, 3.8rem);
+      line-height: 0.95;
+    }
+
+    .fluency-flow {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.7rem;
+    }
+
+    .fluency-flow-step {
+      border: 2px solid var(--line);
+      border-radius: var(--radius);
+      background: white;
+      padding: 0.85rem;
+    }
+
+    .fluency-flow-step strong {
+      display: block;
+      color: var(--teal-dark);
+      margin-bottom: 0.25rem;
+    }
+
+    .fluency-lesson-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+      gap: 1rem;
+      align-items: stretch;
+    }
+
+    .fluency-whiteboard {
+      border: 3px solid #cbd5e1;
+      border-radius: var(--radius);
+      background:
+        linear-gradient(90deg, rgba(15, 159, 143, 0.06) 1px, transparent 1px),
+        linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+      background-size: 34px 34px, auto;
+      padding: 1rem;
+      min-height: 20rem;
+      box-shadow: inset 0 0 0 2px rgba(203, 213, 225, 0.45);
+    }
+
+    .fluency-whiteboard h3 {
+      color: var(--blue);
+      margin-bottom: 0.8rem;
+    }
+
+    .fluency-board-lines {
+      display: grid;
+      gap: 0.45rem;
+      font-size: clamp(1.1rem, 2.5vw, 1.85rem);
+      line-height: 1.25;
+      font-weight: 900;
+    }
+
+    .fluency-board-line {
+      color: #172033;
+    }
+
+    .fluency-board-line.final {
+      color: var(--teal-dark);
+      text-decoration: underline;
+      text-decoration-thickness: 3px;
+      text-underline-offset: 0.18em;
+    }
+
+    .fluency-visual {
+      display: grid;
+      gap: 0.45rem;
+      margin: 0.65rem 0 0.9rem;
+      font-size: clamp(1.2rem, 3vw, 2.1rem);
+      font-weight: 950;
+      letter-spacing: 0.08em;
+    }
+
+    .fluency-visual-row {
+      display: flex;
+      gap: 0.35rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .fluency-dot {
+      width: 1.15em;
+      height: 1.15em;
+      border-radius: 999px;
+      display: inline-grid;
+      place-items: center;
+      background: var(--teal);
+      color: white;
+      border: 2px solid var(--teal-dark);
+      font-size: 0.68em;
+      line-height: 1;
+    }
+
+    .fluency-dot.empty {
+      background: white;
+      color: var(--muted);
+      border-color: var(--line);
+    }
+
+    .fluency-dot.crossed {
+      background: #fee2e2;
+      color: #991b1b;
+      border-color: #fca5a5;
+    }
+
+    .fluency-mini-cards {
+      display: grid;
+      gap: 0.75rem;
+    }
+
+    .fluency-mini-card {
+      border: 2px solid var(--line);
+      border-radius: var(--radius);
+      background: white;
+      padding: 0.9rem;
+    }
+
+    .fluency-mini-card.warning {
+      border-color: #f3d28b;
+      background: #fff8df;
+    }
+
+    .fluency-mini-card.success {
+      border-color: #99f6e4;
+      background: #ecfdf5;
+    }
+
+    .fluency-practice-coach {
+      border: 2px solid #fed7aa;
+      background: linear-gradient(135deg, #fff7ed, #ffffff);
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 0.85rem;
+      align-items: center;
+    }
+
+    .fluency-practice-coach .mr-slay-portrait {
+      width: 4.5rem;
+      height: 4.5rem;
+      border-radius: 18px;
+      font-size: 1.25rem;
+    }
+
+    .fluency-practice-coach .coach-line {
+      font-weight: 900;
+      color: #172033;
+    }
+
+    @media (max-width: 860px) {
+      .fluency-lesson-hero,
+      .fluency-lesson-grid,
+      .fluency-flow,
+      .fluency-practice-coach {
+        grid-template-columns: 1fr;
+      }
+
+      .fluency-practice-coach .mr-slay-portrait {
+        width: 5.25rem;
+        height: 5.25rem;
+      }
+    }
     /* Mr Slay contextual helper NPC */
     .mr-slay-overlay {
       position: fixed;
@@ -4159,34 +4344,364 @@
         }).join("") + '</div>';
       }
 
+
+      // Update 06: lesson-first fluency architecture
+      function fluencyDotHTML(kind) {
+        var cls = "fluency-dot";
+        var text = "";
+        if (kind === "empty") {
+          cls += " empty";
+          text = "";
+        } else if (kind === "crossed") {
+          cls += " crossed";
+          text = "Ã—";
+        }
+        return '<span class="' + cls + '">' + text + '</span>';
+      }
+
+      function fluencyDotRow(filled, empty, crossed) {
+        var dots = [];
+        for (var i = 0; i < (filled || 0); i += 1) dots.push(fluencyDotHTML("filled"));
+        for (var j = 0; j < (empty || 0); j += 1) dots.push(fluencyDotHTML("empty"));
+        for (var k = 0; k < (crossed || 0); k += 1) dots.push(fluencyDotHTML("crossed"));
+        return '<div class="fluency-visual-row">' + dots.join("") + '</div>';
+      }
+
+      function fluencyTenFrameHTML(filled, crossed) {
+        var used = Math.max(0, Math.min(10, Number(filled || 0)));
+        var removed = Math.max(0, Math.min(10 - used, Number(crossed || 0)));
+        var totalFilled = used;
+        var totalCrossed = removed;
+        var totalEmpty = 10 - totalFilled - totalCrossed;
+        var cells = [];
+        for (var i = 0; i < totalFilled; i += 1) cells.push("filled");
+        for (var j = 0; j < totalCrossed; j += 1) cells.push("crossed");
+        for (var k = 0; k < totalEmpty; k += 1) cells.push("empty");
+        var top = cells.slice(0, 5).map(fluencyDotHTML).join("");
+        var bottom = cells.slice(5, 10).map(fluencyDotHTML).join("");
+        return '<div class="fluency-visual"><div class="fluency-visual-row">' + top + '</div><div class="fluency-visual-row">' + bottom + '</div></div>';
+      }
+
+      function fluencyBoardLinesHTML(lines) {
+        return '<div class="fluency-board-lines">' + (lines || []).map(function (line, index, items) {
+          return '<div class="fluency-board-line ' + (index === items.length - 1 ? "final" : "") + '">' + escapeHTML(line) + '</div>';
+        }).join("") + '</div>';
+      }
+
+      function fluencyStepsHTML(items) {
+        return '<ol class="guide-list">' + (items || []).map(function (item) {
+          return '<li>' + escapeHTML(item) + '</li>';
+        }).join("") + '</ol>';
+      }
+
+      function fluencyExampleHTML(example) {
+        return [
+          '<article class="fluency-mini-card">',
+          '  <h3>' + escapeHTML(example.title || "Worked example") + '</h3>',
+          fluencyBoardLinesHTML(example.lines || []),
+          '</article>'
+        ].join("");
+      }
+
+      function fluencyLessonForLevel(level, guide, levelName) {
+        var base = {
+          title: levelName || level.name,
+          badge: "Mini lesson first",
+          focus: guide.meaning,
+          visualTitle: "Look at the structure",
+          visualHTML: '<div class="fluency-visual"><div class="fluency-visual-row"><strong>' + escapeHTML(level.name) + '</strong></div></div>',
+          boardTitle: "Mr Slay models it",
+          boardLines: (guide.examples || []).slice(0, 3),
+          examples: [
+            { title: "Worked example", lines: (guide.examples || ["Read the question", "Choose a strategy", "Answer carefully"]).slice(0, 3) }
+          ],
+          guided: guide.guided || ["Read the whole question.", "Choose a strategy.", "Check your answer."],
+          retrievalPrompt: "Before practice, say the strategy out loud and solve one example without rushing.",
+          warning: "Speed comes after accuracy. If the answer does not make sense, slow down and check the structure.",
+          fluencyTarget: "Aim for correct, smooth answers first. The sprint comes after the method is secure."
+        };
+
+        var id = level.id;
+        var target = friendTargetFromTags(level.tags);
+
+        if (id === "A1") {
+          return Object.assign({}, base, {
+            title: "Add within 10",
+            focus: "Addition means joining parts to find the total.",
+            visualTitle: "Counters first",
+            visualHTML: '<div class="fluency-visual">' + fluencyDotRow(4, 0, 0) + '<div class="fluency-visual-row"><strong>+</strong></div>' + fluencyDotRow(3, 0, 0) + '</div>',
+            boardTitle: "Count on from the bigger part",
+            boardLines: ["4 + 3", "Start at 4", "Count on 3: 5, 6, 7", "4 + 3 = 7"],
+            examples: [
+              { title: "I do", lines: ["6 + 2", "Start at 6", "Count 7, 8", "6 + 2 = 8"] },
+              { title: "We do", lines: ["5 + 4", "Start at 5", "Count on 4", "5 + 4 = 9"] }
+            ],
+            guided: ["Touch each counter once.", "Do not count the starting number again.", "Say the full number sentence."],
+            retrievalPrompt: "Try: 7 + 2. Start at 7 and count on two.",
+            warning: "Do not count the first number twice.",
+            fluencyTarget: "Move from counting every counter to counting on from the bigger number."
+          });
+        }
+
+        if ((id === "A2" || id === "A3") && target === 10) {
+          return Object.assign({}, base, {
+            title: id === "A3" ? "Missing friends of 10" : "Friends of 10",
+            focus: "Friends of 10 are the parts that fill a ten-frame.",
+            visualTitle: "Fill the ten-frame",
+            visualHTML: fluencyTenFrameHTML(7, 0),
+            boardTitle: "Find the empty spaces",
+            boardLines: ["7 + ? = 10", "The ten-frame has 7 counters", "There are 3 empty spaces", "7 + 3 = 10"],
+            examples: [
+              { title: "I do", lines: ["4 + ? = 10", "Count the empty spaces", "4 needs 6", "4 + 6 = 10"] },
+              { title: "We do", lines: ["? + 8 = 10", "8 counters are shown", "2 spaces are empty", "2 + 8 = 10"] }
+            ],
+            guided: ["Find the whole: 10.", "Count the shown part.", "Count the missing spaces."],
+            retrievalPrompt: "Try: 6 + ? = 10. Picture the ten-frame.",
+            warning: "Do not guess. The empty spaces show the missing friend.",
+            fluencyTarget: "Know the ten pairs automatically: 1+9, 2+8, 3+7, 4+6, 5+5."
+          });
+        }
+
+        if (id === "A6") {
+          return Object.assign({}, base, {
+            title: "Bridge to 10",
+            focus: "Bridging means making 10 first, then adding what is left.",
+            visualTitle: "Use 10 as the bridge",
+            visualHTML: fluencyTenFrameHTML(8, 0),
+            boardTitle: "Split the second number",
+            boardLines: ["8 + 5", "8 needs 2 to make 10", "5 = 2 + 3", "10 + 3 = 13"],
+            examples: [
+              { title: "I do", lines: ["9 + 4", "9 needs 1", "4 = 1 + 3", "10 + 3 = 13"] },
+              { title: "We do", lines: ["7 + 6", "7 needs 3", "6 = 3 + 3", "10 + 3 = 13"] }
+            ],
+            guided: ["Ask how many to 10.", "Split the other number.", "Make 10, then add the leftover."],
+            retrievalPrompt: "Try: 8 + 7. How many does 8 need to make 10?",
+            warning: "Do not add the whole second number after you have already used part of it.",
+            fluencyTarget: "Spot the friend-of-10 part quickly."
+          });
+        }
+
+        if ((level.operation === "addition" || level.operation === "subtraction") && target && target > 10) {
+          return Object.assign({}, base, {
+            title: level.name,
+            focus: "Large friends use the same pattern as friends of 10, but with place value.",
+            visualTitle: "Use jumps to the target",
+            visualHTML: '<div class="fluency-visual"><div class="fluency-visual-row"><strong>gap â†’ next friendly number â†’ target</strong></div></div>',
+            boardTitle: "Count up to find the missing part",
+            boardLines: target === 100
+              ? ["36 + ? = 100", "36 â†’ 40 is 4", "40 â†’ 100 is 60", "4 + 60 = 64"]
+              : target === 1000
+                ? ["725 + ? = 1000", "725 â†’ 800 is 75", "800 â†’ 1000 is 200", "75 + 200 = 275"]
+                : target === 150
+                  ? ["90 + ? = 150", "90 â†’ 100 is 10", "100 â†’ 150 is 50", "10 + 50 = 60"]
+                  : ["900 + ? = 1500", "900 â†’ 1000 is 100", "1000 â†’ 1500 is 500", "100 + 500 = 600"],
+            examples: [
+              { title: "I do", lines: target === 100 ? ["75 + ? = 100", "75 needs 25", "75 + 25 = 100"] : ["Find the gap", "Use a friendly jump", "Then finish at the target"] },
+              { title: "We do", lines: ["Say the target first", "Find the known part", "Find the missing part"] }
+            ],
+            guided: ["Say the target: " + target + ".", "Jump to a friendly number.", "Add the jumps to find the missing part."],
+            retrievalPrompt: "Try one more and say your jumps out loud.",
+            warning: "Do not stop at 100 if the target is 150 or 1500.",
+            fluencyTarget: "Use place-value jumps until the partner fact becomes automatic."
+          });
+        }
+
+        if (id === "S1" || id === "S2" || id === "S3") {
+          return Object.assign({}, base, {
+            title: level.name,
+            focus: "Subtraction means taking away, finding what is left, or finding the missing part.",
+            visualTitle: "Take away from a ten-frame",
+            visualHTML: id === "S1" ? '<div class="fluency-visual">' + fluencyDotRow(5, 0, 3) + '</div>' : fluencyTenFrameHTML(6, 4),
+            boardTitle: "Cover what is taken away",
+            boardLines: id === "S3"
+              ? ["10 - ? = 6", "Start with 10", "Keep 6 showing", "4 were taken away"]
+              : ["10 - 4", "Start with 10 counters", "Take away 4", "6 are left"],
+            examples: [
+              { title: "I do", lines: ["8 - 3", "Start with 8", "Take away 3", "5 are left"] },
+              { title: "We do", lines: ["10 - 7", "Start with 10", "Take away 7", "3 are left"] }
+            ],
+            guided: ["Find the whole first.", "Cross out or cover the taken-away amount.", "Count only what is left."],
+            retrievalPrompt: "Try: 10 - 6. Picture the full ten-frame first.",
+            warning: "The number after the minus sign is the amount taken away, not the answer.",
+            fluencyTarget: "Connect subtraction from 10 to friends of 10."
+          });
+        }
+
+        if (id === "S6") {
+          return Object.assign({}, base, {
+            title: "Bridge through 10",
+            focus: "Bridge through 10 by subtracting in two parts.",
+            visualTitle: "Jump back to 10 first",
+            visualHTML: '<div class="fluency-visual"><div class="fluency-visual-row"><strong>14 â”€ -4 â”€ 10 â”€ -2 â”€ 8</strong></div></div>',
+            boardTitle: "Split the subtraction",
+            boardLines: ["14 - 6", "14 - 4 = 10", "6 = 4 + 2", "10 - 2 = 8"],
+            examples: [
+              { title: "I do", lines: ["13 - 5", "13 - 3 = 10", "5 = 3 + 2", "10 - 2 = 8"] },
+              { title: "We do", lines: ["12 - 7", "12 - 2 = 10", "7 = 2 + 5", "10 - 5 = 5"] }
+            ],
+            guided: ["Ask how far back to 10.", "Split the amount being subtracted.", "Finish from 10."],
+            retrievalPrompt: "Try: 15 - 8. How far back to 10?",
+            warning: "Do not subtract the full amount again after landing on 10.",
+            fluencyTarget: "See crossing-10 subtraction as two quick jumps."
+          });
+        }
+
+        if (level.operation === "multiplication") {
+          return Object.assign({}, base, {
+            title: level.name,
+            focus: "Multiplication fluency comes from recognising equal groups and choosing the quickest known strategy.",
+            visualTitle: "Equal groups / array",
+            visualHTML: '<div class="fluency-visual">' + fluencyDotRow(4, 0, 0) + fluencyDotRow(4, 0, 0) + fluencyDotRow(4, 0, 0) + '</div>',
+            boardTitle: "Use a known fact to build the harder fact",
+            boardLines: level.tags.indexOf("times7") >= 0
+              ? ["7 x 8", "5 x 8 = 40", "2 x 8 = 16", "40 + 16 = 56"]
+              : level.tags.indexOf("times8") >= 0
+                ? ["8 x 5", "Double 5 = 10", "Double 10 = 20", "Double 20 = 40"]
+                : level.tags.indexOf("times9") >= 0
+                  ? ["9 x 7", "10 x 7 = 70", "70 - 7 = 63"]
+                  : ["4 x 6", "Double 6 = 12", "Double 12 = 24"],
+            examples: [
+              { title: "I do", lines: ["2s: double", "4s: double-double", "8s: double-double-double"] },
+              { title: "We do", lines: ["12s: 10 groups + 2 groups", "12 x 6 = 60 + 12", "12 x 6 = 72"] }
+            ],
+            guided: ["Identify the table.", "Choose the matching strategy.", "Check with a nearby known fact."],
+            retrievalPrompt: "Try one fact from this table and explain which strategy you used.",
+            warning: "Do not count up from zero if there is a known fact or shortcut available.",
+            fluencyTarget: "Use the strategy until the fact becomes automatic."
+          });
+        }
+
+        if (level.operation === "division") {
+          return Object.assign({}, base, {
+            title: level.name,
+            focus: "Division fluency comes from turning the question into a known multiplication fact.",
+            visualTitle: "Fact family",
+            visualHTML: '<div class="fluency-visual"><div class="fluency-visual-row"><strong>6 Ã— 7 = 42</strong></div><div class="fluency-visual-row"><strong>42 Ã· 6 = 7</strong></div></div>',
+            boardTitle: "Use the inverse",
+            boardLines: ["42 Ã· 6", "Ask: 6 times what equals 42?", "6 x 7 = 42", "42 Ã· 6 = 7"],
+            examples: [
+              { title: "I do", lines: ["35 Ã· 5", "5 x 7 = 35", "35 Ã· 5 = 7"] },
+              { title: "We do", lines: ["48 Ã· 8", "8 x 6 = 48", "48 Ã· 8 = 6"] }
+            ],
+            guided: ["Find the divisor.", "Say the matching times-table fact.", "Check by multiplying back."],
+            retrievalPrompt: "Try: 56 Ã· 7. Which multiplication fact proves it?",
+            warning: "Never divide by 0. Division must make equal groups.",
+            fluencyTarget: "Recall the multiplication family quickly enough to answer division smoothly."
+          });
+        }
+
+        if (level.operation === "measurement") {
+          return Object.assign({}, base, {
+            title: level.name,
+            focus: "Metric conversion is renaming the same amount in a different unit.",
+            visualTitle: "Place-value shift",
+            visualHTML: '<div class="fluency-visual"><div class="fluency-visual-row"><strong>Ã—10/Ã—100/Ã—1000 â†’ digits shift left</strong></div><div class="fluency-visual-row"><strong>Ã·10/Ã·100/Ã·1000 â†’ digits shift right</strong></div></div>',
+            boardTitle: "Decide direction first",
+            boardLines: ["1 m = 100 cm", "m to cm uses a smaller unit", "The number gets larger", "2.5 m = 250 cm"],
+            examples: [
+              { title: "I do", lines: ["1000 mL = 1 L", "mL to L uses a larger unit", "Divide by 1000"] },
+              { title: "We do", lines: ["3.4 kg = ? g", "kg to g uses a smaller unit", "3.4 x 1000 = 3400 g"] }
+            ],
+            guided: ["Name the starting unit.", "Ask whether the new unit is smaller or larger.", "Shift digits the correct number of places."],
+            retrievalPrompt: "Try: 4500 mL = ? L. Should the number get bigger or smaller?",
+            warning: "The decimal point does not jump. The digits shift through place-value columns.",
+            fluencyTarget: "Decide direction before calculating."
+          });
+        }
+
+        if (level.operation === "mixed") {
+          return Object.assign({}, base, {
+            title: level.name,
+            focus: "Mixed fluency means choosing the correct operation or rule before answering.",
+            visualTitle: "Operation check",
+            visualHTML: '<div class="fluency-visual"><div class="fluency-visual-row"><strong>+ join | âˆ’ take away | Ã— equal groups | Ã· share/group</strong></div></div>',
+            boardTitle: "Stop before calculating",
+            boardLines: ["Read the sign", "Name the operation", "Choose the strategy", "Check if the answer size makes sense"],
+            examples: [
+              { title: "I do", lines: ["40 Ã· 5", "Total is 40", "Groups of 5", "Use division"] },
+              { title: "We do", lines: ["8 + 7", "Addition crossing 10", "Bridge to 10", "15"] }
+            ],
+            guided: ["Spot the operation sign.", "Say whether the answer should be larger or smaller.", "Then calculate."],
+            retrievalPrompt: "Try a mixed item slowly. Say the operation before the answer.",
+            warning: "Subtraction and division order matters. 10 Ã· 2 is not the same as 2 Ã· 10.",
+            fluencyTarget: "Build quick but careful operation recognition."
+          });
+        }
+
+        return base;
+      }
+
+      function fluencyLessonHeroHTML(lesson) {
+        return [
+          '<section class="panel section fluency-lesson-hero">',
+          '  <aside class="mr-slay-card">',
+          '    <div class="mr-slay-portrait" aria-hidden="true">MS</div>',
+          '    <div><span class="pill">' + escapeHTML(lesson.badge) + '</span><h3>Mr Slay teaches first</h3></div>',
+          '    <div class="mr-slay-bubble">Speed comes after accuracy. Learn the structure, then retrieve it.</div>',
+          '  </aside>',
+          '  <div class="fluency-lesson-copy">',
+          '    <h2>' + escapeHTML(lesson.title) + '</h2>',
+          '    <p class="lead">' + escapeHTML(lesson.focus) + '</p>',
+          '    <div class="fluency-flow">',
+          '      <div class="fluency-flow-step"><strong>1. I do</strong><span class="tiny muted">Watch the worked example.</span></div>',
+          '      <div class="fluency-flow-step"><strong>2. We do</strong><span class="tiny muted">Follow the same strategy.</span></div>',
+          '      <div class="fluency-flow-step"><strong>3. You do</strong><span class="tiny muted">Retrieve without rushing.</span></div>',
+          '      <div class="fluency-flow-step"><strong>4. Sprint later</strong><span class="tiny muted">Speed after success.</span></div>',
+          '    </div>',
+          '  </div>',
+          '</section>'
+        ].join("");
+      }
+
+      function fluencyLessonBodyHTML(lesson) {
+        return [
+          '<section class="fluency-lesson-grid">',
+          '  <article class="fluency-whiteboard">',
+          '    <h3>' + escapeHTML(lesson.visualTitle) + '</h3>',
+          lesson.visualHTML || "",
+          '    <h3>' + escapeHTML(lesson.boardTitle) + '</h3>',
+          fluencyBoardLinesHTML(lesson.boardLines),
+          '  </article>',
+          '  <aside class="fluency-mini-cards">',
+          (lesson.examples || []).map(fluencyExampleHTML).join(""),
+          '    <article class="fluency-mini-card success"><h3>Guided practice</h3>' + fluencyStepsHTML(lesson.guided) + '</article>',
+          '    <article class="fluency-mini-card"><h3>You do</h3><p class="muted">' + escapeHTML(lesson.retrievalPrompt) + '</p></article>',
+          '    <article class="fluency-mini-card warning"><h3>Common mistake</h3><p class="muted">' + escapeHTML(lesson.warning) + '</p></article>',
+          '  </aside>',
+          '</section>'
+        ].join("");
+      }
       function practiceGuideView() {
         if (!state.student) return homeView();
         var level = levelById(state.selectedLevelId);
         var guide = practiceGuideForLevel(level);
         var tablePractice = customTableLevel(level);
         var levelName = tablePractice ? customMultiplicationLevelName() : level.name;
+        var lesson = fluencyLessonForLevel(level, guide, levelName);
         return [
           '<div class="page">',
           header(),
           '<main class="shell stack">',
           '  <section class="between">',
           '    <div>',
-          '      <span class="pill">Practice</span>',
+          '      <span class="pill">Lesson before practice</span>',
           '      <h2>' + escapeHTML(levelName) + '</h2>',
           '      <p class="muted">' + escapeHTML(studentLevelStageLabel(level) + " | " + operationLabel(level.operation)) + '</p>',
           '    </div>',
           '    <button class="btn ghost" data-action="student-menu">Back</button>',
           '  </section>',
           tablePractice ? '<section class="panel section stack student-menu-panel">' + tablePracticePanel() + '</section>' : '',
-          '  <section class="guide-grid">',
-          guideCardHTML("What this skill means", guide.meaning),
-          guideCardHTML("Strategy", guide.strategy),
-          guideCardHTML("Worked examples", guideExamplesHTML(guide.examples), true),
-          guideCardHTML("Guided practice", guideListHTML(guide.guided), true),
-          '  </section>',
+          fluencyLessonHeroHTML(lesson),
+          fluencyLessonBodyHTML(lesson),
           '  <section class="panel section stack">',
-          '    <h3>Independent practice</h3>',
-          '    <p class="muted">' + escapeHTML(guide.independent) + '</p>',
+          '    <div class="between">',
+          '      <div>',
+          '        <h3>Now retrieve it</h3>',
+          '        <p class="muted">' + escapeHTML(lesson.fluencyTarget) + '</p>',
+          '      </div>',
+          '      <span class="pill">Accuracy first</span>',
+          '    </div>',
+          '    <div class="notice small"><strong>Fluency routine:</strong> learn the structure, retrieve briefly, get feedback, then repeat over time.</div>',
           '    <div class="row">',
           '      <button class="btn primary" data-action="begin-guided-practice">Start fluency practice</button>',
           '      <button class="btn gold" data-action="begin-session" data-mode="sprint">100-second sprint</button>',
@@ -4196,126 +4711,6 @@
           '</main>',
           '</div>'
         ].join("");
-      }
-
-
-      var FOUR_OPERATION_DIAGNOSTIC_OPERATIONS = ["addition", "subtraction", "multiplication", "division"];
-
-      function diagnosticOperationProfile(student, operation) {
-        var sessions = student ? sessionsForStudent(student.id).filter(function (session) {
-          return session.mode === "sprint" && sessionMatchesOperation(session, operation);
-        }) : [];
-        var ordered = sessions.slice().sort(function (a, b) {
-          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-        });
-        var recent = ordered.slice(-2);
-        var attempts = sum(ordered.map(function (session) { return Number(session.attempted) || 0; }));
-        var bestAccuracy = ordered.length ? Math.max.apply(null, ordered.map(function (session) { return Number(session.accuracy) || 0; })) : null;
-        var recentAccuracy = recent.length ? Math.round(avg(recent.map(function (session) { return Number(session.accuracy) || 0; }))) : null;
-        var latest = ordered[ordered.length - 1] || null;
-        var status = "notStarted";
-        var label = "Not started";
-        var className = "none";
-        if (ordered.length && attempts >= 10 && bestAccuracy >= 85) {
-          status = "secure";
-          label = "Secure";
-          className = "secure";
-        } else if (ordered.length && attempts >= 10 && recentAccuracy != null && recentAccuracy >= 75) {
-          status = "nearlySecure";
-          label = "Nearly secure";
-          className = "nearly";
-        } else if (ordered.length) {
-          status = "building";
-          label = "Building";
-          className = "building";
-        }
-        return { operation: operation, label: label, status: status, className: className, sessions: ordered.length, attempts: attempts, bestAccuracy: bestAccuracy, recentAccuracy: recentAccuracy, latest: latest };
-      }
-
-      function fourOperationDiagnosticProfile(student) {
-        var profiles = FOUR_OPERATION_DIAGNOSTIC_OPERATIONS.map(function (operation) { return diagnosticOperationProfile(student, operation); });
-        var started = profiles.filter(function (profile) { return profile.sessions > 0; });
-        var strongest = started.slice().sort(function (a, b) { return (b.bestAccuracy || 0) - (a.bestAccuracy || 0) || b.attempts - a.attempts; })[0] || null;
-        var focus = profiles.find(function (profile) { return profile.status === "notStarted"; }) || profiles.find(function (profile) { return profile.status === "building"; }) || profiles.find(function (profile) { return profile.status === "nearlySecure"; }) || profiles[0];
-        var secureCount = profiles.filter(function (profile) { return profile.status === "secure"; }).length;
-        return { profiles: profiles, strongest: strongest, focus: focus, secureCount: secureCount };
-      }
-
-      function diagnosticOperationEvidence(profile) {
-        if (!profile || !profile.sessions) return "No diagnostic sprint yet.";
-        var parts = [];
-        parts.push(profile.sessions + " sprint" + (profile.sessions === 1 ? "" : "s"));
-        if (profile.bestAccuracy != null) parts.push("best " + profile.bestAccuracy + "%");
-        if (profile.recentAccuracy != null) parts.push("recent " + profile.recentAccuracy + "%");
-        return parts.join(", ");
-      }
-
-      function diagnosticOperationCard(profile) {
-        var op = OPERATIONS.find(function (item) { return item.id === profile.operation; }) || { label: profile.operation, symbol: "?" };
-        return [
-          '<article class="diagnostic-card ' + escapeHTML(profile.className) + '">',
-          '  <div class="between" style="gap:0.5rem">',
-          '    <div class="diagnostic-op-symbol">' + escapeHTML(op.symbol) + '</div>',
-          '    <span class="proficiency ' + escapeHTML(profile.className) + '">' + escapeHTML(profile.label) + '</span>',
-          '  </div>',
-          '  <h3>' + escapeHTML(op.label) + '</h3>',
-          '  <p class="tiny muted">' + escapeHTML(diagnosticOperationEvidence(profile)) + '</p>',
-          '  <button class="btn ghost" data-action="start-diagnostic" data-operation="' + escapeHTML(profile.operation) + '">Check ' + escapeHTML(op.label.toLowerCase()) + '</button>',
-          '</article>'
-        ].join("");
-      }
-
-      function studentFourOperationDiagnosticPanel() {
-        var student = currentStudentRecord();
-        if (!student) return "";
-        var profile = fourOperationDiagnosticProfile(student);
-        var strongestText = profile.strongest ? operationLabel(profile.strongest.operation) + " (" + (profile.strongest.bestAccuracy == null ? "--" : profile.strongest.bestAccuracy + "%") + ")" : "Needs first diagnostic";
-        var focusText = profile.focus ? operationLabel(profile.focus.operation) : "None";
-        return [
-          '<section class="panel section stack">',
-          '  <div class="between">',
-          '    <div><span class="pill">4 operations check-up</span><h3>Diagnostic snapshot</h3><p class="muted">Check each core operation so your practice path is based on evidence.</p></div>',
-          '    <button class="btn gold" data-action="start-diagnostic" data-operation="' + escapeHTML(profile.focus.operation) + '">Start next diagnostic</button>',
-          '  </div>',
-          '  <div class="diagnostic-summary-row">',
-          statHTML("Secure operations", profile.secureCount + "/4"),
-          statHTML("Strongest", strongestText),
-          statHTML("Focus", focusText),
-          '  </div>',
-          '  <div class="diagnostic-grid">' + profile.profiles.map(diagnosticOperationCard).join("") + '</div>',
-          '</section>'
-        ].join("");
-      }
-
-      function diagnosticRecommendationForStudent(student) {
-        var profile = fourOperationDiagnosticProfile(student);
-        if (!profile.focus) return "No focus needed.";
-        if (profile.focus.status === "notStarted") return "Start " + operationLabel(profile.focus.operation) + " diagnostic.";
-        if (profile.focus.status === "building") return "Practise " + operationLabel(profile.focus.operation).toLowerCase() + ", then repeat the diagnostic sprint.";
-        if (profile.focus.status === "nearlySecure") return "Repeat " + operationLabel(profile.focus.operation).toLowerCase() + " to confirm security.";
-        return "All four operation diagnostics are secure.";
-      }
-
-      function fourOperationDiagnosticClassPanel(students, compact) {
-        if (!students || !students.length) return "";
-        var rows = students.map(function (student) { var profile = fourOperationDiagnosticProfile(student); return { student: student, profile: profile, focus: profile.focus }; }).sort(function (a, b) { return a.profile.secureCount - b.profile.secureCount; });
-        return [
-          '<section class="panel section stack">',
-          '  <div><h3>4 operations diagnostic</h3><p class="muted">' + (compact ? "Class evidence across addition, subtraction, multiplication and division." : "Use this to see who needs an initial diagnostic or follow-up practice.") + '</p></div>',
-          '  <table><thead><tr><th>Student</th><th>Secure</th><th>Strongest</th><th>Focus</th><th>Recommendation</th></tr></thead><tbody>',
-          rows.map(function (row) {
-            var strongest = row.profile.strongest ? operationLabel(row.profile.strongest.operation) + ' (' + (row.profile.strongest.bestAccuracy == null ? '--' : row.profile.strongest.bestAccuracy + '%') + ')' : '--';
-            return ['<tr>','<td><strong>' + escapeHTML(studentFullName(row.student)) + '</strong><div class="tiny muted">' + escapeHTML(row.student.alias) + '</div></td>','<td>' + row.profile.secureCount + '/4</td>','<td>' + escapeHTML(strongest) + '</td>','<td>' + (row.focus ? '<span class="proficiency ' + escapeHTML(row.focus.className) + '">' + escapeHTML(operationLabel(row.focus.operation)) + '</span><div class="tiny muted">' + escapeHTML(diagnosticOperationEvidence(row.focus)) + '</div>' : '--') + '</td>','<td>' + escapeHTML(diagnosticRecommendationForStudent(row.student)) + '</td>','</tr>'].join("");
-          }).join(""),
-          '  </tbody></table>',
-          '</section>'
-        ].join("");
-      }
-
-      function studentFourOperationDiagnosticEvidencePanel(student) {
-        if (!student) return "";
-        var profile = fourOperationDiagnosticProfile(student);
-        return ['<section class="panel section stack">','  <div><h3>4 operations diagnostic evidence</h3><p class="muted">Current evidence from diagnostic sprint attempts.</p></div>','  <div class="diagnostic-grid">' + profile.profiles.map(diagnosticOperationCard).join("") + '</div>','</section>'].join("");
       }
 
       function studentMenuView() {
@@ -4832,6 +5227,23 @@
           '</div>'
         ].join("");
       }
+
+      function mrSlayPracticeCoachHTML(active) {
+        if (!active || active.mode === "sprint") return "";
+        var helper = helperForActiveSession(active);
+        var board = (helper.board || []).slice(0, 2).join(" â€¢ ");
+        return [
+          '<section class="panel section fluency-practice-coach">',
+          '  <div class="mr-slay-portrait" aria-hidden="true">MS</div>',
+          '  <div>',
+          '    <span class="pill">Mr Slay is watching the strategy</span>',
+          '    <div class="coach-line">' + escapeHTML(helper.bubble || "Choose the strategy before the answer.") + '</div>',
+          board ? '    <p class="tiny muted">' + escapeHTML(board) + '</p>' : '',
+          '  </div>',
+          '  <button class="btn gold" type="button" data-action="open-mr-slay">Worked example</button>',
+          '</section>'
+        ].join("");
+      }
       function sessionView() {
         var active = state.active;
         if (!active) return studentMenuView();
@@ -4857,6 +5269,7 @@
           statHTML("Accuracy", accuracy + "%"),
           statHTML("Streak", active.streak),
           '  </section>',
+          mrSlayPracticeCoachHTML(active),
           '  <section class="practice-layout session-practice">',
           '    <form class="panel question stack" data-form="answer">',
           '      <div class="pill" style="margin: 0 auto">' + escapeHTML(operationLabel(active.question.operation)) + '</div>',
@@ -7569,5 +7982,6 @@
   </script>
 </body>
 </html>
+
 
 
