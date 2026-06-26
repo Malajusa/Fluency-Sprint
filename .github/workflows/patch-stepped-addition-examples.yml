@@ -27,7 +27,7 @@ jobs:
           import re
 
           path = Path('index.html')
-          text = path.read_text(encoding='utf-8-sig', newline='')
+          text = path.read_text(encoding='utf-8-sig')
 
           if 'Update 07A: full Mr Slay addition/subtraction lesson bank' in text:
               raise SystemExit('Refusing to patch: broken Update 07A marker is present.')
@@ -76,7 +76,7 @@ jobs:
           replace_once(add_old, add_new, 'general addition strategy guide')
 
           if changed:
-              path.write_text('\ufeff' + text, encoding='utf-8', newline='')
+              path.write_text('\ufeff' + text, encoding='utf-8')
           else:
               print('No changes needed.')
           PY
