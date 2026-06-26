@@ -4220,6 +4220,13 @@
           if (tags.indexOf("friends10") >= 0) return MR_SLAY_HELPERS.additionFriends10;
           return MR_SLAY_HELPERS.additionGeneral;
         }
+        if (level && level.operation === "subtraction") {
+          if (tags.indexOf("ending5") >= 0) return MR_SLAY_HELPERS.subtractionEnding5;
+          if (tags.indexOf("bridge") >= 0) return MR_SLAY_HELPERS.subtractionBridge10;
+          if (tags.indexOf("friends10") >= 0) return MR_SLAY_HELPERS.subtractionFriends10;
+          if (tags.indexOf("friends100") >= 0 || tags.indexOf("friends1000") >= 0 || tags.indexOf("friends150") >= 0 || tags.indexOf("friends1500") >= 0) return MR_SLAY_HELPERS.subtractionPlaceValue;
+          return MR_SLAY_HELPERS.subtractionGeneral;
+        }
         if (level && level.operation === "multiplication") return MR_SLAY_HELPERS.multiplicationGeneral;
         if (level && level.operation === "division") return MR_SLAY_HELPERS.divisionGeneral;
         return MR_SLAY_HELPERS.general;
@@ -4865,7 +4872,9 @@
 
         if (active.levelOperation === "addition" || (active.question && active.question.operation === "addition")) {
           return mrSlayHelperForLevel(levelById(active.levelId));
-        }        if (active.levelOperation === "subtraction" || (active.question && active.question.operation === "subtraction")) {
+        }
+
+        if (active.levelOperation === "subtraction" || (active.question && active.question.operation === "subtraction")) {
           return mrSlayHelperForLevel(levelById(active.levelId));
         }
 
