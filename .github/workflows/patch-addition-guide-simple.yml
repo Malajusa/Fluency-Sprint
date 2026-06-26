@@ -1,0 +1,143 @@
+name: Patch addition guide simple
+
+on:
+  push:
+    branches:
+      - feature-lesson-panel
+    paths:
+      - .github/workflows/patch-addition-guide-simple.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature-lesson-panel
+
+      - name: Patch guide content
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8-sig')
+
+          if 'Update 07A: full Mr Slay addition/subtraction lesson bank' in s:
+              raise SystemExit('Broken lesson-bank marker found; stopping.')
+
+          css_anchor = '''    .example-box {
+      border: 2px solid var(--line);
+      border-radius: 8px;
+      background: #f8fafc;
+      padding: 0.85rem;
+      font-size: 1.2rem;
+      font-weight: 950;
+      text-align: center;
+    }
+'''
+          css_insert = css_anchor + '''
+    .example-box.stepped-example {
+      text-align: left;
+      font-size: 0.98rem;
+      line-height: 1.35;
+      display: grid;
+      gap: 0.35rem;
+    }
+
+    .example-title {
+      font-weight: 950;
+      color: var(--teal-dark);
+    }
+
+    .example-step {
+      font-weight: 800;
+      color: var(--ink);
+    }
+
+    .example-result {
+      margin-top: 0.2rem;
+      padding-top: 0.35rem;
+      border-top: 1px solid var(--line);
+      font-weight: 950;
+      color: var(--blue);
+    }
+'''
+          if '.example-box.stepped-example' not in s:
+              if css_anchor not in s:
+                  raise SystemExit('Could not find .example-box CSS anchor')
+              s = s.replace(css_anchor, css_insert, 1)
+
+          renderer_pattern = re.compile(r'''      function guideExamplesHTML\(examples\) \{\n        return '<div class="example-strip">' \+ examples\.map\(function \(example\) \{\n          return '<div class="example-box">' \+ escapeHTML\(example\) \+ '</div>';\n        \}\)\.join\(""\) \+ '</div>';\n      \}\n''')
+          renderer_new = '''      function guideExamplesHTML(examples) {
+        return '<div class="example-strip">' + examples.map(function (example) {
+          var raw = String(example == null ? "" : example);
+          var lines = raw.split(/\\n+/).map(function (line) { return line.trim(); }).filter(Boolean);
+          if (lines.length <= 1) {
+            return '<div class="example-box">' + escapeHTML(raw) + '</div>';
+          }
+          return '<div class="example-box stepped-example">' + lines.map(function (line, index) {
+            var cls = index === 0 ? "example-title" : (index === lines.length - 1 ? "example-result" : "example-step");
+            return '<div class="' + cls + '">' + escapeHTML(line) + '</div>';
+          }).join("") + '</div>';
+        }).join("") + '</div>';
+      }
+'''
+          s, count = renderer_pattern.subn(renderer_new, s, count=1)
+          if count == 0 and 'stepped-example' not in s:
+              raise SystemExit('Could not patch guideExamplesHTML')
+
+          addition_pattern = re.compile(r'''        if \(level\.operation === "addition"\) \{\n          return \{\n            meaning: "Addition combines parts to make a total\.",\n            strategy: "Look for pairs that make 10, doubles, or near doubles\.",\n            examples: \["6 \+ 4 = 10", "7 \+ 7 = 14", "8 \+ 9 = 17"\],\n            guided: \[\n              "Find the friend of 10 or double if there is one\.",\n              "Use the known fact first\.",\n              "Add any leftover amount\."\n            \],\n            independent: "Practise when you can spot the helpful pattern before calculating\."\n          \};\n        \}\n''')
+          addition_new = '''        if (level.operation === "addition") {
+          return {
+            meaning: "Addition combines parts to make a total. Fluency means choosing the most efficient strategy before answering.",
+            strategy: "Choose from friendly pairs, near doubles, jump strategy, split strategy, compensation, or reordering.",
+            examples: [
+              "Friendly pair strategy\\n6 + 4\\n6 needs 4 to make 10\\n6 + 4 = 10",
+              "Near doubles strategy\\n8 + 9\\n8 + 8 = 16\\n9 is 1 more than 8\\n16 + 1 = 17",
+              "Compensation strategy\\n35 + 9\\nThink 9 = 10 - 1\\n35 + 10 = 45\\n45 - 1 = 44"
+            ],
+            guided: [
+              "If the numbers make 10 or 100, group them first.",
+              "If the numbers are close, use a double or near double.",
+              "If one number is near a friendly number, bump it, calculate, then adjust.",
+              "If the numbers are larger, split them by place value and recombine."
+            ],
+            independent: "Practise when you can name the strategy before calculating."
+          };
+        }
+'''
+          s, count = addition_pattern.subn(addition_new, s, count=1)
+          if count == 0 and 'Fluency means choosing the most efficient strategy' not in s:
+              raise SystemExit('Could not patch general addition guide')
+
+          p.write_text('\ufeff' + s, encoding='utf-8')
+          PY
+
+      - name: Syntax check
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          html = Path('index.html').read_text(encoding='utf-8-sig')
+          js = re.search(r'<script>\s*([\s\S]*?)\s*</script>', html).group(1)
+          Path('/tmp/site.js').write_text(js, encoding='utf-8')
+          PY
+          node --check /tmp/site.js
+
+      - name: Commit index update
+        run: |
+          if git diff --quiet -- index.html; then
+            echo "No index changes."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Add stepped addition guide examples"
+          git push origin feature-lesson-panel
