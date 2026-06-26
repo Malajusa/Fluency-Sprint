@@ -4865,12 +4865,11 @@
 
         if (active.levelOperation === "addition" || (active.question && active.question.operation === "addition")) {
           return mrSlayHelperForLevel(levelById(active.levelId));
-        }
-
-                if (active.levelOperation === "subtraction" || (active.question && active.question.operation === "subtraction")) {
+        }        if (active.levelOperation === "subtraction" || (active.question && active.question.operation === "subtraction")) {
           return mrSlayHelperForLevel(levelById(active.levelId));
         }
-return MR_SLAY_HELPERS.general;
+
+        return MR_SLAY_HELPERS.general;
       }
 
       function mrSlayHelperButton(active) {
