@@ -635,6 +635,32 @@
       text-align: center;
     }
 
+    .example-box.stepped-example {
+      text-align: left;
+      font-size: 0.98rem;
+      line-height: 1.35;
+      display: grid;
+      gap: 0.35rem;
+    }
+
+    .example-title {
+      font-weight: 950;
+      color: var(--teal-dark);
+    }
+
+    .example-step {
+      font-weight: 800;
+      color: var(--ink);
+    }
+
+    .example-result {
+      margin-top: 0.2rem;
+      padding-top: 0.35rem;
+      border-top: 1px solid var(--line);
+      font-weight: 950;
+      color: var(--blue);
+    }
+
     .success {
       border-color: #b6e4bd;
       background: #ecfff0;
@@ -3334,9 +3360,9 @@
             meaning: "Friends of " + friendGuideTarget + " are number pairs that make " + friendGuideTarget + ".",
             strategy: "Look at the number you can see, then name the partner that finishes the target number.",
             examples: [
-              addVisible + " + ? = " + friendGuideTarget + ", so ? = " + addPartner,
-              "? + " + addPartner + " = " + friendGuideTarget + ", so ? = " + addVisible,
-              addVisible + " + " + addPartner + " = " + friendGuideTarget
+              "Friendly pair strategy\n" + addVisible + " + ? = " + friendGuideTarget + "\n" + addVisible + " needs " + addPartner + " to make " + friendGuideTarget + "\n" + addVisible + " + " + addPartner + " = " + friendGuideTarget,
+              "Reordering strategy\n? + " + addPartner + " = " + friendGuideTarget + "\nThe known part is " + addPartner + "\n" + addPartner + " needs " + addVisible + "\n? = " + addVisible,
+              "Check with subtraction\n" + friendGuideTarget + " - " + addVisible + "\nThe missing part is " + addPartner + "\n" + addVisible + " + " + addPartner + " = " + friendGuideTarget
             ],
             guided: [
               "Hold " + friendGuideTarget + " in your head.",
@@ -3371,7 +3397,11 @@
           return {
             meaning: "Bridging to 10 means splitting a number so you can make 10 first.",
             strategy: "Fill the first number up to 10, then add what is left.",
-            examples: ["8 + 6 = 8 + 2 + 4", "9 + 5 = 9 + 1 + 4", "7 + 8 = 7 + 3 + 5"],
+            examples: [
+              "Bridge to 10\n8 + 6\n8 needs 2 to make 10\n6 = 2 + 4\n10 + 4 = 14",
+              "Bridge to 10\n9 + 5\n9 needs 1 to make 10\n5 = 1 + 4\n10 + 4 = 14",
+              "Bridge to 10\n7 + 8\n7 needs 3 to make 10\n8 = 3 + 5\n10 + 5 = 15"
+            ],
             guided: [
               "Ask how many are needed to reach 10.",
               "Split the second number into that part and the leftover.",
@@ -3453,15 +3483,20 @@
 
         if (level.operation === "addition") {
           return {
-            meaning: "Addition combines parts to make a total.",
-            strategy: "Look for pairs that make 10, doubles, or near doubles.",
-            examples: ["6 + 4 = 10", "7 + 7 = 14", "8 + 9 = 17"],
-            guided: [
-              "Find the friend of 10 or double if there is one.",
-              "Use the known fact first.",
-              "Add any leftover amount."
+            meaning: "Addition combines parts to make a total. Fluency means choosing the most efficient strategy before answering.",
+            strategy: "Choose from friendly pairs, near doubles, jump strategy, split strategy, compensation, or reordering.",
+            examples: [
+              "Friendly pair strategy\n6 + 4\n6 needs 4 to make 10\n6 + 4 = 10",
+              "Near doubles strategy\n8 + 9\n8 + 8 = 16\n9 is 1 more than 8\n16 + 1 = 17",
+              "Compensation strategy\n35 + 9\nThink 9 = 10 - 1\n35 + 10 = 45\n45 - 1 = 44"
             ],
-            independent: "Practise when you can spot the helpful pattern before calculating."
+            guided: [
+              "If the numbers make 10 or 100, group them first.",
+              "If the numbers are close, use a double or near double.",
+              "If one number is near a friendly number, bump it, calculate, then adjust.",
+              "If the numbers are larger, split them by place value and recombine."
+            ],
+            independent: "Practise when you can name the strategy before calculating."
           };
         }
 
@@ -4155,7 +4190,15 @@
 
       function guideExamplesHTML(examples) {
         return '<div class="example-strip">' + examples.map(function (example) {
-          return '<div class="example-box">' + escapeHTML(example) + '</div>';
+          var raw = String(example == null ? "" : example);
+          var lines = raw.split(/\n+/).map(function (line) { return line.trim(); }).filter(Boolean);
+          if (lines.length <= 1) {
+            return '<div class="example-box">' + escapeHTML(raw) + '</div>';
+          }
+          return '<div class="example-box stepped-example">' + lines.map(function (line, index) {
+            var cls = index === 0 ? "example-title" : (index === lines.length - 1 ? "example-result" : "example-step");
+            return '<div class="' + cls + '">' + escapeHTML(line) + '</div>';
+          }).join("") + '</div>';
         }).join("") + '</div>';
       }
 
