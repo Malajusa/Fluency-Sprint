@@ -1,4 +1,5 @@
 name: Apply multiplication Mr Slay patch
+# trigger: 2
 
 on:
   push:
