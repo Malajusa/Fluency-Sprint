@@ -4425,6 +4425,7 @@
           '      <div class="tabs">' + operationTabs() + '</div>',
           '    </div>',
           tablePractice ? tablePracticePanel() : '',
+          stagedTimesTablePrototypePanel(),
           studentPracticeChoiceHTML(levels),
           '    <div class="row action-row">',
           '      <button class="btn primary" data-action="open-practice-guide">Practise this skill</button>',
@@ -4482,6 +4483,18 @@
           '  <strong>' + escapeHTML(level.name) + '</strong>',
           '  <div class="tiny muted">' + level.tags.map(tagLabel).join(" | ") + '</div>',
           '</button>'
+        ].join("");
+      }
+
+      function stagedTimesTablePrototypePanel() {
+        if (state.selectedOperation !== "multiplication") return "";
+        return [
+          '    <div class="notice small">',
+          '      <strong>New pathway:</strong> Learn the 3 times table step by step before sprinting.',
+          '      <div class="row" style="margin-top:0.6rem">',
+          '        <a class="btn ghost" href="./prototypes/three-times-table-pathway.html">Open 3 times table pathway</a>',
+          '      </div>',
+          '    </div>'
         ].join("");
       }
 
