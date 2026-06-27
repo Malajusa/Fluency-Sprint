@@ -6,6 +6,28 @@ Fluency Sprint should not treat a mathematical concept as a single flat skill. E
 
 This document defines the long-term architecture that should guide lesson pages, practice modes, diagnostics, Mr Slay advice, progress tracking, and teacher observations.
 
+## Related root documents
+
+For times tables and related division facts, use the dedicated root pedagogy document as the source of truth:
+
+- [`docs/times-table-and-division-pedagogy.md`](times-table-and-division-pedagogy.md)
+
+That document defines the specific sequence for multiplication facts and related division facts:
+
+```text
+meaning
+-> visual structure
+-> skip-counting
+-> derived facts
+-> ordered recall
+-> random recall
+-> mixed recall
+-> related division
+-> maintenance
+```
+
+This staged architecture document remains the broad model for all mathematical concepts. The times-table pedagogy document is the more specific model for multiplication fact recall and related division.
+
 ## Core principle
 
 Every skill should follow a progression:
@@ -83,6 +105,8 @@ Each skill lesson page should eventually use a consistent structure:
 5. Common trap.
 6. Try with support.
 7. Move to practice.
+
+Student-facing pages should use child-facing language only. Teacher notes, research commentary and assessment rationale belong in documentation, teacher dashboards, reports, analytics views or planning notes.
 
 ## Practice mode structure
 
@@ -178,15 +202,19 @@ Examples:
 
 ### Times tables
 
+Use [`docs/times-table-and-division-pedagogy.md`](times-table-and-division-pedagogy.md) as the source of truth for times tables and related division facts.
+
 | Stage | Example |
 | --- | --- |
 | Meaning | Multiplication represents equal groups. |
-| Representation | Arrays, groups, number lines. |
-| Guided strategy | Skip count and connect to known facts. |
-| Structured practice | Facts in order. |
-| Varied practice | Facts shuffled. |
-| Fluency | Accurate recall within a target response time. |
-| Transfer | Division facts, missing factors, mixed tables, worded problems. |
+| Visual structure | Arrays, groups, number lines, hundreds charts and grid patterns. |
+| Skip-counting | Count by the table and connect count position to facts. |
+| Derived facts | Use known facts, doubling, halving, 5-plus, 10-minus and commutativity. |
+| Ordered recall | Say the table in order after structure is understood. |
+| Random recall | Answer facts within one table out of order. |
+| Mixed recall | Interleave secure tables gradually. |
+| Related division | Use multiplication to solve division and missing-factor problems. |
+| Maintenance | Use spaced review so facts remain available over time. |
 
 ### Division facts
 
@@ -222,17 +250,19 @@ Recommended first implementation target:
 Prototype one staged pathway for the 3 times table.
 ```
 
-Suggested prototype pathway:
+Suggested prototype pathway should now align with the root times-table pedagogy:
 
-1. Meaning: equal groups of 3.
-2. Representation: groups, arrays, number line jumps.
-3. Guided strategy: skip counting and build from known facts.
-4. Structured practice: 3-times-table facts in order.
-5. Varied practice: 3-times-table facts shuffled.
-6. Fluency: timed recall once accurate.
-7. Transfer: related division facts and missing factors.
+1. Build it: make groups and arrays.
+2. Count it: skip-count the table.
+3. See the pattern: notice visual and number patterns.
+4. Use a smart strategy: derive harder facts from known facts.
+5. Say it in order: recall the table in sequence.
+6. Answer shuffled facts: recall facts from the table out of order.
+7. Mix it with other tables: interleave known facts.
+8. Use division facts: connect multiplication to division and missing factors.
+9. Keep it automatic: use spaced review and maintenance.
 
-Once this pathway works, duplicate the structure for other tables and then apply the same model across addition, subtraction, division, measurement, fractions, decimals, and percentages.
+Once this pathway works, duplicate the structure for other tables and then apply the same staged model across addition, subtraction, division, measurement, fractions, decimals, and percentages.
 
 ## Implementation notes
 
@@ -264,4 +294,8 @@ Fluency Sprint's long-term direction is now:
 
 > Every mathematical concept should be taught and practised through staged progression from conceptual meaning to representation, guided strategy, structured practice, varied practice, fluency, and transfer.
 
-This principle should drive future code changes and content design.
+For times tables and related division facts, the specific long-term sequence is:
+
+> meaning -> visual structure -> skip-counting -> derived facts -> ordered recall -> random recall -> mixed recall -> related division -> maintenance.
+
+These principles should drive future code changes and content design.
